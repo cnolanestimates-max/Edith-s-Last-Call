@@ -1,0 +1,29 @@
+﻿[
+  {
+    "created_at": "2026-11-18T18:15:48.884254Z",
+    "display_name": "Hunyuan3D v3 Image to 3D",
+    "id": "03aecf8a-c36d-4c10-85b4-e5b88493c0d7",
+    "job_type": "hunyuan3d_v3_image_to_3d",
+    "min_result_url": null,
+    "params": {
+      "enable_pbr": true,
+      "face_count": 120000,
+      "folder_id": null,
+      "generate_type": "Normal",
+      "medias": [
+        {
+          "data": {
+            "id": "e9a9da97-bf76-45e3-b9b7-0e98df7ca0d3",
+            "type": "media_input",
+            "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_3JnvaHpmI60W1KtytJAHYxhGyha/e9a9da97-bf76-45e3-b9b7-0e98df7ca0d3_resize.jpg"
+          },
+          "role": "image"
+        }
+      ],
+      "polygon_type": "triangle"
+    },
+    "result_url": "https://d8j0ntlcm91z4.cloudfront.net/user_3JnvaHpmI60W1KtytJAHYxhGyha/hf_20261118_181548_03aecf8a-c36d-4c10-85b4-e5b88493c0d7.glb",
+    "status": "completed"
+  }
+]
+

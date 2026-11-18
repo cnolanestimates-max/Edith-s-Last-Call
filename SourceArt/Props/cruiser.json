@@ -1,0 +1,24 @@
+﻿[
+  {
+    "created_at": "2026-11-18T18:11:31.66858Z",
+    "display_name": "Nano Banana Pro",
+    "id": "cb254278-53c5-4cfc-a9b6-ab2ee691f949",
+    "job_type": "nano_banana_pro",
+    "min_result_url": "https://d8j0ntlcm91z4.cloudfront.net/user_3JnvaHpmI60W1KtytJAHYxhGyha/hf_20261118_181131_cb254278-53c5-4cfc-a9b6-ab2ee691f949_min.webp",
+    "params": {
+      "application": null,
+      "aspect_ratio": "4:3",
+      "batch_size": 1,
+      "height": 1792,
+      "input_image": null,
+      "input_images": [],
+      "prompt": "Product-style reference photo for 3D modelling: a single rural county sheriff's patrol car, a white and dark green full-size sedan cruiser from the early 2000s with a red and blue roof lightbar, push bumper, spotlight by the driver mirror, a gold six-point star emblem and the word SHERIFF on the door. Slightly dusty. Three-quarter front view from slightly above, whole car in frame with margin, plain flat light grey studio background, soft even lighting, no people, no other objects, no ground clutter, photorealistic.",
+      "resolution": "2k",
+      "surface": null,
+      "width": 2400
+    },
+    "result_url": "https://d8j0ntlcm91z4.cloudfront.net/user_3JnvaHpmI60W1KtytJAHYxhGyha/hf_20261118_181131_cb254278-53c5-4cfc-a9b6-ab2ee691f949.png",
+    "status": "completed"
+  }
+]
+

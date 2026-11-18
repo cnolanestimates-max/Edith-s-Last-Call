@@ -1,0 +1,1205 @@
+// The story of Wellness Check, as code: dialogue lines, objectives, the eight major scares, the finale and ending.
+// World actors are found by WCId / tag; the level build script (Scripts/level/build_house.py) creates them.
+#include "WCDirector.h"
+#include "WCCharacter.h"
+#include "WCEntity.h"
+#include "WCWorld.h"
+
+#include "Components/AudioComponent.h"
+#include "EngineUtils.h"
+#include "Engine/PostProcessVolume.h"
+#include "Kismet/GameplayStatics.h"
+#include "Misc/CommandLine.h"
+#include "Sound/SoundBase.h"
+
+DEFINE_LOG_CATEGORY_STATIC(LogWCStory, Log, All);
+
+// ---------------------------------------------------------------------------------------------- lines
+// Kind: 0 deputy (close), 1 dispatch over the radio, 2 Edith heard everywhere, 3 Edith from where she stands, 4 Edith on the phone
+struct FWCLine { const TCHAR* Id; const TCHAR* Speaker; const TCHAR* Text; int32 Kind; };
+
+static const FWCLine GLines[] = {
+	{ TEXT("d_arrive1"), TEXT("Deputy Brandt"), TEXT("Dispatch, Fourteen. I'm out on County Road Nine, coming up on the Harrow place."), 0 },
+	{ TEXT("r_arrive1"), TEXT("Dispatch"), TEXT("Copy, Fourteen. Caller asked for a wellness check on an Edith Harrow, eighty-six, lives alone. Family's out of state. Nobody's laid eyes on her in months."), 1 },
+	{ TEXT("d_arrive2"), TEXT("Deputy Brandt"), TEXT("Copy. House is dark. No lights, no vehicle."), 0 },
+	{ TEXT("r_arrive2"), TEXT("Dispatch"), TEXT("Caller didn't leave a name, Fourteen. Gave the address, said she needs company, and hung up."), 1 },
+	{ TEXT("d_arrive3"), TEXT("Deputy Brandt"), TEXT("...Needs company. Copy."), 0 },
+	{ TEXT("r_arrive3"), TEXT("Dispatch"), TEXT("Check on her and call it in."), 1 },
+	{ TEXT("d_arrive4"), TEXT("Deputy Brandt"), TEXT("Ten-four. Going to the door."), 0 },
+	{ TEXT("d_leave_early"), TEXT("Deputy Brandt"), TEXT("Not until I've laid eyes on her."), 0 },
+	{ TEXT("d_knock"), TEXT("Deputy Brandt"), TEXT("Sheriff's office! Mrs. Harrow? Your daughter asked us to check on you."), 0 },
+	{ TEXT("d_dooropen"), TEXT("Deputy Brandt"), TEXT("...Door's open. Mrs. Harrow, I'm coming in."), 0 },
+	{ TEXT("d_foyer"), TEXT("Deputy Brandt"), TEXT("God, that smell. ...Mrs. Harrow? Deputy Brandt, sheriff's office."), 0 },
+	{ TEXT("d_table"), TEXT("Deputy Brandt"), TEXT("Table's set for four. This food's been sitting here for months."), 0 },
+	{ TEXT("d_phonecord"), TEXT("Deputy Brandt"), TEXT("Cord's cut clean through. Nobody called anybody on this."), 0 },
+	{ TEXT("d_photos"), TEXT("Deputy Brandt"), TEXT("Every face scratched out. Every one but hers."), 0 },
+	{ TEXT("d_cellar_locked"), TEXT("Deputy Brandt"), TEXT("Padlocked. From this side."), 0 },
+	{ TEXT("d_locked"), TEXT("Deputy Brandt"), TEXT("Locked."), 0 },
+	{ TEXT("d_thump"), TEXT("Deputy Brandt"), TEXT("Mrs. Harrow? ...I'm coming upstairs. Stay where you are."), 0 },
+	{ TEXT("m_whisper1"), TEXT(""), TEXT("[a whisper] ...who's there?"), 3 },
+	{ TEXT("d_peek"), TEXT("Deputy Brandt"), TEXT("Ma'am? It's alright. I'm here to help you."), 0 },
+	{ TEXT("d_masterempty"), TEXT("Deputy Brandt"), TEXT("She was right here. I saw her. There's nowhere to go in here."), 0 },
+	{ TEXT("d_radio1"), TEXT("Deputy Brandt"), TEXT("Dispatch, Fourteen. I've got movement in the house. No contact yet."), 0 },
+	{ TEXT("r_trace"), TEXT("Dispatch"), TEXT("Fourteen, be advised. We ran the number on that wellness call. It came from the Harrow landline. From inside that house."), 1 },
+	{ TEXT("d_trace"), TEXT("Deputy Brandt"), TEXT("...Say again? That phone's cut off at the wall."), 0 },
+	{ TEXT("r_static"), TEXT("Radio"), TEXT("[static] ...stay..."), 1 },
+	{ TEXT("d_radio2"), TEXT("Deputy Brandt"), TEXT("Dispatch? ...Dispatch. ...Dead."), 0 },
+	{ TEXT("d_doorstuck"), TEXT("Deputy Brandt"), TEXT("It won't... It was open. It was just open!"), 0 },
+	{ TEXT("d_stop"), TEXT("Deputy Brandt"), TEXT("Sheriff's office! Ma'am, stop right there!"), 0 },
+	{ TEXT("d_stop2"), TEXT("Deputy Brandt"), TEXT("I said stop!"), 0 },
+	{ TEXT("d_getup1"), TEXT("Deputy Brandt"), TEXT("What the hell. What the hell was that."), 0 },
+	{ TEXT("d_getup1b"), TEXT("Deputy Brandt"), TEXT("Went right through her. Every round."), 0 },
+	{ TEXT("d_wayout"), TEXT("Deputy Brandt"), TEXT("Okay. Okay. Back door. There's another way out of here."), 0 },
+	{ TEXT("d_backdoor"), TEXT("Deputy Brandt"), TEXT("Nailed shut. From the inside. Every board."), 0 },
+	{ TEXT("d_window"), TEXT("Deputy Brandt"), TEXT("Nailed. From the inside."), 0 },
+	{ TEXT("d_phone_ring"), TEXT("Deputy Brandt"), TEXT("That phone has no line."), 0 },
+	{ TEXT("m_phone1"), TEXT("Edith"), TEXT("You came."), 4 },
+	{ TEXT("m_phone2"), TEXT("Edith"), TEXT("Nobody comes. Nobody comes to see me anymore."), 4 },
+	{ TEXT("m_phone3"), TEXT("Edith"), TEXT("Sit down. Supper's getting cold."), 4 },
+	{ TEXT("d_light_dead"), TEXT("Deputy Brandt"), TEXT("No, no, no. Come on. Come on!"), 0 },
+	{ TEXT("d_after_kitchen"), TEXT("Deputy Brandt"), TEXT("Jesus Christ!"), 0 },
+	{ TEXT("d_drawer"), TEXT("Deputy Brandt"), TEXT("That drawer was shut."), 0 },
+	{ TEXT("d_sitting"), TEXT("Deputy Brandt"), TEXT("Her drawings. The same figure in every one. It gets taller each time."), 0 },
+	{ TEXT("d_ceiling"), TEXT("Deputy Brandt"), TEXT("...Edith?"), 0 },
+	{ TEXT("d_getup2"), TEXT("Deputy Brandt"), TEXT("She doesn't want me dead. She wants me here."), 0 },
+	{ TEXT("d_kidsdoor"), TEXT("Deputy Brandt"), TEXT("That door was locked a minute ago."), 0 },
+	{ TEXT("d_musicbox"), TEXT("Deputy Brandt"), TEXT("Ruth's. Her name's scratched in the bottom."), 0 },
+	{ TEXT("d_underbed"), TEXT("Deputy Brandt"), TEXT("God!"), 0 },
+	{ TEXT("d_prayer"), TEXT("Deputy Brandt"), TEXT("Hair. She tied knots in her own hair. Three of them."), 0 },
+	{ TEXT("m_whisper2"), TEXT(""), TEXT("[a whisper] ...is that you, Danny?"), 2 },
+	{ TEXT("d_ring"), TEXT("Deputy Brandt"), TEXT("Walter's ring."), 0 },
+	{ TEXT("d_attic"), TEXT("Deputy Brandt"), TEXT("A footlocker. Army issue."), 0 },
+	{ TEXT("d_tags"), TEXT("Deputy Brandt"), TEXT("Dog tags. Harrow, Daniel W. ...He didn't leave her. He never came home."), 0 },
+	{ TEXT("d_after_attic"), TEXT("Deputy Brandt"), TEXT("Padlock key. The cellar. That's where she is."), 0 },
+	{ TEXT("d_cellar_open"), TEXT("Deputy Brandt"), TEXT("Okay, Edith. Let's finish this."), 0 },
+	{ TEXT("d_cellar"), TEXT("Deputy Brandt"), TEXT("Colder down here."), 0 },
+	{ TEXT("d_shelf"), TEXT("Deputy Brandt"), TEXT("There's a draft behind this. And scratches on the floor."), 0 },
+	{ TEXT("d_body"), TEXT("Deputy Brandt"), TEXT("Oh, Edith. How long have you been sitting down here."), 0 },
+	{ TEXT("d_need"), TEXT("Deputy Brandt"), TEXT("Not yet. I need what was theirs. All three."), 0 },
+	{ TEXT("d_place"), TEXT("Deputy Brandt"), TEXT("Walter. Ruth. Daniel. They're here, Edith. They're all here."), 0 },
+	{ TEXT("m_fin1"), TEXT("Edith"), TEXT("Don't."), 3 },
+	{ TEXT("d_knot1"), TEXT("Deputy Brandt"), TEXT("One."), 0 },
+	{ TEXT("m_fin2"), TEXT("Edith"), TEXT("Don't you leave me too."), 3 },
+	{ TEXT("d_knot2"), TEXT("Deputy Brandt"), TEXT("Two."), 0 },
+	{ TEXT("m_fin3"), TEXT("Edith"), TEXT("Everybody leaves. Everybody leaves!"), 3 },
+	{ TEXT("d_knot3"), TEXT("Deputy Brandt"), TEXT("It's alright, Edith. You're not alone. You can let go."), 0 },
+	{ TEXT("m_fin4"), TEXT("Edith"), TEXT("STAY!"), 2 },
+	{ TEXT("m_end"), TEXT("Edith"), TEXT("...thank you."), 2 },
+	{ TEXT("m_laugh1"), TEXT(""), TEXT("Heh heh heh heh... hee hee hee."), 2 },
+	{ TEXT("m_laugh2"), TEXT(""), TEXT("Hm hm hm hm hm. Ha... ha ha ha."), 2 },
+	{ TEXT("m_cry1"), TEXT(""), TEXT("Ohh... oh... oh no... ohh."), 2 },
+	{ TEXT("m_cry2"), TEXT(""), TEXT("Hnnh... hh... hh... mmm... hh."), 2 },
+	{ TEXT("m_ear1"), TEXT(""), TEXT("Stay."), 2 },
+	{ TEXT("m_ear2"), TEXT(""), TEXT("I see you."), 2 },
+	{ TEXT("m_ear3"), TEXT(""), TEXT("Don't go."), 2 },
+	{ TEXT("m_hum"), TEXT(""), TEXT("Mm mm mmm, mm mm mmm, mmm mm, mmm."), 2 },
+	{ TEXT("m_mem1"), TEXT("Edith"), TEXT("Ruthie. Don't go. Stay for supper. Please. I've set your place."), 2 },
+	{ TEXT("m_mem2"), TEXT("Edith"), TEXT("Grandmother Wren's book. ...It will sit with you. It will never go."), 2 },
+	{ TEXT("m_mem3"), TEXT("Edith"), TEXT("I only want company. Please. Never let me be alone again."), 2 },
+	{ TEXT("d_dawn"), TEXT("Deputy Brandt"), TEXT("It's morning."), 0 },
+	{ TEXT("d_end1"), TEXT("Deputy Brandt"), TEXT("Dispatch, Fourteen."), 0 },
+	{ TEXT("r_end1"), TEXT("Dispatch"), TEXT("Fourteen, dispatch! Where have you been? You've been off the air almost five hours."), 1 },
+	{ TEXT("d_end2"), TEXT("Deputy Brandt"), TEXT("I found her. She's been gone a long time. Send the coroner, and call the daughter."), 0 },
+	{ TEXT("r_end2"), TEXT("Dispatch"), TEXT("Copy, Fourteen. ...Stand by. I've got a call coming in on the emergency line."), 1 },
+	{ TEXT("r_end3"), TEXT("Dispatch"), TEXT("Fourteen... it's the Harrow landline again."), 1 },
+	{ TEXT("d_end3"), TEXT("Deputy Brandt"), TEXT("...That's not possible. I'm looking right at the house."), 0 },
+	{ TEXT("m_post"), TEXT("Radio"), TEXT("[static] ...come back and visit."), 1 },
+};
+
+static const FWCLine* FindLine(FName Id)
+{
+	for (const FWCLine& L : GLines) if (Id == L.Id) return &L;
+	return nullptr;
+}
+
+float AWCDirector::LineSeconds(FName LineId)
+{
+	const FWCLine* L = FindLine(LineId);
+	if (!L) return 0.f;
+	if (USoundBase* S = Snd(FString::Printf(TEXT("VO/%s"), *LineId.ToString())))
+	{
+		const float D = S->GetDuration();
+		if (D > 0.1f && D < 60.f) return D;
+	}
+	return 1.0f + 0.062f * FCString::Strlen(L->Text);
+}
+
+// Lines that are no longer spoken (Cheyenne: he talks to dispatch and reacts to her, not to every locked door).
+static bool IsMuted(FName Id)
+{
+	static const TSet<FName> Muted = { TEXT("d_locked"), TEXT("d_cellar_locked"), TEXT("d_window"), TEXT("d_backdoor"), TEXT("d_table"), TEXT("d_photos"),
+		TEXT("d_foyer"), TEXT("d_wayout"), TEXT("d_drawer"), TEXT("d_sitting"), TEXT("d_kidsdoor"), TEXT("d_musicbox"), TEXT("d_prayer"), TEXT("d_ring"),
+		TEXT("d_attic"), TEXT("d_after_attic"), TEXT("d_cellar"), TEXT("d_shelf"), TEXT("d_dawn"), TEXT("d_need"), TEXT("d_leave_early"), TEXT("d_phone_ring") };
+	return Muted.Contains(Id);
+}
+
+void AWCDirector::Think(const FString& Text, float Seconds)
+{
+	FWCSubtitle Sub;
+	Sub.Text = Text;
+	Sub.Until = Clock + (Seconds > 0.f ? Seconds : 2.2f + 0.055f * Text.Len());
+	Subtitles.Reset();
+	Subtitles.Add(Sub);
+}
+
+float AWCDirector::Say(FName LineId, float Delay)
+{
+	if (IsMuted(LineId)) return Delay;
+	const FWCLine* L = FindLine(LineId);
+	if (!L) { UE_LOG(LogWCStory, Warning, TEXT("WC: unknown line %s"), *LineId.ToString()); return Delay; }
+	const float Len = LineSeconds(LineId);
+	const FWCLine Line = *L;
+	After(Delay, [this, Line, Len, LineId]()
+	{
+		const FString Asset = FString::Printf(TEXT("VO/%s"), *LineId.ToString());
+		if (Line.Kind == 1) Play2D(TEXT("radio_click"), 0.5f);
+		if (Line.Kind == 3 && Her() && Her()->IsShown())
+		{
+			if (USoundBase* S = Snd(Asset)) UGameplayStatics::SpawnSoundAtLocation(this, S, Her()->HeadLocation(), FRotator::ZeroRotator, FMath::Max(Vol(EWCSnd::Voice) * 1.2f, 0.0001f), 1.f, 0.f, Atten);
+			Her()->Talk(Len);
+		}
+		else Play2D(Asset, Line.Kind == 0 ? 0.9f : 1.f, EWCSnd::Voice);
+		FWCSubtitle Sub;
+		Sub.Speaker = Line.Speaker;
+		Sub.Text = Line.Text;
+		Sub.Until = Clock + Len + 0.6f;
+		Subtitles.Reset();
+		Subtitles.Add(Sub);
+		UE_LOG(LogWCStory, Display, TEXT("WCLINE t=%.1f %s"), PlaySeconds, *LineId.ToString());
+	});
+	return Delay + Len + 0.35f;
+}
+
+// ---------------------------------------------------------------------------------------------- begin / world state
+void AWCDirector::ApplyWorldState()
+{
+		ShowTagged(TEXT("Show_drawer"), Has(TEXT("phone_done")));
+	ShowTagged(TEXT("Hide_shears"), !HasItem(TEXT("shears")));
+	ShowTagged(TEXT("Show_bookkey"), Has(TEXT("book_done")) && !HasItem(TEXT("key_desk")) && !Has(TEXT("desk_open")));
+	if (AWCInteractable* Bk = Thing(TEXT("book_settlers"))) Bk->bEnabled = !Has(TEXT("book_done"));
+	ShowTagged(TEXT("SettlersBook"), !Has(TEXT("book_done")) || LastCheckpoint == TEXT("book"));
+	ShowTagged(TEXT("L_Welcome"), !Has(TEXT("knocked")));
+	if (AWCInteractable* Desk = Thing(TEXT("desk"))) Desk->bEnabled = !Has(TEXT("desk_open"));
+	bPowerOut = Has(TEXT("power_out")) && !Has(TEXT("fuse_done"));
+	ShowTagged(TEXT("Hide_drawer"), !Has(TEXT("phone_done")));
+	for (TActorIterator<APostProcessVolume> It(GetWorld()); It; ++It)
+	{
+		if (It->ActorHasTag(TEXT("PP_Dawn"))) It->bEnabled = Has(TEXT("dawn"));
+	}
+	ShowTagged(TEXT("Show_placed"), Has(TEXT("placed")));
+	ShowTagged(TEXT("Show_dawn"), Has(TEXT("dawn")));
+	ShowTagged(TEXT("Hide_dawn"), !Has(TEXT("dawn")));
+	ShowTagged(TEXT("Show_knot1"), !Has(TEXT("knot1")));
+	ShowTagged(TEXT("Show_knot2"), !Has(TEXT("knot2")));
+	ShowTagged(TEXT("Show_knot3"), !Has(TEXT("knot3")));
+	if (Has(TEXT("shelf_moved")))
+	{
+		if (AWCInteractable* Shelf = Thing(TEXT("shelf")))
+		{
+			Shelf->SetActorLocation(Pos(TEXT("ShelfOpen")));
+			Shelf->bEnabled = false;
+		}
+	}
+	if (AWCInteractable* Phone = Thing(TEXT("phone"))) Phone->bEnabled = !Has(TEXT("phone_done"));
+	const bool bIn = Has(TEXT("inside")) && !Has(TEXT("dawn"));
+	const bool bCellar = Has(TEXT("sprint_done")) && !Has(TEXT("dawn"));
+	SetLoop(TEXT("amb"), Has(TEXT("dawn")) ? TEXT("amb_dawn") : (bCellar ? TEXT("amb_cellar") : (bIn ? TEXT("amb_house") : TEXT("amb_night"))), 1.f, 3.f);
+	SetLoop(TEXT("drone"), bIn ? TEXT("music_drone") : TEXT(""), bIn ? 0.5f : 0.f, 4.f, EWCSnd::Music);
+		SetLoop(TEXT("low"), bIn ? TEXT("music_low") : TEXT(""), bIn ? 0.25f : 0.f, 6.f, EWCSnd::Music);
+	SetLoop(TEXT("wind"), (bIn || bCellar) ? TEXT("amb_wind") : TEXT(""), bIn ? 0.55f : 0.f, 5.f);
+	SetLoop(TEXT("music"), TEXT(""), 0.f, 2.f, EWCSnd::Music);
+	if (AWCCharacter* P = Player()) P->SetGunAllowed(true);
+}
+
+void AWCDirector::StoryBegin(bool bFromSave)
+{
+	if (APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0))
+	{
+		if (APawn* P = PC->GetPawn()) PC->SetViewTargetWithBlend(P, 0.f);
+		PC->SetShowMouseCursor(false);
+		PC->SetInputMode(FInputModeGameOnly());
+	}
+	ApplyWorldState();
+	Fade = 1.f;
+	if (bFromSave)
+	{
+		FadeTo(0.f, 1.5f);
+		return;
+	}
+		AWCCharacter* P = Player();
+	if (P) { P->SetInputLocked(true); P->SetFlashlight(false, false); }
+	const bool bWantDrive = !FParse::Param(FCommandLine::Get(), TEXT("WCNoDrive")) && (!bAuto || FParse::Param(FCommandLine::Get(), TEXT("WCDrive")));
+	if (bWantDrive) BeginDrive();
+	if (bDriving)
+	{
+		// the road in: title, then the call that sends him here
+		After(1.0f, [this]() { FadeTo(0.f, 3.5f); });
+		After(3.5f, [this]() { BigText = TEXT("EDITH'S LAST CALL"); BigSub = TEXT(""); BigTarget = 1.f; });
+		After(9.0f, [this]() { BigTarget = 0.f; });
+		float T = 12.f;
+		T = Say(TEXT("d_arrive1"), T);
+		T = Say(TEXT("r_arrive1"), T + 0.3f);
+		T = Say(TEXT("r_arrive2"), T + 2.2f);
+		T = Say(TEXT("d_arrive3"), T + 0.6f);
+		return;
+	}
+	Play2D(TEXT("car_door"), 0.8f);
+	After(1.2f, [this]() { FadeTo(0.f, 3.f); });
+	After(3.f, [this]()
+	{
+		if (AWCCharacter* Pl = Player()) Pl->SetInputLocked(false);
+		ShowHint(TEXT("WASD move    Mouse look    F flashlight    E use / examine    Shift hurry    C crouch"), 9.f);
+		DriveDone();
+	});
+}
+
+/** Out of the car, standing in the yard: the last of the radio traffic, then the house is his problem. */
+void AWCDirector::DriveDone()
+{
+	float T = Say(TEXT("d_arrive2"), 1.2f);
+	T = Say(TEXT("r_arrive3"), T + 0.3f);
+	T = Say(TEXT("d_arrive4"), T + 0.2f);
+	After(bAuto ? 0.5f : T, [this]() { SetObjective(TEXT("Check on Edith Harrow")); Set(TEXT("briefed")); });
+}
+
+// ---------------------------------------------------------------------------------------------- events
+static bool Is(FName Id, const TCHAR* S) { return Id == S; }
+
+void AWCDirector::StoryEvent(FName Id)
+{
+		AWCCharacter* P = Player();
+	if (!P) return;
+	if (HouseEvent(Id)) return;
+
+	// ================================================================= act 1: arrival
+	if (Is(Id, TEXT("trig:t_yard_edge")))
+	{
+		if (!Has(TEXT("dawn")) && Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 12.0; Think(TEXT("Not until I've laid eyes on her.")); }
+		return;
+	}
+	if (Is(Id, TEXT("locked:front")))
+	{
+		if (!Has(TEXT("knocked")))
+		{
+			Set(TEXT("knocked"));
+			PlayAt(TEXT("knock"), Pos(TEXT("FrontDoorPoint")), 1.f);
+							After(2.4f, [this]() { ShowTagged(TEXT("L_Welcome"), false); });      // the one lit window goes dark
+				float T = Say(TEXT("d_knock"), 0.9f);
+			After(T + 1.6f, [this]()
+			{
+				if (AWCDoor* D = Door(TEXT("front"))) { D->SetLocked(false); if (AWCCharacter* Pl = Player()) D->OpenAwayFrom(Pl->GetActorLocation(), 3.4f); D->SetAngle(D->OpenAngle * 0.32f, 3.4f); PlayAt(TEXT("door_creak_long"), D->GetActorLocation() + FVector(0, 0, 110), 1.f); }
+				Say(TEXT("d_dooropen"), 3.2f);
+				Set(TEXT("door_opened"));
+			});
+		}
+					else if (Has(TEXT("locked_in")) && !Has(TEXT("door_stuck")))
+			{
+				// locked in, minutes after he walked through it
+				Set(TEXT("door_stuck"));
+				float T = Say(TEXT("d_doorstuck"));
+				T = Say(TEXT("d_end1"), T + 1.0f);
+				After(T, [this]() { Play2D(TEXT("radio_static"), 0.8f, EWCSnd::Voice); });
+				After(T + 2.6f, [this]() { Think(TEXT("Nothing but static. It worked fine in the car.")); SetObjective(TEXT("Find Edith Harrow. Find another way out.")); Checkpoint(TEXT("locked_in")); });
+			}
+		else if (Clock > SpeechFreeAt)
+		{
+			SpeechFreeAt = Clock + 4.0;
+			Think(TEXT("It will not open."));
+		}
+		return;
+	}
+	if (Is(Id, TEXT("trig:t_foyer")))
+	{
+		if (!Has(TEXT("inside")))
+		{
+			Set(TEXT("inside"));
+			InsideAt = PlaySeconds;
+			ApplyWorldState();
+			Say(TEXT("d_foyer"), 1.2f);
+			After(5.f, [this]() { SetObjective(TEXT("Search the house for Edith Harrow")); });
+			Checkpoint(TEXT("inside"));
+		}
+					return;
+	}
+	if (Is(Id, TEXT("trig:t_dining")) && !Has(TEXT("seen_dining"))) { Set(TEXT("seen_dining")); Say(TEXT("d_table"), 1.5f); return; }
+	if (Is(Id, TEXT("trig:t_living")) && !Has(TEXT("seen_living"))) { Set(TEXT("seen_living")); Say(TEXT("d_photos"), 2.5f); return; }
+	if (Is(Id, TEXT("use:phone")) && !Has(TEXT("phone_ringing")) && !Has(TEXT("phone_done")))
+	{
+		if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 8.0; Say(TEXT("d_phonecord")); Set(TEXT("seen_phone")); }
+		return;
+	}
+	if (Is(Id, TEXT("locked:cellar"))) { if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 4.0; Think(TEXT("Padlocked from this side. The cellar.")); } return; }
+	if (Is(Id, TEXT("locked:up_ell")))
+	{
+		if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 5.0; Think(TEXT("Locked. A newer lock than the others. The man of the house would have kept the key.")); }
+		return;
+	}
+	if (Is(Id, TEXT("locked:up_attic")))
+	{
+		if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 5.0; Think(TEXT("The attic. Locked. Danny's things are up there.")); }
+		return;
+	}
+	if (Is(Id, TEXT("locked:sitting")) || Is(Id, TEXT("locked:up_prayer")))
+	{
+		if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 5.0; Think(TEXT("Locked. Scratches round the keyhole, from the inside.")); }
+		return;
+	}
+	if (Id.ToString().StartsWith(TEXT("locked:")) && !Is(Id, TEXT("locked:back")))
+	{
+		if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 3.0; Think(TEXT("Locked.")); }
+		return;
+	}
+	if (Id.ToString().StartsWith(TEXT("use:window")))
+	{
+		if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 4.0; Think(TEXT("Nailed shut. From the inside.")); }
+		return;
+	}
+	if (Is(Id, TEXT("trig:t_kitchen"))) Set(TEXT("seen_kitchen"));
+		if (Id.ToString().StartsWith(TEXT("trig:t_")) && P->GetActorLocation().Z < 250.f && P->GetActorLocation().Z > -50.f
+				&& !Has(TEXT("heard_upstairs")) && Has(TEXT("inside")) && !bBusy
+		&& ((BuildStep >= 7 && PlaySeconds - InsideAt > 450.f * TestPace && NotesRead.Num() + LooksSeen.Num() >= 6) || PlaySeconds - InsideAt > 570.f * TestPace))
+	{
+		Set(TEXT("heard_upstairs"));
+		After(6.f, [this]()
+		{
+			const FVector Up = Pos(TEXT("Snd_UpstairsThump"));
+			PlayAt(TEXT("thump_heavy"), Up, 1.f, 1.f);
+			if (AWCCharacter* Pl = Player()) Pl->AddShake(0.25f);
+			After(1.6f, [this, Up]() { PlayAt(TEXT("drag_floor"), Up, 1.f); });
+			float T = Say(TEXT("d_thump"), 4.2f);
+			After(T, [this]() { SetObjective(TEXT("Check upstairs")); });
+			Tension = 0.3f;
+		});
+		return;
+	}
+
+	// ================================================================= act 2: the peek, the empty room, locked in
+	if (Is(Id, TEXT("trig:t_up_landing")))
+	{
+		if (Has(TEXT("heard_upstairs")) && UpstairsAt < 0.0) { UpstairsAt = Clock; Tension = 0.35f; }
+		if (HasItem(TEXT("key_prayer")) && Has(TEXT("peek_done")) && !Has(TEXT("ceiling_started")) && Gate()) ScareCeiling();
+		return;
+	}
+	if (Is(Id, TEXT("trig:t_up_corridor")))
+	{
+				if (Has(TEXT("heard_upstairs")) && !Has(TEXT("peek_started")) && UpstairsAt > 0.0 && Clock - UpstairsAt > 12.0 * TestPace) ScarePeek();
+		return;
+	}
+	if (Is(Id, TEXT("trig:t_master")) && Has(TEXT("peek_done")) && !Has(TEXT("master_seen")))
+	{
+		Set(TEXT("master_seen"));
+		float T = Say(TEXT("d_masterempty"), 1.2f);
+		T = Say(TEXT("d_radio1"), T + 1.2f);
+		T = Say(TEXT("r_trace"), T + 0.5f);
+		T = Say(TEXT("d_trace"), T + 0.4f);
+		After(T, [this]() { Play2D(TEXT("radio_static"), 0.8f, EWCSnd::Voice); });
+		T = Say(TEXT("r_static"), T + 0.2f);
+				T = Say(TEXT("d_radio2"), T + 0.9f);
+		After(T, [this]() { SetObjective(TEXT("Get out. Try the back door.")); Set(TEXT("want_leave")); Checkpoint(TEXT("want_leave")); });
+		return;
+	}
+		if (Is(Id, TEXT("shot_her"))) { ++ShotsAtHer; return; }
+	if (Is(Id, TEXT("shot"))) { if (bLockInActive) ++LockInShots; return; }
+	if (Is(Id, TEXT("trig:t_backhall")) && Has(TEXT("want_leave")) && !Has(TEXT("lockin_started")) && Gate()) { ScareLockIn(); return; }
+	if (Is(Id, TEXT("gotup")))
+	{
+		bBusy = false;
+		if (Has(TEXT("lockin_started")) && !Has(TEXT("lockin_done")))
+		{
+			Set(TEXT("lockin_done"));
+			Rest(200.f);
+							float T = Say(TEXT("d_getup1"), 0.4f);
+				if (ShotsAtHer > 0)
+				{
+					T = Say(TEXT("d_getup1b"), T + 0.3f);
+					After(T + 0.6f, [this]() { Think(TEXT("But she flinched. Every shot, she flinched.")); });
+					T += 3.f;
+				}
+				After(T + 0.8f, [this]() { SetObjective(TEXT("Find another way out")); Checkpoint(TEXT("lockin_done")); });
+				After(250.f * TestPace, [this]() { Set(TEXT("backdoor_tried")); });
+			Tension = 0.45f;
+		}
+		else if (Has(TEXT("ceiling_started")) && !Has(TEXT("ceiling_done")))
+		{
+			Set(TEXT("ceiling_done"));
+			Rest(120.f);
+			float T = Say(TEXT("d_getup2"), 0.6f);
+			After(T + 1.f, [this]() { Set(TEXT("kids_pending")); SetObjective(TEXT("Find what was theirs")); Checkpoint(TEXT("ceiling_done")); });
+		}
+		else if (Has(TEXT("sprint_started")) && !Has(TEXT("sprint_done")))
+		{
+			Set(TEXT("sprint_done"));
+			ApplyWorldState();
+			Say(TEXT("d_cellar"), 1.f);
+			SetObjective(TEXT("Find her"));
+			Checkpoint(TEXT("cellar"));
+		}
+		return;
+	}
+		if (Is(Id, TEXT("locked:back")))
+	{
+		if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 4.0; Think(TEXT("Nailed shut from the inside. Every board.")); }
+		if (Has(TEXT("want_leave")) && !Has(TEXT("lockin_started")) && Gate()) { After(1.5f, [this]() { ScareLockIn(); }); return; }
+		if (Has(TEXT("lockin_done"))) Set(TEXT("backdoor_tried"));      // the phone rings later, when things have gone quiet (StoryTick)
+		return;
+	}
+	if (Is(Id, TEXT("use:phone")) && Has(TEXT("phone_ringing")) && !Has(TEXT("phone_done"))) { ScarePhone(); return; }
+	if (Is(Id, TEXT("take:key_sitting"))) { SetObjective(TEXT("Find what the key opens")); return; }
+	if (Is(Id, TEXT("unlock:sitting"))) { Set(TEXT("sitting_open")); Say(TEXT("d_sitting"), 3.f); Checkpoint(TEXT("sitting")); return; }
+		if (Is(Id, TEXT("take:key_prayer"))) { SetObjective(TEXT("Upstairs: the locked room")); return; }
+	if (Is(Id, TEXT("unlock:up_ell"))) { Checkpoint(TEXT("ell")); return; }
+	if (Is(Id, TEXT("closed:note_prayer")) && !Has(TEXT("placed"))) { SetObjective(TEXT("Find what was theirs, and something to cut with")); return; }
+
+	// ================================================================= act 3: upstairs again, the attic
+	if (Is(Id, TEXT("trig:t_kids")) && Has(TEXT("ceiling_done")) && !Has(TEXT("seen_kids")))
+	{
+		Set(TEXT("seen_kids"));
+		Say(TEXT("d_kidsdoor"), 0.8f);
+		return;
+	}
+	if (Is(Id, TEXT("take:keep_ruth"))) { Think(TEXT("Ruth's. Her name is scratched in the bottom.")); Checkpoint(TEXT("underbed")); return; }
+	if (Is(Id, TEXT("trig:t_kids")) && Has(TEXT("kids_open")) && !Has(TEXT("underbed_done")) && Gate()) { ScareUnderBed(); return; }
+	if (Is(Id, TEXT("unlock:up_prayer"))) { Say(TEXT("d_prayer"), 3.f); Checkpoint(TEXT("prayer")); return; }
+	if (Is(Id, TEXT("take:keep_walter")))
+	{
+				Think(TEXT("A wedding ring. W.H. to E.H., 1942."));
+		After(1.5f, [this]() { if (AWCCharacter* Pl = Player()) Pl->FlickerLight(1.2f, 0.7f); });
+		return;
+	}
+	
+	if (Is(Id, TEXT("unlock:up_attic"))) { Checkpoint(TEXT("attic")); return; }
+	if (Is(Id, TEXT("use:trunk")) && !Has(TEXT("attic_started"))) { ScareAttic(); return; }
+
+	// ================================================================= act 4: the cellar
+	if (Is(Id, TEXT("unlock:cellar")) && !Has(TEXT("sprint_started"))) { ScareCellarDoor(); return; }
+	if (Is(Id, TEXT("use:shelf")) && !Has(TEXT("shelf_moved")))
+	{
+		Set(TEXT("shelf_moved"));
+		AWCInteractable* Shelf = Thing(TEXT("shelf"));
+		if (Shelf)
+		{
+			Shelf->bEnabled = false;
+			PlayAt(TEXT("shelf_scrape"), Shelf->GetActorLocation(), 1.f);
+			P->AddShake(0.2f);
+			const FVector From = Shelf->GetActorLocation(), To = Pos(TEXT("ShelfOpen"));
+			for (int32 i = 1; i <= 60; ++i)
+			{
+				After(i * 0.05f, [Shelf, From, To, i]() { if (IsValid(Shelf)) Shelf->SetActorLocation(FMath::Lerp(From, To, FMath::InterpEaseInOut(0.f, 1.f, i / 60.f, 2.f))); });
+			}
+		}
+		return;
+	}
+	if (Is(Id, TEXT("trig:t_cellar_shelf")) && Has(TEXT("sprint_done")) && !Has(TEXT("seen_shelf"))) { Set(TEXT("seen_shelf")); Say(TEXT("d_shelf"), 0.5f); return; }
+	if (Is(Id, TEXT("trig:t_root")) && Has(TEXT("shelf_moved")) && !Has(TEXT("seen_body")))
+	{
+		Set(TEXT("seen_body"));
+		float T = Say(TEXT("d_body"), 1.2f);
+		After(T, [this]() { SetObjective(TEXT("Lay their keepsakes at her feet")); });
+		return;
+	}
+	if (Is(Id, TEXT("use:place")) && !Has(TEXT("placed")))
+	{
+		if (!(HasItem(TEXT("keep_ruth")) && HasItem(TEXT("keep_walter")) && HasItem(TEXT("keep_daniel"))))
+		{
+			if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 5.0; Think(TEXT("Not yet. She needs what was theirs. All three.")); }
+			return;
+		}
+		Set(TEXT("placed"));
+		FinaleStart = Clock;
+		ApplyWorldState();
+		Play2D(TEXT("pickup"), 0.7f);
+		if (AWCInteractable* Pl = Thing(TEXT("place"))) Pl->bEnabled = false;
+		float T = Say(TEXT("d_place"), 0.5f);
+		After(T, [this]() { SetObjective(TEXT("Cut the three knots")); FinaleStep(0); });
+		return;
+	}
+	if (Has(TEXT("placed")) && !Has(TEXT("finale_done")))
+	{
+		for (int32 k = 1; k <= 3; ++k)
+		{
+			const FString Use = FString::Printf(TEXT("use:knot%d"), k);
+			const FName Flag(*FString::Printf(TEXT("knot%d"), k));
+						if (Id == FName(*Use) && !Has(Flag) && !bBusy)
+			{
+				if (!HasItem(TEXT("shears")))
+				{
+					if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 5.0; Think(TEXT("Nothing to cut it with. She said scissors. The sewing room.")); }
+					return;
+				}
+				// cutting takes a moment; she keeps coming
+				bBusy = true;
+				P->SetInputLocked(true);
+				Play2D(TEXT("cut_rope"), 1.f);
+				After(2.0f, [this, Flag]()
+				{
+					Set(Flag);
+					ApplyWorldState();
+					if (AWCCharacter* Pl = Player()) Pl->SetInputLocked(false);
+					bBusy = false;
+					FinaleStep(++KnotsCut);
+				});
+				return;
+			}
+		}
+	}
+
+	// ================================================================= ending
+	if ((Is(Id, TEXT("use:cruiser")) || Is(Id, TEXT("trig:t_cruiser"))) && Has(TEXT("dawn")) && !Has(TEXT("ended")))
+	{
+		BeginEnding();
+		return;
+	}
+}
+
+// ---------------------------------------------------------------------------------------------- per-frame story logic
+void AWCDirector::StoryTick(float Dt)
+{
+	AWCCharacter* P = Player();
+	AWCEntity* H = Her();
+	if (!P) return;
+
+	// ---- the house is never silent: things in the walls, boards, wind, something moving on another floor
+	if (Has(TEXT("inside")) && !Has(TEXT("dawn")) && !bBusy && Clock > NextCue)
+	{
+		NextCue = Clock + Rng.FRandRange(5.f, 13.f) * (1.25f - 0.6f * Tension);
+		struct FCue { const TCHAR* Name; float Weight; float Near; float Far; float Vol; int32 Where; };   // Where: 0 around, 1 other floor, 2 in a wall close by
+		static const FCue Cues[] = {
+			{ TEXT("creak"), 3.f, 300.f, 900.f, 0.9f, 0 }, { TEXT("skitter"), 3.f, 150.f, 500.f, 0.9f, 2 }, { TEXT("scratch_wall"), 2.2f, 200.f, 600.f, 0.9f, 2 },
+			{ TEXT("knock_far"), 1.2f, 600.f, 1200.f, 0.9f, 0 }, { TEXT("thump_far"), 1.4f, 500.f, 1200.f, 1.f, 1 }, { TEXT("house_groan"), 2.f, 500.f, 1200.f, 1.f, 0 },
+			{ TEXT("steps_above"), 1.3f, 100.f, 500.f, 1.f, 1 }, { TEXT("wind_gust"), 1.6f, 800.f, 1400.f, 0.8f, 0 }, { TEXT("door_far"), 0.8f, 700.f, 1300.f, 0.9f, 1 },
+			{ TEXT("whisper_far"), 0.7f, 400.f, 900.f, 0.8f, 0 }, { TEXT("breath_near"), 0.35f, 90.f, 160.f, 0.7f, 0 },
+			{ TEXT("VO/m_laugh1"), 0.30f, 350.f, 800.f, 0.55f, 2 }, { TEXT("VO/m_laugh2"), 0.30f, 300.f, 700.f, 0.55f, 1 },
+			{ TEXT("VO/m_cry1"), 0.32f, 400.f, 900.f, 0.6f, 1 }, { TEXT("VO/m_cry2"), 0.30f, 250.f, 600.f, 0.55f, 2 }, { TEXT("VO/m_hum"), 0.30f, 400.f, 900.f, 0.5f, 0 },
+			{ TEXT("VO/m_ear1"), 0.16f, 35.f, 55.f, 0.5f, 3 }, { TEXT("VO/m_ear2"), 0.14f, 35.f, 55.f, 0.5f, 3 }, { TEXT("VO/m_ear3"), 0.14f, 35.f, 55.f, 0.5f, 3 } };
+		float Total = 0.f;
+		auto Scale = [this](const FCue& C) -> float
+		{
+			// her own voice (and breath) is rare while the house is only a house, and grows with the night; none of it before the door locks
+			const bool bHers = FCString::Strncmp(C.Name, TEXT("VO/"), 3) == 0 || FCString::Strcmp(C.Name, TEXT("breath_near")) == 0 || FCString::Strcmp(C.Name, TEXT("whisper_far")) == 0;
+			if (!bHers) return 1.f;
+			return Has(TEXT("locked_in")) ? (0.3f + 2.f * Tension) : 0.f;
+		};
+		for (const FCue& C : Cues) Total += C.Weight * Scale(C);
+		float Pick = Rng.FRandRange(0.f, Total);
+		const FCue* Chosen = &Cues[0];
+		for (const FCue& C : Cues)
+		{
+			const float W = C.Weight * Scale(C);
+			if (Pick <= W) { Chosen = &C; break; }
+			Pick -= W;
+		}
+		FVector Off = FRotator(0.f, Rng.FRandRange(0.f, 360.f), 0.f).Vector() * Rng.FRandRange(Chosen->Near, Chosen->Far);
+		if (Chosen->Where == 1) Off.Z = (P->GetActorLocation().Z > 500.f ? -1.f : 1.f) * 330.f;
+		else if (Chosen->Where == 2) Off.Z = Rng.FRandRange(-60.f, 120.f);
+		else if (Chosen->Where == 3)
+		{
+			// at his ear: just behind him, to one side.  He turns, and there is nothing there.
+			const FRotator Yaw(0.f, P->GetControlRotation().Yaw, 0.f);
+			Off = -Yaw.Vector() * 28.f + FRotationMatrix(Yaw).GetUnitAxis(EAxis::Y) * (Rng.FRand() < 0.5f ? -24.f : 24.f) + FVector(0, 0, 58.f);
+		}
+		else Off.Z = Rng.FRandRange(-80.f, 200.f);
+		if (Has(TEXT("locked_in")) && Rng.FRand() < 0.13f + 0.1f * Tension)
+		{
+			const FVector From = P->GetActorLocation() + FRotator(0.f, Rng.FRandRange(0.f, 360.f), 0.f).Vector() * Rng.FRandRange(700.f, 1300.f) + FVector(0, 0, (Rng.FRand() < 0.5f ? 0.f : (P->GetActorLocation().Z > 300.f ? -330.f : 330.f)) - 80.f);
+			const FVector Step = FRotator(0.f, Rng.FRandRange(0.f, 360.f), 0.f).Vector() * 72.f;
+			const int32 N = Rng.RandRange(3, 6);
+			for (int32 k = 0; k < N; ++k) After(k * 0.62f, [this, From, Step, k]() { PlayAt(TEXT("her_step"), From + Step * k, 0.9f, Rng.FRandRange(0.9f, 1.05f), 3400.f); if (k % 2 == 0) PlayAt(TEXT("creak"), From + Step * k, 0.5f, 0.85f, 2600.f); });
+		}
+		else PlayAt(Chosen->Name, P->GetActorLocation() + Off, Chosen->Vol * Rng.FRandRange(0.75f, 1.f), Rng.FRandRange(0.92f, 1.07f));
+	}
+	if (FLoop* Drone = Loops.Find(TEXT("drone"))) Drone->Target = Has(TEXT("inside")) && !Has(TEXT("dawn")) ? 0.5f + 0.4f * Tension : 0.f;
+	if (FLoop* Low = Loops.Find(TEXT("low"))) Low->Target = Has(TEXT("inside")) && !Has(TEXT("dawn")) ? 0.25f + 0.55f * Tension : 0.f;
+	// tension eases back toward a floor that rises as the night goes on
+	{
+		const float Floor = Has(TEXT("sprint_done")) ? 0.6f : (Has(TEXT("lockin_done")) ? 0.45f : (Has(TEXT("peek_done")) ? 0.3f : (Has(TEXT("heard_upstairs")) ? 0.2f : 0.08f)));
+		Tension = FMath::FInterpConstantTo(Tension, Floor, Dt, 0.012f);
+	}
+
+	if (Has(TEXT("kids_pending")) && !Has(TEXT("kids_open")) && Gate())
+	{
+		// a quiet while after the hallway, a door that was locked creaks open and a music box starts
+		Set(TEXT("kids_open"));
+		if (AWCDoor* D = Door(TEXT("up_kids"))) { D->SetLocked(false); D->SetOpen(true, 4.5f, true); PlayAt(TEXT("door_creak_long"), D->GetActorLocation() + FVector(0, 0, 110), 1.f); }
+		PlayAt(TEXT("musicbox"), Pos(TEXT("MusicBoxPoint")), 1.f);
+	}
+	if (Has(TEXT("backdoor_tried")) && !Has(TEXT("phone_ringing")) && !Has(TEXT("phone_done")) && Gate() && P->GetActorLocation().Z < 200.f && P->GetActorLocation().Z > -50.f)
+	{
+		Set(TEXT("phone_ringing"));
+		if (UAudioComponent* A = PlayAt(TEXT("phone_ring"), Pos(TEXT("PhonePoint")), 1.f)) { A->ComponentTags.Add(TEXT("ring")); }
+		if (AWCInteractable* Ph = Thing(TEXT("phone"))) { Ph->Prompt = TEXT("Answer"); Ph->bEnabled = true; }
+		After(3.f, [this]() { Think(TEXT("That phone has no line.")); });
+		SetObjective(TEXT("Answer the phone"));
+	}
+	if (!H) return;
+
+	// ---- S1: the peek is watching you back
+	if (Has(TEXT("peek_started")) && !Has(TEXT("peek_done")) && H->IsShown() && !Has(TEXT("peek_leaving")))
+	{
+		static double Seen = 0.0, Started = 0.0;
+		if (!Has(TEXT("peek_timing"))) { Set(TEXT("peek_timing")); Seen = 0.0; Started = Clock; }
+		if (PlayerSees(H->HeadLocation(), 0.80f, 1600.f)) Seen += Dt;
+		const double Waited = Clock - Started;
+		if (Waited > 9.0 && !Has(TEXT("peek_whisper"))) { Set(TEXT("peek_whisper")); Say(TEXT("m_whisper1")); }
+		if (Seen > 1.25 || H->DistToPlayer() < 380.f || Waited > 26.0)
+		{
+			Set(TEXT("peek_leaving"));
+			if (Seen > 0.2) Play2D(TEXT("sting_soft"), 0.8f, EWCSnd::Music);
+			H->Slide(Pos(TEXT("Her_PeekBack")), 0.85f, [this]()
+			{
+				if (AWCEntity* E = Her()) E->Vanish();
+				if (AWCDoor* D = Door(TEXT("up_master"))) D->SetOpen(false, 2.8f);
+				Set(TEXT("peek_done"));
+				Rest(150.f);
+				float T = Say(TEXT("d_peek"), 1.4f);
+				After(T, [this]() { SetObjective(TEXT("Find her upstairs")); });
+				Tension = 0.4f;
+			});
+		}
+	}
+
+	// ---- S3: locked in. She walks straight at you.
+	if (bLockInActive && H->IsShown())
+	{
+		if (Clock > HerNextStep)
+		{
+			HerNextStep = Clock + (bLockInRun ? 0.15 : 0.4);
+			const double Elapsed = Clock - LockInStart;
+			if (LockInDist0 <= 0.f) LockInDist0 = H->DistToPlayer();
+						if (!bLockInRun && (LockInShots >= 3 || H->DistToPlayer() < LockInDist0 * 0.5f || Elapsed > 9.0 || H->DistToPlayer() < 600.f))
+			{
+				// halfway: she stops being slow
+				bLockInRun = true;
+				Play2D(TEXT("her_scream"), 1.f);
+				Play2D(TEXT("sting_rise"), 0.9f, EWCSnd::Music);
+				P->FlickerLight(1.2f, 0.85f);
+				P->AddShake(0.5f);
+			}
+			TArray<FVector> Pts; Pts.Add(FVector(P->GetActorLocation().X, P->GetActorLocation().Y, H->GetActorLocation().Z));
+			H->MoveAlong(Pts, bLockInRun ? 1000.f : 125.f, bLockInRun ? TEXT("Run") : TEXT("Walk"));
+		}
+		static int32 LastShots = 0;
+		if (ShotsAtHer != LastShots)
+		{
+			LastShots = ShotsAtHer;
+						// she flinches from every shot, and keeps coming
+			if (!bLockInRun)
+			{
+				H->StopMoving();
+				H->Play(TEXT("Idle"));
+				HerNextStep = Clock + 0.45;
+				PlayAt(TEXT("her_flinch"), H->HeadLocation(), 1.f, 1.f, 3500.f);
+			}
+			P->FlickerLight(0.3f, 0.9f);
+			if (ShotsAtHer == 2) Say(TEXT("d_stop2"));
+		}
+		if (H->DistToPlayer() < 165.f)
+		{
+			bLockInActive = false;
+			Grab(1.3f, [this]()
+			{
+				if (AWCCharacter* Pl = Player()) Pl->Knockdown(3.0f);
+				FadeTo(1.f, 0.3f);
+				After(0.7f, [this]() { if (AWCEntity* E = Her()) E->Vanish(); });
+				After(2.8f, [this]() { FadeTo(0.f, 1.6f); });
+			});
+		}
+	}
+
+	// ---- S4 / S6: sprint at the player.  She follows if you run; if she somehow cannot reach you, the scare still ends.
+	if (bSprintActive && H->IsShown())
+	{
+		if (SprintStart < 0.0) SprintStart = Clock;
+		if (Clock > SprintRetarget)
+		{
+			SprintRetarget = Clock + 0.25;
+			TArray<FVector> Pts; Pts.Add(FVector(P->GetActorLocation().X, P->GetActorLocation().Y, P->GetActorLocation().Z - 88.f));
+			H->MoveAlong(Pts, 1250.f, TEXT("Run"));
+		}
+	}
+	if (bSprintActive && H->IsShown() && (H->DistToPlayer() < 175.f || Clock - SprintStart > 9.0))
+	{
+		SprintStart = -1.0;
+		bSprintActive = false;
+		const bool bCellar = Has(TEXT("sprint_started")) && !Has(TEXT("sprint_done"));
+		Grab(1.25f, [this, bCellar]()
+		{
+			if (AWCCharacter* Pl = Player()) Pl->Knockdown(bCellar ? 3.6f : 3.0f);
+			FadeTo(1.f, 0.3f);
+			After(0.7f, [this]() { if (AWCEntity* E = Her()) E->Vanish(); if (AWCCharacter* Pl = Player()) Pl->SetLightScale(1.f); });
+			if (bCellar)
+			{
+				After(1.2f, [this]()
+				{
+					if (AWCCharacter* Pl = Player()) Pl->Relocate(Pos(TEXT("P_CellarBottom")), YawOf(TEXT("P_CellarBottom")));
+					Play2D(TEXT("body_fall"), 1.f);
+					if (AWCDoor* D = Door(TEXT("cellar"))) { D->Slam(); D->SetLocked(true); D->KeyId = NAME_None; }
+				});
+			}
+			After(3.2f, [this]() { FadeTo(0.f, 1.8f); });
+		});
+	}
+
+	// ---- finale clock: take too long and she keeps you
+	if (FinaleStart > 0.0 && Has(TEXT("placed")) && !Has(TEXT("finale_done")) && !Has(TEXT("caught")))
+	{
+		const double Elapsed = Clock - FinaleStart;
+		Tension = FMath::Clamp(0.6f + (float)Elapsed / 150.f, 0.f, 1.f);
+		if (Elapsed > 95.0) FinaleCaught();
+	}
+}
+
+// ---------------------------------------------------------------------------------------------- S1 corner peek
+void AWCDirector::ScarePeek()
+{
+	Set(TEXT("peek_started"));
+	AWCEntity* H = Her();
+	if (!H) { Set(TEXT("peek_done")); return; }
+	if (AWCDoor* D = Door(TEXT("up_master"))) D->SetOpen(true, 0.01f, true);
+	H->Appear(Pos(TEXT("Her_Peek")), YawOf(TEXT("Her_Peek")), TEXT("Peek"));
+	H->SetGlow(0.8f);
+	PlayAt(TEXT("creak"), H->GetActorLocation(), 1.f, 0.8f);
+	UE_LOG(LogWCStory, Display, TEXT("WCSCARE t=%.1f S1_peek"), PlaySeconds);
+}
+
+// ---------------------------------------------------------------------------------------------- S3 locked in
+void AWCDirector::ScareLockIn()
+{
+	if (Has(TEXT("lockin_started"))) return;
+		Set(TEXT("lockin_started"));
+	UE_LOG(LogWCStory, Display, TEXT("WCSCARE t=%.1f S3_lockin"), PlaySeconds);
+	ShotsAtHer = 0;
+	LockInShots = 0;
+	Set(TEXT("power_out"));
+	bPowerOut = true;
+	KillLights(0.f, true);
+	if (AWCCharacter* Pl = Player()) Pl->FlickerLight(0.8f, 0.8f);
+	After(1.0f, [this]()
+	{
+		AWCEntity* H = Her();
+		if (!H) return;
+		SetLoop(TEXT("amb"), TEXT("amb_house"), 0.15f, 1.5f);
+		H->Appear(Pos(TEXT("Her_Hall0")), YawOf(TEXT("Her_Hall0")), TEXT("Idle"));
+		H->SetStutter(11.f);
+		PlayAt(TEXT("creak"), H->GetActorLocation(), 1.f, 0.7f);
+		Play2D(TEXT("sting_low"), 0.9f, EWCSnd::Music);
+		Tension = 0.8f;
+		After(2.6f, [this]()
+		{
+			Say(TEXT("d_stop"));
+			ShowHint(TEXT("Hold Right Mouse to raise your pistol    Left Mouse to fire    R reload"), 7.f);
+			bLockInActive = true;
+			bLockInRun = false;
+			LockInDist0 = 0.f;
+			LockInStart = Clock;
+			HerNextStep = 0.0;
+		});
+	});
+}
+
+// ---------------------------------------------------------------------------------------------- S2 the phone
+void AWCDirector::ScarePhone()
+{
+	Set(TEXT("phone_done"));
+	Flags.Remove(TEXT("phone_ringing"));
+	UE_LOG(LogWCStory, Display, TEXT("WCSCARE t=%.1f S2_phone"), PlaySeconds);
+	// stop the ring
+	TArray<UAudioComponent*> All;
+	for (TObjectIterator<UAudioComponent> It; It; ++It) if (It->GetWorld() == GetWorld() && It->ComponentHasTag(TEXT("ring"))) It->Stop();
+	if (AWCInteractable* Ph = Thing(TEXT("phone"))) Ph->bEnabled = false;
+	Play2D(TEXT("phone_pickup"), 0.9f);
+	AWCCharacter* P = Player();
+	bBusy = true;
+	float T = Say(TEXT("m_phone1"), 1.4f);
+	T = Say(TEXT("m_phone2"), T + 0.8f);
+	After(T, [this]() { if (AWCCharacter* Pl = Player()) Pl->FlickerLight(2.5f, 0.9f); });
+	T = Say(TEXT("m_phone3"), T + 0.7f);
+	After(T - 0.4f, [this]()
+	{
+		if (AWCCharacter* Pl = Player()) { Pl->SetLightScale(0.f); }
+		Play2D(TEXT("bulb_die"), 0.9f);
+		SetLoop(TEXT("amb"), TEXT("amb_house"), 0.05f, 0.5f);
+		Play2D(TEXT("her_breath"), 0.9f);
+	});
+	T = Say(TEXT("d_light_dead"), T + 1.6f);
+	After(T + 1.2f, [this]()
+	{
+		AWCEntity* H = Her();
+		AWCCharacter* Pl = Player();
+		if (!H || !Pl) return;
+		H->Appear(Pos(TEXT("Her_KitchenSeat")), YawOf(TEXT("Her_KitchenSeat")), TEXT("Sit"));
+		Pl->SetLightScale(1.f);
+		Pl->FlickerLight(0.5f, 0.8f);
+		PlayAt(TEXT("chair_scrape"), H->GetActorLocation(), 1.f);
+		Set(TEXT("phone_seat"));
+		// she waits to be seen, but not for long
+		for (int32 i = 1; i <= 50; ++i)
+		{
+			After(i * 0.1f, [this, i]()
+			{
+				AWCEntity* E = Her();
+				AWCCharacter* Q = Player();
+				if (!E || !Q || !Has(TEXT("phone_seat"))) return;
+				const bool bSeen = PlayerSees(E->HeadLocation(), 0.82f, 1400.f);
+				if ((bSeen && i > 9) || i == 50)
+				{
+					Flags.Remove(TEXT("phone_seat"));
+					After(bSeen ? 0.9f : 0.0f, [this]()
+					{
+						AWCEntity* E2 = Her();
+						AWCCharacter* Q2 = Player();
+						if (!E2 || !Q2) return;
+						Play2D(TEXT("her_scream"), 1.f);
+						Play2D(TEXT("sting_hit"), 1.f, EWCSnd::Music);
+						E2->SetStutter(14.f);
+						TArray<FVector> Pts; Pts.Add(FVector(Q2->GetActorLocation().X, Q2->GetActorLocation().Y, E2->GetActorLocation().Z));
+						E2->MoveAlong(Pts, 1300.f, TEXT("Run"), [this]()
+						{
+							Grab(1.3f, [this]()
+							{
+							if (AWCCharacter* Q3 = Player()) { Q3->AddShake(1.f); Q3->SetLightScale(0.f); }
+							if (AWCEntity* E3 = Her()) E3->Vanish();
+							After(0.9f, [this]()
+							{
+								if (AWCCharacter* Q4 = Player()) { Q4->SetLightScale(1.f); Q4->FlickerLight(0.8f, 0.8f); }
+								ApplyWorldState();
+								bBusy = false;
+								Rest(170.f);
+								float T2 = Say(TEXT("d_after_kitchen"), 0.3f);
+								T2 = Say(TEXT("d_drawer"), T2 + 2.2f);
+								After(T2, [this]() { SetObjective(TEXT("Search the kitchen")); Checkpoint(TEXT("phone_done")); });
+								Tension = 0.55f;
+							});
+							});
+						});
+					});
+				}
+			});
+		}
+	});
+}
+
+// ---------------------------------------------------------------------------------------------- S4 the head by the ceiling
+void AWCDirector::ScareCeiling()
+{
+	Set(TEXT("ceiling_started"));
+	UE_LOG(LogWCStory, Display, TEXT("WCSCARE t=%.1f S4_ceiling"), PlaySeconds);
+	AWCEntity* H = Her();
+	AWCCharacter* P = Player();
+	if (!H || !P) { Set(TEXT("ceiling_done")); return; }
+	H->Appear(Pos(TEXT("Her_UpFar")), YawOf(TEXT("Her_UpFar")), TEXT("Tall"));
+	H->SetGlow(1.6f);
+	P->SetLightScale(0.3f);
+	P->FlickerLight(1.2f, 0.6f);
+	Play2D(TEXT("bulb_die"), 0.5f);
+	Play2D(TEXT("sting_low"), 0.8f, EWCSnd::Music);
+	SetLoop(TEXT("amb"), TEXT("amb_house"), 0.1f, 1.f);
+	Tension = 0.9f;
+	Say(TEXT("d_ceiling"), 2.4f);
+	After(4.6f, [this]()
+	{
+		// she draws back into the dark and the light goes
+		if (AWCEntity* E = Her()) E->Slide(Pos(TEXT("Her_UpBack")), 1.6f);
+		After(1.2f, [this]() { if (AWCCharacter* Pl = Player()) Pl->SetLightScale(0.f); });
+		After(3.4f, [this]()
+		{
+			AWCEntity* E = Her();
+			AWCCharacter* Pl = Player();
+			if (!E || !Pl) return;
+			Play2D(TEXT("her_scream"), 1.f);
+			E->SetStutter(0.f);
+			TArray<FVector> Pts; Pts.Add(FVector(Pl->GetActorLocation().X, Pl->GetActorLocation().Y, E->GetActorLocation().Z));
+			E->MoveAlong(Pts, 1250.f, TEXT("Run"));
+			Pl->SetLightScale(0.55f);
+			Pl->FlickerLight(2.f, 0.95f);
+			SprintStart = -1.0;
+			bSprintActive = true;
+		});
+	});
+}
+
+// ---------------------------------------------------------------------------------------------- S7 the hand under the bed
+// Slow.  He comes into Ruth's room and sees the music box on the floor; the view is held on it; her arm comes out from under the
+// bed, closes on the box and draws it back under.  She is never seen.  Then he has to get down and take it back.
+void AWCDirector::ScareUnderBed()
+{
+	if (Has(TEXT("underbed_done"))) return;
+	Set(TEXT("underbed_done"));
+	UE_LOG(LogWCStory, Display, TEXT("WCSCARE t=%.1f S7_hand"), PlaySeconds);
+	for (TObjectIterator<UAudioComponent> It; It; ++It) if (It->GetWorld() == GetWorld() && It->Sound && It->Sound->GetName().Contains(TEXT("musicbox"))) It->FadeOut(2.5f, 0.f);
+	AWCEntity* H = Her();
+	AWCCharacter* P = Player();
+	AWCInteractable* Box = Thing(TEXT("pick_keep_ruth"));
+	if (!H || !P || !Box) return;
+	bBusy = true;
+	P->SetInputLocked(true);
+	const FVector BoxFrom = Box->GetActorLocation();
+	const FVector Under = Pos(TEXT("Her_Under"));
+	const FVector Dir = (BoxFrom - Under).GetSafeNormal2D();
+	const float Reach = 150.f;                                   // from her shoulders to her fingertips, lying flat
+	const FVector Hidden = BoxFrom - Dir * (Reach + 190.f), AtBox = BoxFrom - Dir * (Reach + 6.f);
+	LookAtPoint = BoxFrom + FVector(0, 0, 6);
+	LookAtUntil = Clock + 9.6;
+	Box->bEnabled = false;
+	H->Appear(FVector(Hidden.X, Hidden.Y, Under.Z), Dir.Rotation().Yaw, TEXT("Under"), true, 0.5f);
+	H->SetGlow(0.f);
+	Tension = 0.8f;
+	SetLoop(TEXT("amb"), TEXT("amb_house"), 0.1f, 1.5f);
+	After(1.6f, [this, AtBox, Under]()
+	{
+		if (AWCEntity* E = Her()) { E->Slide(FVector(AtBox.X, AtBox.Y, Under.Z), 3.4f); PlayAt(TEXT("scratch_wall"), E->GetActorLocation(), 0.8f, 0.7f, 1500.f); }
+		Play2D(TEXT("sting_low"), 0.6f, EWCSnd::Music);
+	});
+	After(5.3f, [this, Box, BoxFrom, Hidden, Under, Dir]()
+	{
+		// the fingers close; the box goes with them
+		PlayAt(TEXT("pickup"), BoxFrom, 0.9f, 0.7f, 1200.f);
+		if (AWCEntity* E = Her()) E->Slide(FVector(Hidden.X, Hidden.Y, Under.Z), 3.0f);
+		const FVector To = BoxFrom - Dir * 128.f;
+		for (int32 i = 1; i <= 60; ++i) After(i * 0.05f, [Box, BoxFrom, To, i]() { if (IsValid(Box)) Box->SetActorLocation(FMath::Lerp(BoxFrom, To, FMath::InterpEaseInOut(0.f, 1.f, i / 60.f, 2.f))); });
+		PlayAt(TEXT("drag_floor"), BoxFrom, 0.5f, 1.3f, 1200.f);
+	});
+	After(9.4f, [this, Box]()
+	{
+		if (AWCEntity* E = Her()) E->Vanish();
+		if (IsValid(Box)) Box->bEnabled = true;
+		if (AWCCharacter* Pl = Player()) Pl->SetInputLocked(false);
+		bBusy = false;
+		LookAtUntil = 0.0;
+		Rest(140.f);
+		ApplyWorldState();
+		Think(TEXT("...It took it. It's under the bed."));
+		ShowHint(TEXT("C: crouch"), 6.f);
+		Checkpoint(TEXT("hand"));
+	});
+}
+
+// ---------------------------------------------------------------------------------------------- S5 the attic
+void AWCDirector::ScareAttic()
+{
+	Set(TEXT("attic_started"));
+	UE_LOG(LogWCStory, Display, TEXT("WCSCARE t=%.1f S5_attic"), PlaySeconds);
+	if (AWCInteractable* Trunk = Thing(TEXT("trunk"))) Trunk->bEnabled = false;
+	Play2D(TEXT("trunk_open"), 0.9f);
+	GiveItem(TEXT("keep_daniel"), TEXT("Daniel's dog tags"));
+	float T = Say(TEXT("d_attic"), 0.6f);
+	T = Say(TEXT("d_tags"), T + 0.4f);
+	After(T, [this]() { GiveItem(TEXT("key_cellar"), TEXT("Padlock key")); });
+	After(T + 1.4f, [this]()
+	{
+		AWCEntity* H = Her();
+		AWCCharacter* P = Player();
+		if (!H || !P) { Set(TEXT("attic_done"));
+						Rest(120.f); return; }
+		PlayAt(TEXT("thump_heavy"), Pos(TEXT("Her_AtticFar")), 1.f);
+		After(1.6f, [this]()
+		{
+			AWCEntity* E = Her();
+			AWCCharacter* Pl = Player();
+			if (!E || !Pl) return;
+			E->Appear(Pos(TEXT("Her_AtticFar")), YawOf(TEXT("Her_AtticFar")), TEXT("Crawl"));
+			E->SetStutter(15.f);
+			Play2D(TEXT("crawl_knocks"), 1.f);
+			Play2D(TEXT("sting_rise"), 0.9f, EWCSnd::Music);
+			Tension = 1.f;
+			TArray<FVector> Pts;
+			const FVector Dir = (Pl->GetActorLocation() - E->GetActorLocation()).GetSafeNormal2D();
+			Pts.Add(FVector(Pl->GetActorLocation().X, Pl->GetActorLocation().Y, E->GetActorLocation().Z) - Dir * 150.f);
+			E->MoveAlong(Pts, 860.f, TEXT("Crawl"), [this]()
+			{
+				AWCEntity* E2 = Her();
+				AWCCharacter* Q = Player();
+				if (!E2 || !Q) return;
+				E2->SetStutter(0.f);
+				E2->FacePlayer(true);
+				E2->Play(TEXT("Rise"), false, 3.2f);
+				Play2D(TEXT("her_scream"), 1.f);
+				Play2D(TEXT("sting_hit"), 1.f, EWCSnd::Music);
+				Q->AddShake(1.f);
+				Q->FlickerLight(1.0f, 0.95f);
+				After(1.0f, [this]()
+				{
+					if (AWCCharacter* Q2 = Player()) Q2->SetLightScale(0.f);
+					After(1.3f, [this]()
+					{
+						if (AWCEntity* E3 = Her()) E3->Vanish();
+						if (AWCCharacter* Q3 = Player()) { Q3->SetLightScale(1.f); Q3->FlickerLight(0.6f, 0.8f); }
+						Set(TEXT("attic_done"));
+						float T2 = Say(TEXT("d_after_attic"), 1.6f);
+						After(T2, [this]() { SetObjective(TEXT("Unlock the cellar")); Checkpoint(TEXT("attic_done")); });
+						Tension = 0.6f;
+					});
+				});
+			});
+		});
+	});
+}
+
+// ---------------------------------------------------------------------------------------------- S6 the sprint down the hall
+void AWCDirector::ScareCellarDoor()
+{
+	Set(TEXT("sprint_started"));
+	UE_LOG(LogWCStory, Display, TEXT("WCSCARE t=%.1f S6_sprint"), PlaySeconds);
+	float T = Say(TEXT("d_cellar_open"), 0.6f);
+	After(T + 0.5f, [this]()
+	{
+		AWCEntity* H = Her();
+		AWCCharacter* P = Player();
+		if (!H || !P) { Set(TEXT("sprint_done")); return; }
+		H->Appear(Pos(TEXT("Her_SprintStart")), YawOf(TEXT("Her_SprintStart")), TEXT("Run"));
+		Play2D(TEXT("her_scream"), 1.f);
+		Play2D(TEXT("sting_rise"), 1.f, EWCSnd::Music);
+		TArray<FVector> Pts; Pts.Add(FVector(P->GetActorLocation().X, P->GetActorLocation().Y, H->GetActorLocation().Z));
+		H->MoveAlong(Pts, 1200.f, TEXT("Run"));
+		P->FlickerLight(1.6f, 0.8f);
+		SprintStart = -1.0;
+		bSprintActive = true;
+		Tension = 1.f;
+	});
+}
+
+// ---------------------------------------------------------------------------------------------- S8 finale
+void AWCDirector::FinaleStep(int32 Knot)
+{
+	AWCEntity* H = Her();
+	AWCCharacter* P = Player();
+	if (!H || !P) return;
+	UE_LOG(LogWCStory, Display, TEXT("WCSCARE t=%.1f S8_finale step %d"), PlaySeconds, Knot);
+	if (Knot == 0)
+	{
+		FinaleStart = Clock;
+		KnotsCut = 0;
+		SetLoop(TEXT("music"), TEXT("music_finale"), 0.7f, 6.f, EWCSnd::Music);
+		After(2.5f, [this]()
+		{
+			if (AWCEntity* E = Her()) { E->Appear(Pos(TEXT("Her_Fin0")), YawOf(TEXT("Her_Fin0")), TEXT("Idle")); E->SetStutter(10.f); E->FacePlayer(true); }
+			Say(TEXT("m_fin1"), 0.6f);
+			if (AWCCharacter* Pl = Player()) Pl->FlickerLight(1.2f, 0.7f);
+		});
+	}
+	else if (Knot == 1)
+	{
+		Say(TEXT("d_knot1"));
+		TArray<FVector> Pts; Pts.Add(Pos(TEXT("Her_Fin1")));
+		H->MoveAlong(Pts, 95.f, TEXT("Walk"));
+		Say(TEXT("m_fin2"), 1.2f);
+		P->FlickerLight(1.5f, 0.8f);
+	}
+	else if (Knot == 2)
+	{
+		Say(TEXT("d_knot2"));
+		TArray<FVector> Pts; Pts.Add(Pos(TEXT("Her_Fin2")));
+		H->SetStutter(14.f);
+		H->MoveAlong(Pts, 760.f, TEXT("Run"), [this]()
+		{
+			if (AWCEntity* E = Her()) { E->SetStutter(0.f); E->Play(TEXT("Rise"), false, 1.f); E->FacePlayer(true); }
+		});
+		Play2D(TEXT("her_scream_short"), 0.9f);
+		Say(TEXT("m_fin3"), 1.4f);
+		P->SetLightScale(0.3f);
+		P->FlickerLight(30.f, 0.6f);
+		P->AddShake(0.5f);
+	}
+	else
+	{
+		Set(TEXT("finale_done"));
+		bBusy = true;
+		P->SetInputLocked(true);
+		float T = Say(TEXT("d_knot3"));
+		After(T - 0.3f, [this]()
+		{
+			AWCEntity* E = Her();
+			AWCCharacter* Pl = Player();
+			if (!E || !Pl) return;
+			const FVector Fwd = FRotator(0.f, Pl->GetControlRotation().Yaw, 0.f).Vector();
+			E->Appear(Pl->GetActorLocation() - FVector(0, 0, 88) + Fwd * 115.f, (-Fwd).Rotation().Yaw, TEXT("Tall"));
+			Pl->SetLightScale(1.f);
+			Pl->FlickerLight(1.5f, 0.6f);
+			Play2D(TEXT("her_scream"), 1.f);
+			Play2D(TEXT("VO/m_fin4"), 1.f, EWCSnd::Voice);
+			Play2D(TEXT("sting_hit"), 1.f, EWCSnd::Music);
+			Pl->AddShake(1.f);
+			SetLoop(TEXT("music"), TEXT(""), 0.f, 0.4f, EWCSnd::Music);
+			After(1.25f, [this]()
+			{
+				FadeTo(1.f, 0.08f);
+				if (AWCEntity* E2 = Her()) E2->Vanish();
+				SetLoop(TEXT("amb"), TEXT(""), 0.f, 0.3f);
+				SetLoop(TEXT("drone"), TEXT(""), 0.f, 0.3f, EWCSnd::Music);
+				Tension = 0.f;
+				float T2 = Say(TEXT("m_end"), 4.5f);
+				After(T2 + 1.5f, [this]()
+				{
+					Set(TEXT("dawn"));
+					if (AWCDoor* C = Door(TEXT("cellar"))) { C->SetLocked(false); C->SetOpen(true, 0.01f, true); C->Snap(); }
+					if (AWCDoor* F = Door(TEXT("front"))) { F->SetLocked(false); F->SetOpen(true, 0.01f, true); F->Snap(); }
+					ApplyWorldState();
+					if (AWCCharacter* Q = Player()) { Q->SetInputLocked(false); Q->SetLightScale(1.f); }
+					bBusy = false;
+					FadeTo(0.f, 5.f);
+					SetLoop(TEXT("music"), TEXT("music_dawn"), 0.6f, 6.f, EWCSnd::Music);
+					Say(TEXT("d_dawn"), 6.f);
+					After(8.f, [this]() { SetObjective(TEXT("Go back to the cruiser")); Checkpoint(TEXT("dawn")); });
+				});
+			});
+		});
+	}
+}
+
+void AWCDirector::FinaleCaught()
+{
+	Set(TEXT("caught"));
+	UE_LOG(LogWCStory, Display, TEXT("WCFAIL t=%.1f caught in the finale"), PlaySeconds);
+	AWCEntity* H = Her();
+	AWCCharacter* P = Player();
+	if (!H || !P) return;
+	bBusy = true;
+	P->SetInputLocked(true);
+	Play2D(TEXT("her_scream"), 1.f);
+	TArray<FVector> Pts; Pts.Add(FVector(P->GetActorLocation().X, P->GetActorLocation().Y, H->GetActorLocation().Z));
+	if (!H->IsShown()) H->Appear(Pos(TEXT("Her_Fin1")), YawOf(TEXT("Her_Fin1")), TEXT("Run"));
+	H->MoveAlong(Pts, 1100.f, TEXT("Run"), [this]()
+	{
+		if (AWCCharacter* Pl = Player()) { Pl->AddShake(1.f); Pl->Knockdown(8.f); }
+		FadeTo(1.f, 0.3f);
+		BigText = TEXT("You stayed.");
+		BigSub = TEXT("");
+		After(1.2f, [this]() { BigTarget = 1.f; });
+		After(5.5f, [this]() { RestartFromCheckpoint(); });
+	});
+}
+
+// ---------------------------------------------------------------------------------------------- ending
+void AWCDirector::BeginEnding()
+{
+	Set(TEXT("ended"));
+	UE_LOG(LogWCStory, Display, TEXT("WCENDING t=%.1f reached the ending"), PlaySeconds);
+	if (AWCCharacter* P = Player()) P->SetInputLocked(true);
+	Objective.Reset();
+	float T = Say(TEXT("d_end1"), 0.8f);
+	T = Say(TEXT("r_end1"), T + 0.4f);
+	T = Say(TEXT("d_end2"), T + 0.6f);
+	T = Say(TEXT("r_end2"), T + 0.5f);
+	After(T + 0.4f, [this]() { PlayAt(TEXT("phone_ring"), Pos(TEXT("FrontDoorPoint")), 0.7f); });
+	T = Say(TEXT("r_end3"), T + 2.4f);
+	T = Say(TEXT("d_end3"), T + 1.1f);
+	After(T - 0.3f, [this]() { FadeTo(1.f, 0.05f); SetLoop(TEXT("amb"), TEXT(""), 0.f, 0.05f); SetLoop(TEXT("music"), TEXT(""), 0.f, 0.05f, EWCSnd::Music); });
+	T += 2.5f;
+	After(T + 5.f, [this]()
+	{
+		Mode = EWCMode::Ending;
+		BigText = TEXT("EDITH'S LAST CALL");
+		BigSub = TEXT("");
+		BigTarget = 1.f;
+		UGameplayStatics::DeleteGameInSlot(TEXT("WellnessCheck"), 0);
+	});
+	After(T + 11.f, [this]() { BigTarget = 0.f; });
+	After(T + 13.5f, [this]() { Mode = EWCMode::Credits; CreditsScroll = 0.f; });
+	After(T + 13.5f + 38.f, [this]()
+	{
+		SetLoop(TEXT("music"), TEXT(""), 0.f, 3.f, EWCSnd::Music);
+		Play2D(TEXT("radio_static"), 0.6f, EWCSnd::Voice);
+		Mode = EWCMode::Playing;       // (so the line system runs; input stays locked)
+		float T2 = Say(TEXT("m_post"), 1.5f);
+		After(T2 + 2.5f, [this]() { QuitToMenu(); });
+	});
+}

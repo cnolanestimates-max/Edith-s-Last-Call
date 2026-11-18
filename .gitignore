@@ -1,0 +1,27 @@
+Binaries/
+DerivedDataCache/
+Intermediate/
+Saved/
+.vs/
+*.sln
+*.suo
+*.VC.db
+*.VC.opendb
+.env
+.env.*
+!.env.example
+__pycache__/
+*.pyc
+
+Builds/
+
+# Fab packs: large (about 5 GB), re-add from Fab on another machine instead of storing in Git
+# (Scripts/fab_install.py installs them; the list is in Docs/ASSET_AND_VOICE_MANIFEST.md)
+Content/Fab/
+Content/Megaplant_Library/
+Content/OldWest/
+Content/Collections/
+Content/Developers/
+
+# Untouched copies pulled out of the Sonniss / Night Shift library zips (about 1 GB); Scripts/audio/lib_sfx.py re-extracts them
+SourceArt/Audio/raw_lib/

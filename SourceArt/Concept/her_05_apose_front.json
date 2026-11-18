@@ -1,0 +1,30 @@
+﻿[
+  {
+    "created_at": "2026-11-18T17:26:33.133974Z",
+    "display_name": "Nano Banana Pro",
+    "id": "c6b9c6d1-28e9-4dec-8213-c94c8e246f55",
+    "job_type": "nano_banana_pro",
+    "min_result_url": "https://d8j0ntlcm91z4.cloudfront.net/user_3JnvaHpmI60W1KtytJAHYxhGyha/hf_20261118_172633_c6b9c6d1-28e9-4dec-8213-c94c8e246f55_min.webp",
+    "params": {
+      "application": null,
+      "aspect_ratio": "2:3",
+      "batch_size": 1,
+      "height": 5056,
+      "input_image": null,
+      "input_images": [
+        {
+          "id": "ba9fa28f-62d9-4a90-84b9-01dd927deffb",
+          "type": "media_input",
+          "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_3JnvaHpmI60W1KtytJAHYxhGyha/ba9fa28f-62d9-4a90-84b9-01dd927deffb.png"
+        }
+      ],
+      "prompt": "Full-body character turnaround reference for 3D modelling: the exact same character as the reference image, front view only, standing fully upright and straight in a neutral A-pose with both very long thin arms held about 30 degrees away from her sides, legs slightly apart, facing the camera directly. Nearly nine feet tall, severely emaciated elderly woman, grey mottled papery skin with age spots, bare feet, long bony fingers spread, stained threadbare sleeveless cotton nightgown ending above the knees. Long straight stringy grayish-blonde hair hanging down past her chest, covering the right half of her face completely; on her left side one enormous round bulging lidless eye with a pale iris, wide open. Plain flat light grey studio background, soft even lighting with no harsh shadows, whole figure in frame from the top of the head to the toes with margin, orthographic feel, photorealistic game character concept, no text, no other figures.",
+      "resolution": "4k",
+      "surface": null,
+      "width": 3392
+    },
+    "result_url": "https://d8j0ntlcm91z4.cloudfront.net/user_3JnvaHpmI60W1KtytJAHYxhGyha/hf_20261118_172633_c6b9c6d1-28e9-4dec-8213-c94c8e246f55.png",
+    "status": "completed"
+  }
+]
+

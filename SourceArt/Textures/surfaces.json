@@ -1,0 +1,177 @@
+{
+ "WallpaperGreen": {
+  "tile": 260,
+  "grime": 0.55,
+  "rough": 1.0
+ },
+ "WallpaperRed": {
+  "tile": 260,
+  "grime": 0.55,
+  "rough": 1.0
+ },
+ "WallpaperPurple": {
+  "tile": 260,
+  "grime": 0.55,
+  "rough": 1.0
+ },
+ "WallpaperGrey": {
+  "tile": 280,
+  "grime": 0.6,
+  "rough": 1.0
+ },
+ "PlasterCeiling": {
+  "tile": 300,
+  "grime": 0.55,
+  "rough": 1.0
+ },
+ "FloorBoards": {
+  "tile": 240,
+  "grime": 0.5,
+  "rough": 1.0
+ },
+ "AtticBoards": {
+  "tile": 240,
+  "grime": 0.5,
+  "rough": 1.0
+ },
+ "WoodTrim": {
+  "tile": 160,
+  "grime": 0.5,
+  "rough": 0.9
+ },
+ "WoodDark": {
+  "tile": 110,
+  "grime": 0.45,
+  "rough": 0.85
+ },
+ "WoodRotten": {
+  "tile": 120,
+  "grime": 0.4,
+  "rough": 1.0
+ },
+ "WoodBleached": {
+  "tile": 140,
+  "grime": 0.4,
+  "rough": 1.0
+ },
+ "WoodPainted": {
+  "tile": 140,
+  "grime": 0.45,
+  "rough": 1.0
+ },
+ "PorchBoards": {
+  "tile": 220,
+  "grime": 0.4,
+  "rough": 1.0
+ },
+ "Siding": {
+  "tile": 300,
+  "grime": 0.5,
+  "rough": 1.0
+ },
+ "RoofShingle": {
+  "tile": 300,
+  "grime": 0.4,
+  "rough": 1.0
+ },
+ "CellarStone": {
+  "tile": 260,
+  "grime": 0.45,
+  "rough": 1.0
+ },
+ "CellarFloor": {
+  "tile": 260,
+  "grime": 0.4,
+  "rough": 0.95
+ },
+ "Brick": {
+  "tile": 240,
+  "grime": 0.45,
+  "rough": 1.0
+ },
+ "YardGround": {
+  "tile": 500,
+  "grime": 0.3,
+  "rough": 1.0
+ },
+ "Gravel": {
+  "tile": 320,
+  "grime": 0.3,
+  "rough": 1.0
+ },
+ "Rust": {
+  "tile": 100,
+  "grime": 0.3,
+  "rough": 1.0
+ },
+ "Iron": {
+  "tile": 90,
+  "grime": 0.3,
+  "rough": 0.8
+ },
+ "Brass": {
+  "tile": 60,
+  "grime": 0.3,
+  "rough": 0.6
+ },
+ "FabricRed": {
+  "tile": 110,
+  "grime": 0.5,
+  "rough": 1.0
+ },
+ "FabricDark": {
+  "tile": 110,
+  "grime": 0.5,
+  "rough": 1.0
+ },
+ "Sheet": {
+  "tile": 130,
+  "grime": 0.5,
+  "rough": 1.0
+ },
+ "Mattress": {
+  "tile": 130,
+  "grime": 0.5,
+  "rough": 1.0
+ },
+ "Leather": {
+  "tile": 80,
+  "grime": 0.4,
+  "rough": 0.85
+ },
+ "Porcelain": {
+  "tile": 120,
+  "grime": 0.55,
+  "rough": 0.7
+ },
+ "PaperOld": {
+  "tile": 60,
+  "grime": 0.35,
+  "rough": 1.0
+ },
+ "Cardboard": {
+  "tile": 90,
+  "grime": 0.4,
+  "rough": 1.0
+ },
+ "Bark": {
+  "tile": 140,
+  "grime": 0.2,
+  "rough": 1.0
+ },
+ "Soot": {
+  "tile": 100,
+  "grime": 0.2,
+  "rough": 1.0
+ },
+ "RoofTin": {
+  "tile": 300,
+  "grime": 0.4,
+  "rough": 0.85
+ },
+ "Grime": {
+  "tile": 400,
+  "grime": 0.0,
+  "rough": 1.0
+ }
+}

@@ -1,0 +1,24 @@
+﻿[
+  {
+    "created_at": "2026-11-18T17:20:12.401198Z",
+    "display_name": "Nano Banana Pro",
+    "id": "2920fe5b-aba5-4a26-a1ca-dde68ec8e7af",
+    "job_type": "nano_banana_pro",
+    "min_result_url": "https://d8j0ntlcm91z4.cloudfront.net/user_3JnvaHpmI60W1KtytJAHYxhGyha/hf_20261118_172012_2920fe5b-aba5-4a26-a1ca-dde68ec8e7af_min.webp",
+    "params": {
+      "application": null,
+      "aspect_ratio": "4:5",
+      "batch_size": 1,
+      "height": 2304,
+      "input_image": null,
+      "input_images": [],
+      "prompt": "Photorealistic cinematic horror close-up portrait, harsh single flashlight from the front, black background. The face and shoulders of an elderly woman apparition who is impossibly tall, close to nine feet, and severely emaciated, with unnaturally elongated thin arms that hang past her knees, very long thin legs, and long bony fingers. Long stringy grayish-blonde hair hangs down over her face and completely hides the right half of her face; on her left side the hair parts to show one enormous round bulging eye with no eyelid, wet and glassy with a pale washed-out iris, staring straight at the viewer. Grey papery mottled skin with age spots, sunken cheeks, thin neck. She wears a stained threadbare old-fashioned long cotton nightgown. Hair like wet straw draped over the face, the single huge lidless eye gleaming through the gap in the hair, thin cracked lips slightly parted, collarbones jutting under the nightgown. Extreme skin detail, muted desaturated colors, 85mm lens, shallow depth of field, deeply unsettling, no text.",
+      "resolution": "2k",
+      "surface": null,
+      "width": 1856
+    },
+    "result_url": "https://d8j0ntlcm91z4.cloudfront.net/user_3JnvaHpmI60W1KtytJAHYxhGyha/hf_20261118_172012_2920fe5b-aba5-4a26-a1ca-dde68ec8e7af.png",
+    "status": "completed"
+  }
+]
+

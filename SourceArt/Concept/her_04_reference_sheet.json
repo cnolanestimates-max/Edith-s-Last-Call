@@ -1,0 +1,24 @@
+﻿[
+  {
+    "created_at": "2026-11-18T17:20:12.590724Z",
+    "display_name": "Nano Banana Pro",
+    "id": "5db684c8-a2a6-4323-acdf-b2ca2924cfde",
+    "job_type": "nano_banana_pro",
+    "min_result_url": "https://d8j0ntlcm91z4.cloudfront.net/user_3JnvaHpmI60W1KtytJAHYxhGyha/hf_20261118_172012_5db684c8-a2a6-4323-acdf-b2ca2924cfde_min.webp",
+    "params": {
+      "application": null,
+      "aspect_ratio": "16:9",
+      "batch_size": 1,
+      "height": 1536,
+      "input_image": null,
+      "input_images": [],
+      "prompt": "Character design reference sheet for a horror game creature, three full-body views side by side on a plain neutral grey background with even soft lighting: front view, side view, back view, standing upright at full height next to a simple grey silhouette of an average 6 foot man for scale. The character is an elderly woman apparition who is impossibly tall, close to nine feet, and severely emaciated, with unnaturally elongated thin arms that hang past her knees, very long thin legs, and long bony fingers. Long stringy grayish-blonde hair hangs down over her face and completely hides the right half of her face; on her left side the hair parts to show one enormous round bulging eye with no eyelid, wet and glassy with a pale washed-out iris, staring straight at the viewer. Grey papery mottled skin with age spots, sunken cheeks, thin neck. She wears a stained threadbare old-fashioned long cotton nightgown. Photorealistic 3D game character concept art, consistent anatomy across all three views, full figure visible head to bare feet, no text, no labels.",
+      "resolution": "2k",
+      "surface": null,
+      "width": 2752
+    },
+    "result_url": "https://d8j0ntlcm91z4.cloudfront.net/user_3JnvaHpmI60W1KtytJAHYxhGyha/hf_20261118_172012_5db684c8-a2a6-4323-acdf-b2ca2924cfde.png",
+    "status": "completed"
+  }
+]
+

@@ -1,0 +1,30 @@
+﻿[
+  {
+    "created_at": "2026-11-18T17:21:57.013497Z",
+    "display_name": "Nano Banana Pro",
+    "id": "29aa7fce-3beb-4c5a-950f-cbaae846f092",
+    "job_type": "nano_banana_pro",
+    "min_result_url": "https://d8j0ntlcm91z4.cloudfront.net/user_3JnvaHpmI60W1KtytJAHYxhGyha/hf_20261118_172157_29aa7fce-3beb-4c5a-950f-cbaae846f092_min.webp",
+    "params": {
+      "application": null,
+      "aspect_ratio": "16:9",
+      "batch_size": 1,
+      "height": 1536,
+      "input_image": null,
+      "input_images": [
+        {
+          "id": "45783153-bf35-4814-88af-2f7def783e73",
+          "type": "media_input",
+          "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_3JnvaHpmI60W1KtytJAHYxhGyha/45783153-bf35-4814-88af-2f7def783e73_resize.jpg"
+        }
+      ],
+      "prompt": "Photorealistic cinematic horror film still, first-person point of view inside a pitch-black rotting old farmhouse. A police flashlight beam lights the edge of a doorway with peeling floral wallpaper. The same woman from the reference image is peeking around the doorframe from the dark room beyond, very high up near the top of the doorframe because she is nearly nine feet tall. Only half of her face is visible past the corner: the side with the one enormous round lidless bulging eye staring at the viewer, strands of long grayish-blonde hair hanging down, and her long bony grey fingers curled around the edge of the doorframe. The rest of her is hidden behind the wall. Everything behind her is black. Muted desaturated colors, 35mm, subtle film grain, deeply unsettling, no text.",
+      "resolution": "2k",
+      "surface": null,
+      "width": 2752
+    },
+    "result_url": "https://d8j0ntlcm91z4.cloudfront.net/user_3JnvaHpmI60W1KtytJAHYxhGyha/hf_20261118_172157_29aa7fce-3beb-4c5a-950f-cbaae846f092.png",
+    "status": "completed"
+  }
+]
+

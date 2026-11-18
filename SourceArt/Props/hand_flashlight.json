@@ -1,0 +1,24 @@
+﻿[
+  {
+    "created_at": "2026-11-18T18:12:46.517697Z",
+    "display_name": "Nano Banana Pro",
+    "id": "3b03e934-cdcb-49ae-8da1-fa631becdf4d",
+    "job_type": "nano_banana_pro",
+    "min_result_url": "https://d8j0ntlcm91z4.cloudfront.net/user_3JnvaHpmI60W1KtytJAHYxhGyha/hf_20261118_181246_3b03e934-cdcb-49ae-8da1-fa631becdf4d_min.webp",
+    "params": {
+      "application": null,
+      "aspect_ratio": "4:3",
+      "batch_size": 1,
+      "height": 1792,
+      "input_image": null,
+      "input_images": [],
+      "prompt": "Reference image for a 3D game asset: a single left hand and forearm wearing a black leather duty glove and the cuff of a dark brown sheriff's uniform sleeve, holding a long black aluminium police flashlight in an overhand grip, lens end pointing to the left. Clean side view, the whole forearm, hand and flashlight in frame with margin, isolated on a plain flat light grey studio background, soft even lighting, photorealistic, no body, no other objects.",
+      "resolution": "2k",
+      "surface": null,
+      "width": 2400
+    },
+    "result_url": "https://d8j0ntlcm91z4.cloudfront.net/user_3JnvaHpmI60W1KtytJAHYxhGyha/hf_20261118_181246_3b03e934-cdcb-49ae-8da1-fa631becdf4d.png",
+    "status": "completed"
+  }
+]
+

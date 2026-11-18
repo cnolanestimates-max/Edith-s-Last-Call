@@ -1,0 +1,597 @@
+[
+ {
+  "id": "d_arrive1",
+  "who": "deputy",
+  "text": "Dispatch, Fourteen. I'm out on County Road Nine, coming up on the Harrow place.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics."
+ },
+ {
+  "id": "r_arrive1",
+  "who": "dispatch",
+  "text": "Copy, Fourteen. Caller asked for a wellness check on an Edith Harrow, eighty-six, lives alone. Family's out of state. Nobody's laid eyes on her in months.",
+  "fx": "radio",
+  "style": "A calm, experienced female county sheriff's dispatcher speaking over the police radio at 3 a.m. Clipped, professional, even pace, slightly flat. American Midwest."
+ },
+ {
+  "id": "d_arrive2",
+  "who": "deputy",
+  "text": "Copy. House is dark. No lights, no vehicle.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics."
+ },
+ {
+  "id": "r_arrive2",
+  "who": "dispatch",
+  "text": "Caller didn't leave a name, Fourteen. Gave the address, said she needs company, and hung up.",
+  "fx": "radio",
+  "style": "A calm, experienced female county sheriff's dispatcher speaking over the police radio at 3 a.m. Clipped, professional, even pace, slightly flat. American Midwest. Matter-of-fact, a little puzzled by it."
+ },
+ {
+  "id": "d_arrive3",
+  "who": "deputy",
+  "text": "...Needs company. Copy.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. Dry, uneasy, under his breath."
+ },
+ {
+  "id": "r_arrive3",
+  "who": "dispatch",
+  "text": "Check on her and call it in.",
+  "fx": "radio",
+  "style": "A calm, experienced female county sheriff's dispatcher speaking over the police radio at 3 a.m. Clipped, professional, even pace, slightly flat. American Midwest."
+ },
+ {
+  "id": "d_arrive4",
+  "who": "deputy",
+  "text": "Ten-four. Going to the door.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics."
+ },
+ {
+  "id": "d_leave_early",
+  "who": "deputy",
+  "text": "Not until I've laid eyes on her.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics."
+ },
+ {
+  "id": "d_knock",
+  "who": "deputy",
+  "text": "Sheriff's office! Mrs. Harrow? Your daughter asked us to check on you.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. Calling out loudly at a front door, projecting, official."
+ },
+ {
+  "id": "d_dooropen",
+  "who": "deputy",
+  "text": "...Door's open. Mrs. Harrow, I'm coming in.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. Quiet, wary, then calling into the house."
+ },
+ {
+  "id": "d_foyer",
+  "who": "deputy",
+  "text": "God, that smell. ...Mrs. Harrow? Deputy Brandt, sheriff's office.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. Disgusted by a smell, muttering, then calling out."
+ },
+ {
+  "id": "d_table",
+  "who": "deputy",
+  "text": "Table's set for four. This food's been sitting here for months.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics."
+ },
+ {
+  "id": "d_phonecord",
+  "who": "deputy",
+  "text": "Cord's cut clean through. Nobody called anybody on this.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics."
+ },
+ {
+  "id": "d_photos",
+  "who": "deputy",
+  "text": "Every face scratched out. Every one but hers.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics."
+ },
+ {
+  "id": "d_cellar_locked",
+  "who": "deputy",
+  "text": "Padlocked. From this side.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics."
+ },
+ {
+  "id": "d_locked",
+  "who": "deputy",
+  "text": "Locked.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics."
+ },
+ {
+  "id": "d_thump",
+  "who": "deputy",
+  "text": "Mrs. Harrow? ...I'm coming upstairs. Stay where you are.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. Startled, calling up a staircase, trying to sound steady."
+ },
+ {
+  "id": "m_whisper1",
+  "who": "mabel",
+  "text": "Who's there?",
+  "fx": "ghost",
+  "style": "A very old, frail woman in her late eighties. Thin, dry, trembling voice, slow, breathy, barely above a whisper, lonely and eerily gentle. Rural American. A faint, suspicious whisper from another room."
+ },
+ {
+  "id": "d_peek",
+  "who": "deputy",
+  "text": "Ma'am? It's alright. I'm here to help you.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. Very soft and careful, as if to a frightened animal."
+ },
+ {
+  "id": "d_masterempty",
+  "who": "deputy",
+  "text": "She was right here. I saw her. There's nowhere to go in here.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. Unsettled, thinking out loud."
+ },
+ {
+  "id": "d_radio1",
+  "who": "deputy",
+  "text": "Dispatch, Fourteen. I've got movement in the house. No contact yet.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. Speaking into a shoulder radio, low and controlled."
+ },
+ {
+  "id": "r_trace",
+  "who": "dispatch",
+  "text": "Fourteen, be advised. We ran the number on that wellness call. It came from the Harrow landline. From inside that house.",
+  "fx": "radio",
+  "style": "A calm, experienced female county sheriff's dispatcher speaking over the police radio at 3 a.m. Clipped, professional, even pace, slightly flat. American Midwest. Urgent, breaking protocol slightly, uneasy."
+ },
+ {
+  "id": "d_trace",
+  "who": "deputy",
+  "text": "...Say again? That phone's cut off at the wall.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. Stunned, slow, quiet."
+ },
+ {
+  "id": "r_static",
+  "who": "mabel",
+  "text": "Stay.",
+  "fx": "radio",
+  "style": "A very old, frail woman in her late eighties. Thin, dry, trembling voice, slow, breathy, barely above a whisper, lonely and eerily gentle. Rural American. A barely audible whisper of one word."
+ },
+ {
+  "id": "d_radio2",
+  "who": "deputy",
+  "text": "Dispatch? ...Dispatch. ...Dead.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics."
+ },
+ {
+  "id": "d_doorstuck",
+  "who": "deputy",
+  "text": "It won't... It was open. It was just open!",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. Rising panic, straining at a door."
+ },
+ {
+  "id": "d_stop",
+  "who": "deputy",
+  "text": "Sheriff's office! Ma'am, stop right there!",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. Shouting a police command, frightened but forceful."
+ },
+ {
+  "id": "d_stop2",
+  "who": "deputy",
+  "text": "I said stop!",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. Shouting, voice cracking with fear."
+ },
+ {
+  "id": "d_getup1",
+  "who": "deputy",
+  "text": "What the hell. What the hell was that.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. Shaken, out of breath, getting up off the floor."
+ },
+ {
+  "id": "d_getup1b",
+  "who": "deputy",
+  "text": "Went right through her. Every round.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. Disbelief, breathing hard."
+ },
+ {
+  "id": "d_wayout",
+  "who": "deputy",
+  "text": "Okay. Okay. Back door. There's another way out of here.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. Talking himself down, shaky."
+ },
+ {
+  "id": "d_backdoor",
+  "who": "deputy",
+  "text": "Nailed shut. From the inside. Every board.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics."
+ },
+ {
+  "id": "d_window",
+  "who": "deputy",
+  "text": "Nailed. From the inside.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics."
+ },
+ {
+  "id": "d_phone_ring",
+  "who": "deputy",
+  "text": "That phone has no line.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics."
+ },
+ {
+  "id": "m_phone1",
+  "who": "mabel",
+  "text": "You came.",
+  "fx": "phone",
+  "style": "A very old, frail woman in her late eighties. Thin, dry, trembling voice, slow, breathy, barely above a whisper, lonely and eerily gentle. Rural American. Over a telephone, delighted in a hollow way, almost a sigh."
+ },
+ {
+  "id": "m_phone2",
+  "who": "mabel",
+  "text": "Nobody comes. Nobody comes to see me anymore.",
+  "fx": "phone",
+  "style": "A very old, frail woman in her late eighties. Thin, dry, trembling voice, slow, breathy, barely above a whisper, lonely and eerily gentle. Rural American. Mournful, very slow."
+ },
+ {
+  "id": "m_phone3",
+  "who": "mabel",
+  "text": "Sit down. Supper's getting cold.",
+  "fx": "phone",
+  "style": "A very old, frail woman in her late eighties. Thin, dry, trembling voice, slow, breathy, barely above a whisper, lonely and eerily gentle. Rural American. Sweet and coaxing, with something wrong underneath."
+ },
+ {
+  "id": "d_light_dead",
+  "who": "deputy",
+  "text": "No, no, no. Come on. Come on!",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. Panicked whisper, shaking a dead flashlight."
+ },
+ {
+  "id": "d_after_kitchen",
+  "who": "deputy",
+  "text": "Jesus Christ!",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. A terrified shout, gasping."
+ },
+ {
+  "id": "d_drawer",
+  "who": "deputy",
+  "text": "That drawer was shut.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics."
+ },
+ {
+  "id": "d_sitting",
+  "who": "deputy",
+  "text": "Her drawings. The same figure in every one. It gets taller each time.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics."
+ },
+ {
+  "id": "d_ceiling",
+  "who": "deputy",
+  "text": "...Edith?",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. A horrified whisper, barely audible."
+ },
+ {
+  "id": "d_getup2",
+  "who": "deputy",
+  "text": "She doesn't want me dead. She wants me here.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. Grim realisation, quiet, winded."
+ },
+ {
+  "id": "d_kidsdoor",
+  "who": "deputy",
+  "text": "That door was locked a minute ago.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics."
+ },
+ {
+  "id": "d_musicbox",
+  "who": "deputy",
+  "text": "Ruth's. Her name's scratched in the bottom.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics."
+ },
+ {
+  "id": "d_underbed",
+  "who": "deputy",
+  "text": "God!",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. A sharp startled cry."
+ },
+ {
+  "id": "d_prayer",
+  "who": "deputy",
+  "text": "Hair. She tied knots in her own hair. Three of them.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics."
+ },
+ {
+  "id": "m_whisper2",
+  "who": "mabel",
+  "text": "Is that you, Danny?",
+  "fx": "ghost",
+  "style": "A very old, frail woman in her late eighties. Thin, dry, trembling voice, slow, breathy, barely above a whisper, lonely and eerily gentle. Rural American. A hopeful, heartbreaking whisper."
+ },
+ {
+  "id": "d_ring",
+  "who": "deputy",
+  "text": "Walter's ring.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics."
+ },
+ {
+  "id": "d_attic",
+  "who": "deputy",
+  "text": "A footlocker. Army issue.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics."
+ },
+ {
+  "id": "d_tags",
+  "who": "deputy",
+  "text": "Dog tags. Harrow, Daniel W. ...He didn't leave her. He never came home.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. Sad, slowly understanding."
+ },
+ {
+  "id": "d_after_attic",
+  "who": "deputy",
+  "text": "Padlock key. The cellar. That's where she is.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics."
+ },
+ {
+  "id": "d_cellar_open",
+  "who": "deputy",
+  "text": "Okay, Edith. Let's finish this.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. Resolved, quiet, steadying himself."
+ },
+ {
+  "id": "d_cellar",
+  "who": "deputy",
+  "text": "Colder down here.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics."
+ },
+ {
+  "id": "d_shelf",
+  "who": "deputy",
+  "text": "There's a draft behind this. And scratches on the floor.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics."
+ },
+ {
+  "id": "d_body",
+  "who": "deputy",
+  "text": "Oh, Edith. How long have you been sitting down here.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. Gentle, grieving, very quiet."
+ },
+ {
+  "id": "d_need",
+  "who": "deputy",
+  "text": "Not yet. I need what was theirs. All three.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics."
+ },
+ {
+  "id": "d_place",
+  "who": "deputy",
+  "text": "Walter. Ruth. Daniel. They're here, Edith. They're all here.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. Tender and steady, speaking to the dead."
+ },
+ {
+  "id": "m_fin1",
+  "who": "mabel",
+  "text": "Don't.",
+  "fx": "ghost",
+  "style": "A very old, frail woman in her late eighties. Thin, dry, trembling voice, slow, breathy, barely above a whisper, lonely and eerily gentle. Rural American. A single pleading word, fragile."
+ },
+ {
+  "id": "d_knot1",
+  "who": "deputy",
+  "text": "One.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. Tense, through his teeth."
+ },
+ {
+  "id": "m_fin2",
+  "who": "mabel",
+  "text": "Don't you leave me too.",
+  "fx": "ghost",
+  "style": "A very old, frail woman in her late eighties. Thin, dry, trembling voice, slow, breathy, barely above a whisper, lonely and eerily gentle. Rural American. Begging, tearful, a little louder."
+ },
+ {
+  "id": "d_knot2",
+  "who": "deputy",
+  "text": "Two.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. Tenser, louder, afraid."
+ },
+ {
+  "id": "m_fin3",
+  "who": "mabel",
+  "text": "Everybody leaves. Everybody leaves!",
+  "fx": "ghost",
+  "style": "A very old, frail woman in her late eighties. Thin, dry, trembling voice, slow, breathy, barely above a whisper, lonely and eerily gentle. Rural American. Anguished, rising to a wail on the second sentence."
+ },
+ {
+  "id": "d_knot3",
+  "who": "deputy",
+  "text": "It's alright, Edith. You're not alone. You can let go.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. Soft, kind, final."
+ },
+ {
+  "id": "m_fin4",
+  "who": "mabel",
+  "text": "STAY!",
+  "fx": "ghost",
+  "style": "A very old, frail woman in her late eighties. Thin, dry, trembling voice, slow, breathy, barely above a whisper, lonely and eerily gentle. Rural American. A raw, terrible, drawn-out scream of the single word."
+ },
+ {
+  "id": "m_end",
+  "who": "mabel",
+  "text": "...thank you.",
+  "fx": "ghost",
+  "style": "A very old, frail woman in her late eighties. Thin, dry, trembling voice, slow, breathy, barely above a whisper, lonely and eerily gentle. Rural American. At peace, a faint relieved whisper, fading."
+ },
+ {
+  "id": "m_laugh1",
+  "who": "mabel",
+  "text": "Heh heh heh heh... hee hee hee.",
+  "fx": "ghost",
+  "style": "A very old, frail woman in her late eighties. Thin, dry, trembling voice, slow, breathy, barely above a whisper, lonely and eerily gentle. Rural American. No words at all: only laughter. A very old woman giggling quietly to herself, dry, breathy and childlike, as if at a private joke. Eerie."
+ },
+ {
+  "id": "m_laugh2",
+  "who": "mabel",
+  "text": "Hm hm hm hm hm. Ha... ha ha ha.",
+  "fx": "ghost",
+  "style": "A very old, frail woman in her late eighties. Thin, dry, trembling voice, slow, breathy, barely above a whisper, lonely and eerily gentle. Rural American. No words at all: only a soft, pleased, slightly unhinged little laugh, under her breath."
+ },
+ {
+  "id": "m_cry1",
+  "who": "mabel",
+  "text": "Ohh... oh... oh no... ohh.",
+  "fx": "ghost",
+  "style": "A very old, frail woman in her late eighties. Thin, dry, trembling voice, slow, breathy, barely above a whisper, lonely and eerily gentle. Rural American. No real words: a very old woman crying softly, alone, thin wet hopeless sobs."
+ },
+ {
+  "id": "m_cry2",
+  "who": "mabel",
+  "text": "Hnnh... hh... hh... mmm... hh.",
+  "fx": "ghost",
+  "style": "A very old, frail woman in her late eighties. Thin, dry, trembling voice, slow, breathy, barely above a whisper, lonely and eerily gentle. Rural American. No words: quiet, muffled weeping, as if into her hands, with shaky breaths."
+ },
+ {
+  "id": "m_ear1",
+  "who": "mabel",
+  "text": "Stay.",
+  "fx": "ghost",
+  "style": "A very old, frail woman in her late eighties. Thin, dry, trembling voice, slow, breathy, barely above a whisper, lonely and eerily gentle. Rural American. Whispered, extremely close, right into the listener's ear. One breath. Intimate and wrong."
+ },
+ {
+  "id": "m_ear2",
+  "who": "mabel",
+  "text": "I see you.",
+  "fx": "ghost",
+  "style": "A very old, frail woman in her late eighties. Thin, dry, trembling voice, slow, breathy, barely above a whisper, lonely and eerily gentle. Rural American. Whispered, extremely close, right into the listener's ear, almost fond."
+ },
+ {
+  "id": "m_ear3",
+  "who": "mabel",
+  "text": "Don't go.",
+  "fx": "ghost",
+  "style": "A very old, frail woman in her late eighties. Thin, dry, trembling voice, slow, breathy, barely above a whisper, lonely and eerily gentle. Rural American. Whispered, extremely close, pleading, right into the listener's ear."
+ },
+ {
+  "id": "m_hum",
+  "who": "mabel",
+  "text": "Mm mm mmm, mm mm mmm, mmm mm, mmm.",
+  "fx": "ghost",
+  "style": "A very old, frail woman in her late eighties. Thin, dry, trembling voice, slow, breathy, barely above a whisper, lonely and eerily gentle. Rural American. No words: humming a slow lullaby to herself, tunelessly and very quietly, mouth closed."
+ },
+ {
+  "id": "m_mem1",
+  "who": "mabel",
+  "text": "Ruthie. Don't go. Stay for supper. Please. I've set your place.",
+  "fx": "ghost",
+  "style": "A very old, frail woman in her late eighties. Thin, dry, trembling voice, slow, breathy, barely above a whisper, lonely and eerily gentle. Rural American."
+ },
+ {
+  "id": "m_mem2",
+  "who": "mabel",
+  "text": "Grandmother Wren's book. ...It will sit with you. It will never go.",
+  "fx": "ghost",
+  "style": "A very old, frail woman in her late eighties. Thin, dry, trembling voice, slow, breathy, barely above a whisper, lonely and eerily gentle. Rural American."
+ },
+ {
+  "id": "m_mem3",
+  "who": "mabel",
+  "text": "I only want company. Please. Never let me be alone again.",
+  "fx": "ghost",
+  "style": "A very old, frail woman in her late eighties. Thin, dry, trembling voice, slow, breathy, barely above a whisper, lonely and eerily gentle. Rural American."
+ },
+ {
+  "id": "d_dawn",
+  "who": "deputy",
+  "text": "It's morning.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. Exhausted, relieved, almost a breath."
+ },
+ {
+  "id": "d_end1",
+  "who": "deputy",
+  "text": "Dispatch, Fourteen.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. Exhausted, hoarse, into the radio."
+ },
+ {
+  "id": "r_end1",
+  "who": "dispatch",
+  "text": "Fourteen, dispatch! Where have you been? You've been off the air almost five hours.",
+  "fx": "radio",
+  "style": "A calm, experienced female county sheriff's dispatcher speaking over the police radio at 3 a.m. Clipped, professional, even pace, slightly flat. American Midwest. Alarmed and relieved, faster than usual."
+ },
+ {
+  "id": "d_end2",
+  "who": "deputy",
+  "text": "I found her. She's been gone a long time. Send the coroner, and call the daughter.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. Flat, drained, gentle."
+ },
+ {
+  "id": "r_end2",
+  "who": "dispatch",
+  "text": "Copy, Fourteen. ...Stand by. I've got a call coming in on the emergency line.",
+  "fx": "radio",
+  "style": "A calm, experienced female county sheriff's dispatcher speaking over the police radio at 3 a.m. Clipped, professional, even pace, slightly flat. American Midwest. Professional, then distracted mid-sentence by something on her console."
+ },
+ {
+  "id": "r_end3",
+  "who": "dispatch",
+  "text": "Fourteen... it's the Harrow landline again.",
+  "fx": "radio",
+  "style": "A calm, experienced female county sheriff's dispatcher speaking over the police radio at 3 a.m. Clipped, professional, even pace, slightly flat. American Midwest. Hushed and frightened, almost whispering."
+ },
+ {
+  "id": "d_end3",
+  "who": "deputy",
+  "text": "...That's not possible. I'm looking right at the house.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. Cold dread, very quiet, slow."
+ },
+ {
+  "id": "m_post",
+  "who": "mabel",
+  "text": "Come back and visit.",
+  "fx": "radio",
+  "style": "A very old, frail woman in her late eighties. Thin, dry, trembling voice, slow, breathy, barely above a whisper, lonely and eerily gentle. Rural American. A gentle, inviting whisper, smiling."
+ }
+]
