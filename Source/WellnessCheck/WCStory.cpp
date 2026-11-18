@@ -932,35 +932,57 @@ void AWCDirector::ScareUnderBed()
 	if (!H || !P || !Box) return;
 	bBusy = true;
 	P->SetInputLocked(true);
+	if (!P->IsFlashlightOn()) P->SetFlashlight(true);
 	const FVector BoxFrom = Box->GetActorLocation();
 	const FVector Under = Pos(TEXT("Her_Under"));
 	const FVector Dir = (BoxFrom - Under).GetSafeNormal2D();
-	const float Reach = 150.f;                                   // from her shoulders to her fingertips, lying flat
-	const FVector Hidden = BoxFrom - Dir * (Reach + 190.f), AtBox = BoxFrom - Dir * (Reach + 6.f);
+	const FVector Left(Dir.Y, -Dir.X, 0.f);
+	const float K = 1.25f;                                       // for this she is a quarter larger: a long arm, a big hand
+	// in the Under clip her left wrist lies 92 cm ahead of her and 30 cm to her left; the fingers go on past it
+	FVector AtBox = BoxFrom - Dir * (92.f * K + 17.f) - Left * (30.f * K);
+	AtBox.Z = Under.Z;
+	const FVector Hidden = AtBox - Dir * 175.f;
 	LookAtPoint = BoxFrom + FVector(0, 0, 6);
-	LookAtUntil = Clock + 9.6;
+	LookAtUntil = Clock + 9.8;
 	Box->bEnabled = false;
-	H->Appear(FVector(Hidden.X, Hidden.Y, Under.Z), Dir.Rotation().Yaw, TEXT("Under"), true, 0.5f);
+	H->Appear(Hidden, Dir.Rotation().Yaw, TEXT("Under"), true, 0.5f);
+	H->SetActorScale3D(FVector(K));
 	H->SetGlow(0.f);
 	Tension = 0.8f;
 	SetLoop(TEXT("amb"), TEXT("amb_house"), 0.1f, 1.5f);
-	After(1.6f, [this, AtBox, Under]()
+	After(1.6f, [this, AtBox, BoxFrom, Dir]()
 	{
-		if (AWCEntity* E = Her()) { E->Slide(FVector(AtBox.X, AtBox.Y, Under.Z), 3.4f); PlayAt(TEXT("scratch_wall"), E->GetActorLocation(), 0.8f, 0.7f, 1500.f); }
+		AWCEntity* E = Her();
+		if (!E) return;
+		FVector At = AtBox;
+		const FVector Wrist = E->BoneWorld(TEXT("LeftHand")) - E->GetActorLocation();
+		const float Fwd = FVector::DotProduct(Wrist, Dir);
+		if (Fwd > 60.f && Fwd < 190.f) { At = BoxFrom - FVector(Wrist.X, Wrist.Y, 0.f) - Dir * 17.f; At.Z = AtBox.Z; }
+		UE_LOG(LogWCStory, Display, TEXT("WC: S7 wrist offset fwd %.0f side %.0f"), Fwd, FVector::DotProduct(Wrist, FVector(Dir.Y, -Dir.X, 0.f)));
+		E->Slide(At, 3.4f);
+		PlayAt(TEXT("scratch_wall"), BoxFrom, 0.8f, 0.7f, 1500.f);
 		Play2D(TEXT("sting_low"), 0.6f, EWCSnd::Music);
 	});
-	After(5.3f, [this, Box, BoxFrom, Hidden, Under, Dir]()
+	After(5.3f, [this, Box, BoxFrom, Hidden, Dir]()
 	{
 		// the fingers close; the box goes with them
+		AWCEntity* E = Her();
+		if (!E) return;
 		PlayAt(TEXT("pickup"), BoxFrom, 0.9f, 0.7f, 1200.f);
-		if (AWCEntity* E = Her()) E->Slide(FVector(Hidden.X, Hidden.Y, Under.Z), 3.0f);
-		const FVector To = BoxFrom - Dir * 128.f;
-		for (int32 i = 1; i <= 60; ++i) After(i * 0.05f, [Box, BoxFrom, To, i]() { if (IsValid(Box)) Box->SetActorLocation(FMath::Lerp(BoxFrom, To, FMath::InterpEaseInOut(0.f, 1.f, i / 60.f, 2.f))); });
 		PlayAt(TEXT("drag_floor"), BoxFrom, 0.5f, 1.3f, 1200.f);
+		const FVector HerAt = E->GetActorLocation();
+		E->Slide(Hidden, 3.2f);
+		for (int32 i = 1; i <= 66; ++i) After(i * 0.05f, [this, Box, BoxFrom, HerAt, Dir]()
+		{
+			AWCEntity* E2 = Her();
+			if (!E2 || !IsValid(Box)) return;
+			const float Back = FMath::Clamp(FVector::DotProduct(HerAt - E2->GetActorLocation(), Dir), 0.f, 100.f);
+			Box->SetActorLocation(BoxFrom - Dir * Back);
+		});
 	});
-	After(9.4f, [this, Box]()
+	After(9.6f, [this, Box]()
 	{
-		if (AWCEntity* E = Her()) E->Vanish();
+		if (AWCEntity* E = Her()) { E->Vanish(); E->SetActorScale3D(FVector(1.f)); }
 		if (IsValid(Box)) Box->bEnabled = true;
 		if (AWCCharacter* Pl = Player()) Pl->SetInputLocked(false);
 		bBusy = false;

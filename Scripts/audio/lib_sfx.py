@@ -68,6 +68,9 @@ ITEMS = {
     "door_far_02": ("own", "door_creak_long", 0, 4.0, FAR, -28, 1),
     "door_far_03": ("own", "door_slam", 0, None, "lowpass=f=600,aecho=0.8:0.8:70|130:0.4|0.25", -24, 1),
 }
+# her feet: a wet slap (library) over a heavy low thud (our own wood step, slowed).  name: (slap pitch, wood step, slap delay ms)
+HER_STEPS = {"her_step_01": (0.72, 1, 0), "her_step_02": (0.62, 3, 14), "her_step_03": (0.80, 2, 0), "her_step_04": (0.67, 5, 22)}
+SLAP = (2, "WOODImpt_Hit Blood Spill Splat Wood Impact Light Hit Squelch Small Thump 03")
 # footsteps overhead: several of our own wood steps in a row, heard through the ceiling
 STEPS_ABOVE = {"steps_above_01": ([1, 3, 2, 4, 1, 5], 0.62), "steps_above_02": ([2, 4, 1, 3], 0.9), "steps_above_03": ([5, 1, 4, 2, 3, 1, 4, 2], 0.42)}
 
@@ -137,6 +140,22 @@ def main():
             print("  ", name, round(dur(dst), 1), "s")
         except Exception as exc:
             print("  FAILED", name, str(exc)[:200])
+    for name, (pitch, wood, delay) in HER_STEPS.items():
+        dst = f"{OUT}/{name}.wav"
+        if os.path.exists(dst) and not force:
+            continue
+        try:
+            slap, origin = raw_copy(*SLAP)
+            ff(["-i", slap, "-i", f"{OUT}/step_wood_0{wood}.wav", "-filter_complex",
+                f"[0]aresample=48000,pan=mono|c0=0.5*c0+0.5*c1,asetrate=48000*{pitch},aresample=48000,lowpass=f=5200,adelay={delay}:all=1,volume=0.9[w];"
+                f"[1]asetrate=48000*0.55,aresample=48000,lowpass=f=650,volume=2.0[t];"
+                f"[w][t]amix=inputs=2:normalize=0,apad=pad_dur=0.15,areverse,afade=t=in:d=0.12,areverse,alimiter=limit=0.9,volume=1.3[o]",
+                "-map", "[o]", "-ac", "1", "-ar", "48000", "-c:a", "pcm_s16le", dst])
+            credits.append(f"- {name}: {origin} + our own step_wood_0{wood}")
+            print("  ", name, round(dur(dst), 2), "s")
+            ok += 1
+        except Exception as exc:
+            print("  FAILED", name, str(exc)[:300])
     for name, (order, gap) in STEPS_ABOVE.items():
         dst = f"{OUT}/{name}.wav"
         if os.path.exists(dst) and not force:

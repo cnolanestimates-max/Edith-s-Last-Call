@@ -143,6 +143,30 @@ for i, p in enumerate(co):
         wp_ = Vector((x + dxs, y + dy_, z + dz_))
         v_.co = inv_ @ wp_
 print("HER scream: jaw verts", n_jaw, "gap verts", n_gap)
+# SNEER: the upper lip on her left side lifts off the mouth.  BROW: the brow comes down over the eye.
+sk_sneer = mesh.shape_key_add(name="Sneer", from_mix=False)
+sk_brow = mesh.shape_key_add(name="Brow", from_mix=False)
+EYE_Z = float(ecen[2])
+n_sneer = n_brow = 0
+for i, p in enumerate(co):
+    x, y, z = float(p[0]), float(p[1]), float(p[2])
+    if y > -14.0:
+        continue
+    front = 1.0 - sstep(-19.0, -14.0, y)
+    u = z - LIP_Z
+    sx_ = x - MOUTH_X
+    if 0.75 <= u <= 5.2 and sx_ > -1.0:
+        w_ = sstep(-1.0, 2.0, sx_) * (1.0 - sstep(5.0, 9.5, sx_)) * (1.0 - sstep(2.4, 5.2, u)) * front
+        if w_ > 0.02:
+            sk_sneer.data[i].co = inv_ @ Vector((x + 0.5 * w_, y - 0.9 * w_, z + 2.4 * w_))
+            n_sneer += 1
+    bz = z - (EYE_Z + 1.6)
+    if 0.0 <= bz <= 8.0 and abs(x) < 11.0:
+        w_ = sstep(0.0, 1.2, bz) * (1.0 - sstep(3.5, 8.0, bz)) * (1.0 - sstep(7.0, 11.0, abs(x))) * front
+        if w_ > 0.02:
+            sk_brow.data[i].co = inv_ @ Vector((x * (1.0 - 0.10 * w_), y - 1.5 * w_, z - 3.0 * w_))
+            n_brow += 1
+print("HER face: sneer verts", n_sneer, "brow verts", n_brow)
 # black inside: paint every face on the lip line black in the base colour (it is a hair-thin line until she screams)
 _bsdf = next(n for n in me_.materials[0].node_tree.nodes if n.type == "BSDF_PRINCIPLED")
 _node = _bsdf.inputs["Base Color"].links[0].from_node
@@ -195,6 +219,16 @@ if "--screamshot" in argv:
         _cam.rotation_euler = (_tgt - _cam.location).to_track_quat("-Z", "Y").to_euler()
         sc.render.filepath = os.path.join(OUT, "preview", _nm + ".png")
         bpy.ops.render.render(write_still=True)
+    sk_scream.value = 0.0
+    for _nm, _sn, _br, _scr in (("sneer_1", 1.0, 0.0, 0.0), ("brow_1", 0.0, 1.0, 0.0), ("talk_1", 0.2, 0.4, 0.3), ("rest_1", 0.0, 0.0, 0.0)):
+        sk_sneer.value, sk_brow.value, sk_scream.value = _sn, _br, _scr
+        mesh.data.update()
+        bpy.context.view_layer.update()
+        _cam.location = _tgt + Vector((0.15, -1, 0.0)).normalized() * 150
+        _cam.rotation_euler = (_tgt - _cam.location).to_track_quat("-Z", "Y").to_euler()
+        sc.render.filepath = os.path.join(OUT, "preview", _nm + ".png")
+        bpy.ops.render.render(write_still=True)
+    sk_sneer.value = sk_brow.value = 0.0
     sk_scream.value = 0.0
     raise SystemExit(0)
 

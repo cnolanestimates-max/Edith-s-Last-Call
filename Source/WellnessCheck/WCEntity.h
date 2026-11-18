@@ -80,6 +80,7 @@ private:
 public:
 	/** Her mouth works for this long (she is speaking). */
 	void Talk(float Seconds) { TalkLeft = FMath::Max(TalkLeft, Seconds); }
+	FVector BoneWorld(FName Bone) const;
 private:
 	FQuat EyeQuat = FQuat::Identity;
 };

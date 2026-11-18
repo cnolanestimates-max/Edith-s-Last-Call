@@ -317,3 +317,8 @@ void AWCEntity::Tick(float Dt)
 		Eye->SetWorldRotation(EyeQuat);
 	}
 }
+
+FVector AWCEntity::BoneWorld(FName Bone) const
+{
+	return Body && Body->GetBoneIndex(Bone) != INDEX_NONE ? Body->GetBoneLocation(Bone) : GetActorLocation();
+}
