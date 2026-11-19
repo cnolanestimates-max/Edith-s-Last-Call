@@ -92,7 +92,25 @@ void AWCDirector::AutoBegin()
 		Fade = 0.f; FadeTarget = 0.f;
 		SwitchRoom(TEXT("hall"), true, false);
 		Wait(4.f);
-		if (FParse::Param(FCommandLine::Get(), TEXT("WCSmokeOnly")))
+		if (FParse::Param(FCommandLine::Get(), TEXT("WCBeamShots")))
+		{
+			AutoSteps.Add({ A_Do, TEXT("at:3760,-720,59,-90,-6"), 0.f });
+			UE_LOG(LogWCAuto, Display, TEXT("WCBEAM selected %s"), *Settings.BeamLabel());
+			Wait(1.5f); Shot(TEXT("beam_selected"));
+			for (int32 Choice = 0; Choice < FWCSettings::BeamChoices; ++Choice)
+			{
+				AutoSteps.Add({ A_Do, TEXT("beam"), static_cast<float>(Choice) });
+				Wait(1.5f);
+				Shot(*FString::Printf(TEXT("beam_%c"), 'A' + Choice));
+			}
+			AutoSteps.Add({ A_Do, TEXT("at:548,-288,92,90,-3"), 0.f });
+			Wait(1.f);
+			AutoSteps.Add({ A_Do, TEXT("check_book_focus"), 0.f });
+			Shot(TEXT("living_book"));
+			AutoSteps.Add({ A_Do, TEXT("at:220,-307,92,-65,-7"), 0.f });
+			Wait(1.f); Shot(TEXT("living_room")); Wait(1.f);
+		}
+		else if (FParse::Param(FCommandLine::Get(), TEXT("WCSmokeOnly")))
 		{
 			AutoSteps.Add({ A_Tele, TEXT("A_UpEll"), 0.f }); Wait(1.0f); AutoSteps.Add({ A_Look, TEXT("W_company_uprear"), -1.f }); Wait(0.15f); Shot(TEXT("smoke_1_hall_far"));
 			AutoSteps.Add({ A_Do, TEXT("at:2330,10,442,0,4"), 0.f }); Wait(0.25f); Shot(TEXT("smoke_2_hall_near")); Wait(0.5f); Shot(TEXT("smoke_3_hall_near_later"));
@@ -130,7 +148,7 @@ void AWCDirector::AutoBegin()
 			};
 			// 1 the front hall with its lamp on   2 the television playing   3 Edith in the hall   4 the house from the yard
 			AutoSteps.Add({ A_Do, TEXT("at:230,40,92,0,-2"), 0.f }); Wait(1.2f); Looks(TEXT("a_hall"));
-			AutoSteps.Add({ A_Do, TEXT("at:366,-400,92,-90,-14"), 0.f }); Wait(0.4f); AutoSteps.Add({ A_Do, TEXT("tvon"), 0.f }); Wait(6.5f); Looks(TEXT("b_television"));
+			AutoSteps.Add({ A_Do, TEXT("at:366,-550,92,-90,-14"), 0.f }); Wait(0.4f); AutoSteps.Add({ A_Do, TEXT("tvon"), 0.f }); Wait(6.5f); Looks(TEXT("b_television"));
 			AutoSteps.Add({ A_Do, TEXT("at:1500,0,92,180,6"), 0.f }); Wait(0.6f); AutoSteps.Add({ A_Her, TEXT("Idle"), 300.f }); Wait(0.8f); Looks(TEXT("c_edith"));
 			AutoSteps.Add({ A_Do, TEXT("at:-1500,60,144,0,8"), 0.f }); Wait(1.5f); Looks(TEXT("d_house"));
 			Wait(1.f);
@@ -186,9 +204,9 @@ void AWCDirector::AutoBegin()
 			AutoSteps.Add({ A_Do, TEXT("tvgain:1000"), 0.f }); Wait(0.5f); Shot(TEXT("tv_3c_gain1000"));
 			AutoSteps.Add({ A_Do, TEXT("tvgain:420"), 0.f });
 			AutoSteps.Add({ A_Do, TEXT("at:250,-215,92,-70,-10"), 0.f }); Wait(1.2f); Shot(TEXT("tv_4_room_lit_by_it"));
-			AutoSteps.Add({ A_Do, TEXT("at:366,-420,92,-90,-8"), 0.f }); Wait(0.5f); AutoSteps.Add({ A_Crouch, NAME_None, 1.f }); Wait(0.8f);
+			AutoSteps.Add({ A_Do, TEXT("at:366,-570,92,-90,-8"), 0.f }); Wait(0.5f); AutoSteps.Add({ A_Crouch, NAME_None, 1.f }); Wait(0.8f);
 			AutoSteps.Add({ A_Look, TEXT("tv"), 0.f }); Wait(0.6f); Shot(TEXT("tv_4b_crouched_at_the_set"));
-			if (FParse::Param(FCommandLine::Get(), TEXT("WCTVDebug"))) { AutoSteps.Add({ A_Do, TEXT("at:372,-470,92,97,4"), 0.f }); Wait(0.5f); }
+			if (FParse::Param(FCommandLine::Get(), TEXT("WCTVDebug"))) { AutoSteps.Add({ A_Do, TEXT("at:372,-620,92,97,4"), 0.f }); Wait(0.5f); }
 			AutoSteps.Add({ A_Do, TEXT("tvoff"), 0.f }); Wait(0.9f); Shot(TEXT("tv_5_dead_glass")); Wait(5.0f); Shot(TEXT("tv_6_after")); Wait(2.0f);
 		}
 		else if (FParse::Param(FCommandLine::Get(), TEXT("WCCarOnly")))
@@ -560,7 +578,17 @@ void AWCDirector::AutoTick(float Dt)
 	case A_Aim: P->SetAiming(S.F > 0.5f); Next(); return;
 	case A_Crouch: if (S.F > 0.5f) P->Crouch(); else P->UnCrouch(); Next(); return;
 	case A_Do:
-		if (S.Arg == TEXT("drawings"))
+		if (S.Arg == TEXT("beam"))
+		{
+			Settings.BeamChoice = FMath::RoundToInt(S.F);
+			P->ApplyBeamWidth();
+		}
+		else if (S.Arg == TEXT("check_book_focus"))
+		{
+			const AWCInteractable* Focused = P->GetFocus();
+			UE_LOG(LogWCAuto, Display, TEXT("WCSHELF standing focus=%s"), Focused ? *Focused->WCId.ToString() : TEXT("none"));
+		}
+		else if (S.Arg == TEXT("drawings"))
 		{
 			if (AController* C = P->GetController()) C->SetControlRotation((FVector(818.f, -430.f, P->GetActorLocation().Z + 72.f) - P->EyeLocation()).Rotation());
 		}

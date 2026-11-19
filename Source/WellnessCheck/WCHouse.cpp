@@ -10,6 +10,9 @@
 #include "Camera/CameraComponent.h"
 #include "Components/AudioComponent.h"
 #include "Components/LightComponent.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Animation/SkeletalMeshActor.h"
+#include "Engine/SkeletalMesh.h"
 #include "EngineUtils.h"
 #include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
@@ -25,6 +28,23 @@ DEFINE_LOG_CATEGORY_STATIC(LogWCHouse, Log, All);
 // ================================================================================================ set-up
 void AWCDirector::HouseBegin()
 {
+	// The authored foliage uses frozen skeletal meshes. Past the headlight and fog
+	// range the ferns disappear first, while the taller canopy keeps its silhouette.
+	int32 TreeCount = 0, FernCount = 0;
+	for (TActorIterator<ASkeletalMeshActor> It(GetWorld()); It; ++It)
+	{
+		USkeletalMeshComponent* Plant = It->GetSkeletalMeshComponent();
+		USkeletalMesh* Mesh = Plant->GetSkeletalMeshAsset();
+		if (!Mesh) continue;
+		const FString Package = Mesh->GetOutermost()->GetName();
+		if (!Package.StartsWith(TEXT("/Game/Megaplant_Library/"))) continue;
+		const bool bFern = Package.StartsWith(TEXT("/Game/Megaplant_Library/Plant_Bracken_Fern/"));
+		if (bFern) ++FernCount; else ++TreeCount;
+		Plant->SetCullDistance(bFern ? 5200.f : 10000.f);
+		Plant->ShadowCacheInvalidationBehavior = EShadowCacheInvalidationBehavior::Rigid;
+		Plant->MarkRenderStateDirty();
+	}
+	UE_LOG(LogWCHouse, Display, TEXT("WCFOREST visibility configured for %d trees and %d ferns"), TreeCount, FernCount);
 	ShowTagged(TEXT("CabinOnly"), false);
 	Rooms.Reset();
 	for (TActorIterator<AActor> It(GetWorld()); It; ++It)
@@ -381,6 +401,8 @@ void AWCDirector::BeginDrive()
 		UE_LOG(LogWCHouse, Display, TEXT("WCDRIVE the thing on the road stands %.0f m in"), ShadowDist / 100.f);
 	}
 	bDriving = true;
+	bParkedCarCollision = Car->GetActorEnableCollision();
+	Car->SetActorEnableCollision(false);
 	P->SetInputLocked(true);
 	P->SetFlashlight(false, false);
 	P->SetActorHiddenInGame(true);
@@ -499,7 +521,11 @@ void AWCDirector::EndDrive()
 		// when filming, stay until he has walked up to the house
 		After(FParse::Param(FCommandLine::Get(), TEXT("WCFilm")) ? 34.f : 7.f, [this]() { UKismetSystemLibrary::QuitGame(this, UGameplayStatics::GetPlayerController(this, 0), EQuitPreference::Quit, false); });
 	}
-	if (Car.IsValid()) Car->SetActorLocationAndRotation(CarHome, CarHomeRot);
+	if (Car.IsValid())
+	{
+		Car->SetActorLocationAndRotation(CarHome, CarHomeRot);
+		Car->SetActorEnableCollision(bParkedCarCollision);
+	}
 	Play2D(TEXT("car_stop"), 0.6f);
 	SetLoop(TEXT("car"), TEXT(""), 0.f, 1.8f);
 	UE_LOG(LogWCHouse, Display, TEXT("WCDRIVE arrived t=%.1f"), PlaySeconds);

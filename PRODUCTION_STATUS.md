@@ -47,10 +47,10 @@ Written and compiled but NOT yet in the level or imported (do these in order, no
 5. Sound (pass 111, compiled, unheard): wind loop removed (it was the repeating thump: `Scripts/audio/find_hits.py`), random
    noise timer replaced by the trigger table `GWCCues` in `WCEvents.cpp`, whispers kept on a long timer, TV soundtrack quieter.
    `-WCSndLog` logs every one-shot (`WCSND`).
-6. Seeing (pass 112, compiled, unseen): flashlight throw beam (11 degrees, 10 m), wide beam 6.4 m, her far glow up to 2.6x at 15 m.
-7. Edith's skin: she picked look C (dark and wet) and asked for more texture. `darkwet2` / `darkwet3` exist in
-   `Scripts/her/her_look.py`; sharp previews were rendering to `SourceArt/Her/look/` at 16:50. Send her those, then
-   `her_look.py ... bake <name>` and import as the new `M_Her` maps.
+6. Flashlight playtest follow-up. Cheyenne selected E (+60% beam width). New settings default to E. The flashlight output
+   is 20% brighter than the width-comparison build. The throw reaches 10 m and the main beam reaches 6.4 m.
+7. Edith's approved look C is in the game. The face textures are in `SourceArt/Her/look_c`. The `her_skin`
+   import step updates the base color, normal and roughness maps used by her existing material.
 8. Still open from before: TTS `r_end3` and `m_whyleave` (one attempt each), real-pace spacing check when she allows runs again,
    honest re-score, QA report, menu test, cruiser Ford badge, packaging only when asked.
 

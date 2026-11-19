@@ -43,6 +43,8 @@ private:
 	struct FItem { FString Label; FString Value; FName Id; bool bSlider = false; float Frac = 0.f; };
 
 	float Px(float P) const;
+	bool CanvasMouse(float& X, float& Y) const;
+	void CycleBeam(AWCDirector* D, int32 Direction);
 	FVector2D Measure(const FString& S, float PxHeight, bool bTitle = false) const;
 	void Text(const FString& S, float X, float Y, float PxHeight, const FLinearColor& C, int32 Align = 0, bool bTitle = false, bool bShadow = true);
 	float Wrapped(const FString& S, float X, float Y, float MaxW, float PxHeight, const FLinearColor& C, int32 Align = 0, bool bShadow = true, bool bMeasureOnly = false);
@@ -91,6 +93,7 @@ private:
 	double RealNow = 0.0;
 	double ScreenOpenedAt = 0.0;
 	bool bSettingsDirty = false;
+	bool bDisplayModePending = false;
 	FString MenuTestDir;
 	int32 MenuTestStage = 0;
 	double MenuTestAt = 0.0;

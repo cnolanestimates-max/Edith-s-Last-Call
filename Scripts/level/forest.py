@@ -6,6 +6,7 @@ import random as _rnd
 _fr = _rnd.Random(9)
 FO = "Forest"
 MP = "/Game/Megaplant_Library"
+exec(open(os.path.join(HERE, "forest_meshes.py"), encoding="utf-8").read())
 
 # ---------------------------------------------------------------- the road (control points; the car follows the same curve)
 CRX, CRY = -1480.0, 300.0
@@ -60,6 +61,9 @@ def in_yard(x, y):
 
 # ---------------------------------------------------------------- trees
 def sk(path):
+    rigid = forest_mesh_path(path.rsplit("/", 1)[-1])
+    if eal.does_asset_exist(rigid):
+        return eal.load_asset(rigid)
     return eal.load_asset(path) if eal.does_asset_exist(path) else None
 
 
@@ -94,23 +98,30 @@ def lean_skel(c):
 _lean_warned = set()
 
 
+def plant_actor(mesh, loc, rot):
+    if isinstance(mesh, unreal.StaticMesh):
+        a = actors.spawn_actor_from_class(unreal.StaticMeshActor, loc, rot)
+        c = a.static_mesh_component
+        c.set_static_mesh(mesh)
+        configure_forest_mesh(c, mesh)
+    else:
+        a = actors.spawn_actor_from_class(unreal.SkeletalMeshActor, loc, rot)
+        c = a.skeletal_mesh_component
+        c.set_skeletal_mesh_asset(mesh)
+        c.set_collision_profile_name("NoCollision")
+        lean_skel(c)
+        c.set_editor_property("component_use_fixed_skel_bounds", True)
+    return a, c
+
+
 def tree(mesh, x, y, scale, sub="Trees", lean=0.0, toward=None):
     rot = R(_fr.uniform(0, 360))
     if lean and toward:
         # spun about its own trunk first, then tipped toward a point (the road)
         rot = unreal.MathLibrary.compose_rotators(rot, R(math.degrees(math.atan2(toward[1] - y, toward[0] - x)), -lean))
-    a = actors.spawn_actor_from_class(unreal.SkeletalMeshActor, V(x, y, -44 - (18 if lean > 12 else 0)), rot)
+    a, _ = plant_actor(mesh, V(x, y, -44 - (18 if lean > 12 else 0)), rot)
     a.set_actor_label("Pine")
-    c = a.skeletal_mesh_component
-    c.set_skeletal_mesh_asset(mesh)
     a.set_actor_scale3d(V(scale, scale, scale * _fr.uniform(0.92, 1.1)))
-    c.set_collision_profile_name("NoCollision")
-    lean_skel(c)
-    for prop, val in (("component_use_fixed_skel_bounds", True),):
-        try:
-            c.set_editor_property(prop, val)
-        except Exception:
-            pass
     a.set_folder_path(f"House/{FO}/{sub}")
     count["tree"] += 1
     return a
@@ -209,15 +220,13 @@ for i in range(0, len(SAMPLES) - 1, 1):
             bx, by = x0 - uy * bo + ux * _fr.uniform(-130, 130), y0 + ux * bo + uy * _fr.uniform(-130, 130)
             place(_fr.choice(("Bramble_Bush_Dead", "Bush_Thorny_Dead")), bx, by, -43, _fr.uniform(0, 360), FO + "/Under", scale=_fr.uniform(0.8, 1.6), collide=False)
         for k in range(6):
-            a = actors.spawn_actor_from_class(unreal.SkeletalMeshActor, V(px + _fr.uniform(-150, 150), py + _fr.uniform(-150, 150), -42), R(_fr.uniform(0, 360)))
+            loc = V(px + _fr.uniform(-150, 150), py + _fr.uniform(-150, 150), -42)
+            rot = R(_fr.uniform(0, 360))
+            a, c = plant_actor(_fr.choice(FERNS), loc, rot)
             a.set_actor_label("Fern")
-            c = a.skeletal_mesh_component
-            c.set_skeletal_mesh_asset(_fr.choice(FERNS))
             s_ = _fr.uniform(1.4, 2.5)
             a.set_actor_scale3d(V(s_, s_, s_))
-            c.set_collision_profile_name("NoCollision")
             c.set_editor_property("cast_shadow", False)
-            lean_skel(c)
             a.set_folder_path(f"House/{FO}/Ferns")
         n_under += 1
 # the thing on the road: half way in, at the right-hand edge of the dirt, facing the car that is coming

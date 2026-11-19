@@ -4,7 +4,10 @@
 #include "WCWorld.h"
 
 #include "CanvasItem.h"
+#include "Containers/Ticker.h"
 #include "Engine/Canvas.h"
+#include "Engine/GameViewportClient.h"
+#include "SceneView.h"
 #include "Engine/Font.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
@@ -73,6 +76,17 @@ void AWCHUD::BeginPlay()
 float AWCHUD::Px(float P) const
 {
 	return Canvas ? P * Canvas->SizeY / 1080.f : P;
+}
+
+bool AWCHUD::CanvasMouse(float& X, float& Y) const
+{
+	if (!GetOwningPlayerController()->GetMousePosition(X, Y)) return false;
+	if (Canvas->SceneView)
+	{
+		X -= Canvas->SceneView->UnscaledViewRect.Min.X;
+		Y -= Canvas->SceneView->UnscaledViewRect.Min.Y;
+	}
+	return true;
 }
 
 FVector2D AWCHUD::Measure(const FString& S, float PxHeight, bool bTitle) const
@@ -203,7 +217,16 @@ void AWCHUD::DrawHUD()
 	else if (D->Mode == EWCMode::Menu && bEsc && Screen != EWCScreen::Main) Open(EWCScreen::Main);
 	if ((D->Mode == EWCMode::Credits || D->Mode == EWCMode::Ending) && bEsc) D->QuitToMenu();
 
-	if (D->Mode == EWCMode::Playing && Screen == EWCScreen::None) DrawGame(D);
+	if (D->Mode == EWCMode::Playing && Screen == EWCScreen::None)
+	{
+		AWCCharacter* Pl = D->Player();
+		if (Pl && !Pl->IsInputLocked() && !D->ActiveNote.IsValid() && !D->IsDriving())
+		{
+			if (PC->WasInputKeyJustPressed(EKeys::LeftBracket)) CycleBeam(D, -1);
+			else if (PC->WasInputKeyJustPressed(EKeys::RightBracket)) CycleBeam(D, 1);
+		}
+		DrawGame(D);
+	}
 	if (D->Fade > 0.003f) Box(0, 0, Canvas->SizeX, Canvas->SizeY, FLinearColor(0, 0, 0, D->Fade));
 	if (D->Mode == EWCMode::Playing && Screen == EWCScreen::None && D->Fade > 0.5f)
 	{
@@ -288,6 +311,16 @@ void AWCHUD::DrawHUD()
 		static const TCHAR* Names[] = { TEXT("menu_main"), TEXT("menu_settings"), TEXT("menu_controls") };
 		if (MenuTestStage < 3)
 		{
+			if (FParse::Param(FCommandLine::Get(), TEXT("WCDisplayTest")) && GetWorld()->GetGameViewport())
+			{
+				FViewport* View = GetWorld()->GetGameViewport()->Viewport;
+				if (View)
+				{
+					UE_LOG(LogTemp, Display, TEXT("WCDISPLAY selected=%d fullscreen=%d size=%s"),
+						AWCDirector::Settings.bFullscreen, View->IsFullscreen(), *View->GetSizeXY().ToString());
+					if (MenuTestStage < 2) { FItem Toggle; Toggle.Id = TEXT("full"); Activate(D, Toggle, 0); }
+				}
+			}
 			FScreenshotRequest::RequestScreenshot(MenuTestDir / (FString(Names[MenuTestStage]) + TEXT(".png")), true, false);
 			++MenuTestStage;
 			MenuTestAt = RealNow + 1.5;
@@ -480,6 +513,7 @@ void AWCHUD::BuildItems(AWCDirector* D, TArray<FItem>& Out) const
 		Add(TEXT("Invert look"), OnOff(S.bInvertY), TEXT("invert"));
 		Add(TEXT("Field of view"), FString::Printf(TEXT("%d"), FMath::RoundToInt(S.FOV)), TEXT("fov"), true, (S.FOV - 65.f) / 40.f);
 		Add(TEXT("Brightness"), FString::Printf(TEXT("%.2f"), S.Gamma), TEXT("gamma"), true, (S.Gamma - 1.6f) / 1.4f);
+		Add(TEXT("Flashlight beam width"), S.BeamLabel(), TEXT("beam"));
 		Add(TEXT("Master volume"), Pct(S.VolMaster), TEXT("vmaster"), true, S.VolMaster);
 		Add(TEXT("Effects volume"), Pct(S.VolSFX), TEXT("vsfx"), true, S.VolSFX);
 		Add(TEXT("Music volume"), Pct(S.VolMusic), TEXT("vmusic"), true, S.VolMusic);
@@ -500,6 +534,15 @@ void AWCHUD::BuildItems(AWCDirector* D, TArray<FItem>& Out) const
 	}
 }
 
+void AWCHUD::CycleBeam(AWCDirector* D, int32 Direction)
+{
+	FWCSettings& S = AWCDirector::Settings;
+	S.BeamChoice = (S.BeamChoice + (Direction < 0 ? -1 : 1) + S.BeamChoices) % S.BeamChoices;
+	if (AWCCharacter* P = D->Player()) P->ApplyBeamWidth();
+	S.Save();
+	if (Screen == EWCScreen::None) D->ShowToast(TEXT("Flashlight ") + S.BeamLabel());
+}
+
 void AWCHUD::Activate(AWCDirector* D, const FItem& It, int32 Dir)
 {
 	FWCSettings& S = AWCDirector::Settings;
@@ -516,6 +559,24 @@ void AWCHUD::Activate(AWCDirector* D, const FItem& It, int32 Dir)
 	if (Id == TEXT("restart") && bPress) { SetPaused(false); D->RestartFromCheckpoint(); return; }
 	if (Id == TEXT("tomenu") && bPress) { SetPaused(false); D->QuitToMenu(); return; }
 	if (Id == TEXT("back") && bPress) { Open(Back); return; }
+	if (Id == TEXT("beam")) { CycleBeam(D, Dir); return; }
+	if (Id == TEXT("full"))
+	{
+		if (bDisplayModePending) return;
+		bDisplayModePending = true;
+		ScreenOpenedAt = FPlatformTime::Seconds();
+		S.bFullscreen = !S.bFullscreen;
+		S.Save();
+		D->Play2D(TEXT("ui_tick"), 0.5f);
+		// Resizing draws the viewport synchronously. Finish this HUD frame before applying it.
+		FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateWeakLambda(this, [this](float)
+		{
+			AWCDirector::Settings.ApplyDisplayMode(GetWorld());
+			bDisplayModePending = false;
+			return false;
+		}));
+		return;
+	}
 
 	if (Id == TEXT("sens")) S.Sensitivity = FMath::Clamp(S.Sensitivity + 0.1f * Step, 0.2f, 3.f);
 	else if (Id == TEXT("invert")) S.bInvertY = !S.bInvertY;
@@ -530,7 +591,6 @@ void AWCHUD::Activate(AWCDirector* D, const FItem& It, int32 Dir)
 	else if (Id == TEXT("shake")) S.bCameraShake = !S.bCameraShake;
 	else if (Id == TEXT("picture")) S.Filter = (S.Filter + (Dir < 0 ? 5 : 1)) % 6;
 	else if (Id == TEXT("quality")) S.Quality = (S.Quality + (Dir < 0 ? 3 : 1)) % 4;
-	else if (Id == TEXT("full")) S.bFullscreen = !S.bFullscreen;
 	else if (Id == TEXT("vsync")) S.bVSync = !S.bVSync;
 	else bChanged = false;
 	if (bChanged)
@@ -576,7 +636,7 @@ void AWCHUD::DrawMenu(AWCDirector* D)
 	{
 		static const TCHAR* Rows[][2] = {
 			{ TEXT("Move"), TEXT("W A S D") }, { TEXT("Look"), TEXT("Mouse") }, { TEXT("Run"), TEXT("Left Shift") },
-			{ TEXT("Crouch"), TEXT("C or Left Ctrl") }, { TEXT("Flashlight"), TEXT("F") }, { TEXT("Use / read / open"), TEXT("E") },
+			{ TEXT("Crouch"), TEXT("C or Left Ctrl") }, { TEXT("Flashlight"), TEXT("F") }, { TEXT("Flashlight beam width"), TEXT("[  /  ]") }, { TEXT("Use / read / open"), TEXT("E") },
 			{ TEXT("Raise pistol"), TEXT("Hold Right Mouse") }, { TEXT("Fire"), TEXT("Left Mouse") }, { TEXT("Reload"), TEXT("R") },
 			{ TEXT("Inventory and objective"), TEXT("Tab or I") }, { TEXT("Pause"), TEXT("Esc") } };
 		for (const auto& R : Rows)
@@ -602,7 +662,7 @@ void AWCHUD::DrawMenu(AWCDirector* D)
 	}
 	if (Move != 0 && Items.Num() > 0) { Sel = (Sel + Move + Items.Num()) % Items.Num(); D->Play2D(TEXT("ui_tick"), 0.35f); }
 	float MX = 0.f, MY = 0.f;
-	const bool bMouse = PC->GetMousePosition(MX, MY);
+	const bool bMouse = CanvasMouse(MX, MY);
 	const bool bClick = !bFresh && PC->WasInputKeyJustPressed(EKeys::LeftMouseButton);
 
 	const bool bSettings = Screen == EWCScreen::Settings;
@@ -837,7 +897,7 @@ void AWCHUD::DrawInventory(AWCDirector* D)
 	int32 Move = 0, Side = 0;
 	bool bGo = false;
 	float MX = 0.f, MY = 0.f;
-	const bool bMouse = PC->GetMousePosition(MX, MY);
+	const bool bMouse = CanvasMouse(MX, MY);
 	const float DX = MX - InvMX, DY = MY - InvMY;
 	const bool bMouseMoved = bMouse && (FMath::Abs(DX) > 0.5f || FMath::Abs(DY) > 0.5f);
 	InvMX = MX; InvMY = MY;

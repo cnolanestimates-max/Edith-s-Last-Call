@@ -4,6 +4,7 @@
 #include "WCWorld.h"
 
 #include "Camera/CameraActor.h"
+#include "Camera/CameraComponent.h"
 #include "Components/AudioComponent.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
@@ -37,6 +38,8 @@ void FWCSettings::Load()
 	GConfig->GetBool(Sec, TEXT("InvertY"), bInvertY, Ini);
 	GConfig->GetFloat(Sec, TEXT("FOV"), FOV, Ini);
 	GConfig->GetFloat(Sec, TEXT("Gamma"), Gamma, Ini);
+	GConfig->GetInt(Sec, TEXT("FlashlightBeamChoice"), BeamChoice, Ini);
+	BeamChoice = FMath::Clamp(BeamChoice, 0, BeamChoices - 1);
 	GConfig->GetFloat(Sec, TEXT("VolMaster"), VolMaster, Ini);
 	GConfig->GetFloat(Sec, TEXT("VolSFX"), VolSFX, Ini);
 	GConfig->GetFloat(Sec, TEXT("VolMusic"), VolMusic, Ini);
@@ -62,6 +65,7 @@ void FWCSettings::Save() const
 	GConfig->SetBool(Sec, TEXT("InvertY"), bInvertY, Ini);
 	GConfig->SetFloat(Sec, TEXT("FOV"), FOV, Ini);
 	GConfig->SetFloat(Sec, TEXT("Gamma"), Gamma, Ini);
+	GConfig->SetInt(Sec, TEXT("FlashlightBeamChoice"), BeamChoice, Ini);
 	GConfig->SetFloat(Sec, TEXT("VolMaster"), VolMaster, Ini);
 	GConfig->SetFloat(Sec, TEXT("VolSFX"), VolSFX, Ini);
 	GConfig->SetFloat(Sec, TEXT("VolMusic"), VolMusic, Ini);
@@ -83,11 +87,6 @@ void FWCSettings::Apply(UObject* WorldContext) const
 	{
 		U->SetOverallScalabilityLevel(Quality);
 		U->SetVSyncEnabled(bVSync);
-#if !WITH_EDITOR
-		U->SetFullscreenMode(bFullscreen ? EWindowMode::WindowedFullscreen : EWindowMode::Windowed);
-		if (!bFullscreen) U->SetScreenResolution(FIntPoint(1600, 900));
-		U->ApplyResolutionSettings(false);
-#endif
 		U->ApplyNonResolutionSettings();
 	}
 	if (AWCDirector* D = AWCDirector::Get(WorldContext))
@@ -97,6 +96,22 @@ void FWCSettings::Apply(UObject* WorldContext) const
 		int32 Forced = 0;
 		if (!FParse::Value(FCommandLine::Get(), TEXT("WCFilter="), Forced)) D->SetFilter(Filter);
 	}
+}
+
+void FWCSettings::ApplyDisplayMode(UWorld* World) const
+{
+	// The desktop shortcut uses the editor executable in standalone -game mode.
+	if (!World || World->WorldType != EWorldType::Game || FParse::Param(FCommandLine::Get(), TEXT("RenderOffscreen"))) return;
+	UGameUserSettings* U = GEngine ? GEngine->GetGameUserSettings() : nullptr;
+	if (!U) return;
+	const FIntPoint Desktop = U->GetDesktopResolution();
+	if (Desktop.X <= 0 || Desktop.Y <= 0) return;
+	const FIntPoint Window(FMath::Min(1280, Desktop.X), FMath::Min(720, Desktop.Y));
+	U->SetFullscreenMode(bFullscreen ? EWindowMode::WindowedFullscreen : EWindowMode::Windowed);
+	U->SetScreenResolution(bFullscreen ? Desktop : Window);
+	U->ApplyResolutionSettings(false);
+	U->ConfirmVideoMode();
+	U->SaveSettings();
 }
 
 // ---------------------------------------------------------------------------------------------- lifetime
@@ -134,6 +149,7 @@ void AWCDirector::BeginPlay()
 	Rng.Initialize(FPlatformTime::Cycles());
 	Settings.Load();
 	Settings.Apply(this);
+	Settings.ApplyDisplayMode(GetWorld());
 	for (TActorIterator<AWCEntity> It(GetWorld()); It; ++It) { HerActor = *It; break; }
 	for (TActorIterator<AWCTrigger> It(GetWorld()); It; ++It) Triggers.Add(*It);
 	// flies over everything that rots
@@ -194,20 +210,37 @@ void AWCDirector::BeginPlay()
 	if (Start == 0)
 	{
 		Mode = EWCMode::Menu;
+		// Warm the small set of sounds that otherwise synchronously load at departure,
+		// on the radio, or as the camera hands back to the player.
+		for (const TCHAR* Id : { TEXT("amb_car"), TEXT("radio_click"), TEXT("car_stop"), TEXT("car_door"),
+			TEXT("VO/d_arrive1"), TEXT("VO/r_arrive1"), TEXT("VO/r_arrive2"), TEXT("VO/d_arrive3"),
+			TEXT("VO/d_arrive2"), TEXT("VO/r_arrive3"), TEXT("VO/d_arrive4") })
+		{
+			const FString Name(Id);
+			const FSoftObjectPath Path(FString::Printf(TEXT("/Game/WC/Audio/%s.%s"), Id, *FPaths::GetCleanFilename(Name)));
+			Path.LoadAsync(FLoadSoftObjectPathAsyncDelegate::CreateWeakLambda(this, [this, Name](const FSoftObjectPath&, UObject* Object)
+			{
+				if (USoundBase* Sound = Cast<USoundBase>(Object)) SoundCache.Add(Name, Sound);
+			}));
+		}
 		if (APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0))
 		{
-			if (AActor* Cam = Find(TEXT("MenuCam"))) PC->SetViewTargetWithBlend(Cam, 0.f);
+			if (ACameraActor* Cam = Cast<ACameraActor>(Find(TEXT("MenuCam"))))
+			{
+				Cam->GetCameraComponent()->bConstrainAspectRatio = false;
+				PC->SetViewTargetWithBlend(Cam, 0.f);
+			}
 		}
-					SetLoop(TEXT("amb"), TEXT("amb_night"), 0.9f, 2.f);
-			SetLoop(TEXT("music"), TEXT("music_menu"), 0.7f, 4.f, EWCSnd::Music);
-			HouseBegin();
-		}
+		SetLoop(TEXT("amb"), TEXT("amb_night"), 0.9f, 2.f);
+		SetLoop(TEXT("music"), TEXT("music_menu"), 0.7f, 4.f, EWCSnd::Music);
+		HouseBegin();
+	}
 	else
 	{
 		Mode = EWCMode::Playing;
-					const bool bLoaded = Start == 2 && DoLoad();
-			HouseBegin();
-			StoryBegin(bLoaded);
+		const bool bLoaded = Start == 2 && DoLoad();
+		HouseBegin();
+		StoryBegin(bLoaded);
 		if (bAuto) AutoBegin();
 	}
 }
@@ -255,7 +288,7 @@ void AWCDirector::Tick(float Dt)
 	}
 	TickAudio(Dt);
 	TickLights(Dt);
-	TickFlies(Dt);
+	if (!bDriving) TickFlies(Dt);
 }
 
 void AWCDirector::TickFlies(float Dt)
@@ -330,15 +363,28 @@ static void Reopen(AWCDirector* D)
 
 void AWCDirector::StartNewGame()
 {
+	if (Mode != EWCMode::Menu) return;
 	UGameplayStatics::DeleteGameInSlot(SaveSlot, 0);
-	PendingStart = 1;
-	Reopen(this);
+	StartFromMenu(false);
 }
 
 void AWCDirector::ContinueGame()
 {
-	PendingStart = HasSave() ? 2 : 1;
-	Reopen(this);
+	if (Mode == EWCMode::Menu) StartFromMenu(true);
+}
+
+void AWCDirector::StartFromMenu(bool bContinue)
+{
+	// The menu camera is already in a fresh, initialized House. Traveling to it again
+	// discards the loaded world and interrupts the opening on the next render frame.
+	Mode = EWCMode::Playing;
+	Clock = 0.0;
+	UGameplayStatics::SetGamePaused(this, false);
+	const bool bLoaded = bContinue && DoLoad();
+	Fade = 1.f;
+	FadeTarget = 1.f;
+	StoryBegin(bLoaded);
+	UE_LOG(LogWC, Display, TEXT("WCSTART from main menu: %s"), bLoaded ? TEXT("checkpoint") : TEXT("new game"));
 }
 
 void AWCDirector::RestartFromCheckpoint()

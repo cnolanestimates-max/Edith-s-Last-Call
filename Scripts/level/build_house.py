@@ -959,6 +959,8 @@ exec(open(os.path.join(HERE, "lighting.py"), encoding="utf-8").read())
 exec(open(os.path.join(HERE, "memory.py"), encoding="utf-8").read())
 exec(open(os.path.join(HERE, "switches.py"), encoding="utf-8").read())
 exec(open(os.path.join(HERE, "forest.py"), encoding="utf-8").read())
+exec(open(os.path.join(HERE, "living_room.py"), encoding="utf-8").read())
+enlarge_living_room()
 
 if not level_editor.save_current_level():
     raise RuntimeError("could not save " + MAP)

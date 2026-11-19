@@ -149,6 +149,26 @@ def usage(m, what):
         log(f"usage {what}: {exc}")
 
 
+def step_her_skin():
+    # Both the full character import and material-only updates use the approved
+    # maps. Keep the texture object paths stable for the mesh and corpse instance.
+    folder = G + "/Her"
+    maps = ("BaseColor", "Normal", "Roughness")
+    paths = [f"{SRC}/Her/look_c/T_Her_{name}.png" for name in maps]
+    for path in paths:
+        if not os.path.isfile(path):
+            raise FileNotFoundError(path)
+    imported = import_files(paths, folder)
+    textures = [tex_settings(f"{folder}/T_Her_{name}", name == "BaseColor", normal=name == "Normal") for name in maps]
+    if len(imported) != len(maps) or not all(textures):
+        raise RuntimeError(f"Edith C texture import incomplete: {imported}")
+    for texture in textures:
+        if texture.blueprint_get_size_x() != 4096 or texture.blueprint_get_size_y() != 4096:
+            raise RuntimeError(f"Unexpected texture dimensions for {texture.get_name()}")
+    log(f"Edith C skin imported: {imported}")
+    return textures
+
+
 def step_her():
     d = SRC + "/Her/export"
     H = G + "/Her"
@@ -166,10 +186,7 @@ def step_her():
         a = eal.load_asset(f"{H}/A_Her_{c}")
         log(f"her clip {c}: {p} -> {a.get_play_length() if a else 'FAILED'} s")
     # textures + material
-    import_files([f"{d}/T_Her_{k}.png" for k in ("BaseColor", "Normal", "Roughness")], H)
-    bc = tex_settings(H + "/T_Her_BaseColor", True)
-    nm = tex_settings(H + "/T_Her_Normal", False, normal=True)
-    rg = tex_settings(H + "/T_Her_Roughness", False)
+    bc, nm, rg = step_her_skin()
     if eal.does_asset_exist(H + "/M_Her"):
         eal.delete_asset(H + "/M_Her")
     m = tools.create_asset("M_Her", H, unreal.Material, unreal.MaterialFactoryNew())
@@ -504,7 +521,7 @@ exec(open(ROOT + "/Scripts/level/import_surfaces.py", encoding="utf-8").read())
 exec(open(ROOT + "/Scripts/level/import_variants.py", encoding="utf-8").read())
 exec(open(ROOT + "/Scripts/level/import_items.py", encoding="utf-8").read())
 
-for name, fn in (("kit", step_kit), ("her", step_her), ("mats", step_mats), ("audio", step_audio), ("tex", step_tex), ("props", step_props), ("decals", step_decals), ("extra", step_extra_mats), ("mega", step_mega), ("variants", step_variants), ("drawings", step_drawings), ("items", step_items)):
+for name, fn in (("kit", step_kit), ("her", step_her), ("her_skin", step_her_skin), ("mats", step_mats), ("audio", step_audio), ("tex", step_tex), ("props", step_props), ("decals", step_decals), ("extra", step_extra_mats), ("mega", step_mega), ("variants", step_variants), ("drawings", step_drawings), ("items", step_items)):
     if name in STEPS:
         try:
             fn()

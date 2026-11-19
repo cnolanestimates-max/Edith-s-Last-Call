@@ -30,6 +30,10 @@ struct FWCSettings
 	bool bInvertY = false;
 	float FOV = 85.f;
 	float Gamma = 2.2f;
+	static constexpr int32 BeamChoices = 5;
+	int32 BeamChoice = 4;       // E: 60% wider than the original flashlight.
+	int32 BeamWidthPercent() const { return 20 + 10 * BeamChoice; }
+	FString BeamLabel() const { return FString::Printf(TEXT("%c  (+%d%%)"), 'A' + BeamChoice, BeamWidthPercent()); }
 	float VolMaster = 1.f;
 	float VolSFX = 1.f;
 	float VolMusic = 0.8f;
@@ -44,6 +48,7 @@ struct FWCSettings
 	void Load();
 	void Save() const;
 	void Apply(UObject* WorldContext) const;
+	void ApplyDisplayMode(UWorld* World) const;
 };
 
 UCLASS()
@@ -205,6 +210,7 @@ protected:
 private:
 	// story (WCStory.cpp)
 	void StoryBegin(bool bFromSave);
+	void StartFromMenu(bool bContinue);
 	void StoryEvent(FName Id);
 	void StoryTick(float Dt);
 	void ApplyWorldState();
@@ -242,6 +248,7 @@ private:
 	void StalkShot();
 	void EndStalk(bool bDriven);
 	bool bDriving = false;
+	bool bParkedCarCollision = false;
 	TArray<FVector> DrivePts;
 	TArray<float> DriveLen;
 	float DriveTotal = 0.f, DriveDist = 0.f, DriveSpeed = 0.f, DriveHeading = 0.f;

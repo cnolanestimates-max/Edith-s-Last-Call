@@ -13,4 +13,4 @@ if not errorlevel 1 (
   pause
   exit /b 1
 )
-start "" "%UE%" "C:\GameDev\Unreal\WellnessCheck\WellnessCheck.uproject" /Game/WC/Maps/House -game -fullscreen -nosplash -log
+start "" "%UE%" "%~dp0WellnessCheck.uproject" /Game/WC/Maps/House -game -nosplash %*

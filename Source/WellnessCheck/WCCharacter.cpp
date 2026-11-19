@@ -34,6 +34,7 @@ AWCCharacter::AWCCharacter()
 	Cam->SetupAttachment(GetCapsuleComponent());
 	Cam->SetRelativeLocation(FVector(0.f, 0.f, 64.f));
 	Cam->bUsePawnControlRotation = false;
+	Cam->bConstrainAspectRatio = false;
 	Cam->SetFieldOfView(85.f);
 	Cam->PostProcessBlendWeight = 0.f;
 
@@ -42,8 +43,6 @@ AWCCharacter::AWCCharacter()
 	Flash->SetRelativeLocation(FVector(50.f, -23.f, -22.f));
 	Flash->SetIntensityUnits(ELightUnits::Lumens);
 	Flash->SetIntensity(0.f);
-	Flash->SetInnerConeAngle(12.f);
-	Flash->SetOuterConeAngle(37.f);                 // 20% wider
 	Flash->SetAttenuationRadius(640.f);             // longer again (was 510, before that 390)
 	Flash->SetLightColor(FLinearColor(1.f, 0.91f, 0.78f));
 	Flash->SetSourceRadius(1.5f);
@@ -56,8 +55,6 @@ AWCCharacter::AWCCharacter()
 	Spill->SetupAttachment(Flash);
 	Spill->SetIntensityUnits(ELightUnits::Lumens);
 	Spill->SetIntensity(0.f);
-	Spill->SetInnerConeAngle(24.f);
-	Spill->SetOuterConeAngle(60.f);
 	Spill->SetAttenuationRadius(390.f);
 	Spill->SetLightColor(FLinearColor(1.f, 0.9f, 0.76f));
 	Spill->SetCastShadows(false);
@@ -68,8 +65,6 @@ AWCCharacter::AWCCharacter()
 	Throw->SetupAttachment(Flash);
 	Throw->SetIntensityUnits(ELightUnits::Lumens);
 	Throw->SetIntensity(0.f);
-	Throw->SetInnerConeAngle(4.f);
-	Throw->SetOuterConeAngle(11.f);
 	Throw->SetAttenuationRadius(1000.f);
 	Throw->SetLightColor(FLinearColor(1.f, 0.92f, 0.80f));
 	Throw->SetSourceRadius(1.f);
@@ -228,6 +223,28 @@ void AWCCharacter::BeginPlay()
 void AWCCharacter::ApplySettings()
 {
 	Cam->SetFieldOfView(AWCDirector::Settings.FOV);
+	ApplyBeamWidth();
+}
+
+void AWCCharacter::ApplyBeamWidth()
+{
+	const float Width = 1.f + AWCDirector::Settings.BeamWidthPercent() / 100.f;
+	const auto SetCone = [Width](USpotLightComponent* Light, float Inner, float Outer)
+	{
+		// On a wall at distance d, radius = d * tan(half-angle).
+		const auto HalfAngle = [Width](float Degrees)
+		{
+			return FMath::Atan(Width * FMath::Tan(FMath::DegreesToRadians(Degrees)));
+		};
+		const float NewOuter = HalfAngle(Outer);
+		Light->SetInnerConeAngle(FMath::RadiansToDegrees(HalfAngle(Inner)));
+		Light->SetOuterConeAngle(FMath::RadiansToDegrees(NewOuter));
+		// UE distributes lumens across the cone's solid angle. Keep centre illuminance.
+		return (1.f - FMath::Cos(NewOuter)) / (1.f - FMath::Cos(FMath::DegreesToRadians(Outer)));
+	};
+	FlashFluxScale = SetCone(Flash, 12.f, 37.f);
+	SpillFluxScale = SetCone(Spill, 24.f, 60.f);
+	ThrowFluxScale = SetCone(Throw, 4.f, 11.f);
 }
 
 FVector AWCCharacter::EyeLocation() const { return Cam->GetComponentLocation(); }
@@ -479,6 +496,8 @@ void AWCCharacter::Tick(float Dt)
 	Super::Tick(Dt);
 	Clock += Dt;
 	AWCDirector* D = AWCDirector::Get(this);
+	// Both cameras have their own view target. The deputy and his dust remain at the gate.
+	if (D && (D->Mode == EWCMode::Menu || D->IsDriving())) return;
 	const FWCSettings& S = AWCDirector::Settings;
 	UCharacterMovementComponent* M = GetCharacterMovement();
 	const bool bBlocked = Blocked();
@@ -594,9 +613,9 @@ void AWCCharacter::Tick(float Dt)
 		const float N = FMath::Sin(Clock * 61.f) * FMath::Sin(Clock * 23.f + 1.3f);
 		Level *= FMath::Clamp(1.f - FlickerDepth * (0.55f + 0.45f * N) - (N > 0.55f ? 0.5f : 0.f), 0.f, 1.f);
 	}
-	Flash->SetIntensity(FlashLumens * Level);
-	Spill->SetIntensity(FlashLumens * 0.11f * Level);
-	Throw->SetIntensity(FlashLumens * 0.24f * Level);
+	Flash->SetIntensity(FlashLumens * FlashFluxScale * Level);
+	Spill->SetIntensity(FlashLumens * 0.11f * SpillFluxScale * Level);
+	Throw->SetIntensity(FlashLumens * 0.24f * ThrowFluxScale * Level);
 	FaceLight->SetIntensity(FaceLumens * FMath::Clamp(Level, 0.25f, 1.f));
 
 	// ---- pistol

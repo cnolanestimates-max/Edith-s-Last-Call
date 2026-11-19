@@ -45,6 +45,7 @@ public:
 	void SetGunAllowed(bool bAllowed) { bGunAllowed = bAllowed; }
 	bool IsGunUp() const { return GunAlpha > 0.75f; }
 	void ApplySettings();
+	void ApplyBeamWidth();
 	void TeleportToCheckpoint(const FVector& Loc, float Yaw);
 	/** Move the player without touching any state (used while they are down and the screen is black). */
 	void Relocate(const FVector& Loc, float Yaw);
@@ -74,7 +75,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "WC") float InteractRange = 190.f;        // along the line of sight: long enough to reach the floor at his feet
 	/** ... but the thing itself has to be this close to him on the floor plan (arm's length). */
 	UPROPERTY(EditAnywhere, Category = "WC") float InteractReach = 115.f;
-	UPROPERTY(EditAnywhere, Category = "WC") float FlashLumens = 150.f;       // Cheyenne: about five feet of sight, the rest black (was 980 with a 26 m reach)
+	UPROPERTY(EditAnywhere, Category = "WC") float FlashLumens = 180.f;       // Before beam-width compensation.
 
 	int32 Ammo = 8;
 	int32 Reserve = 16;
@@ -125,6 +126,7 @@ private:
 
 	TWeakObjectPtr<AWCInteractable> Focus;
 	bool bLightOn = false;
+	float FlashFluxScale = 1.f, SpillFluxScale = 1.f, ThrowFluxScale = 1.f;
 	float AimDist = 600.f;
 	float FaceLumens = 0.f;
 	float FaceAim = 0.f;
