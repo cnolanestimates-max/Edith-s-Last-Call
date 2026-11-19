@@ -53,15 +53,20 @@ FLinearColor AxisParameter(const FVector& Axis, const FVector& Center, double Of
 }
 
 void MountPrint(UStaticMeshComponent* Frame, const FPrintSurface& S, UTexture2D* Print,
-	UMaterialInterface* Paper, UMaterialInterface* Hidden, UMaterialInterface* Glass, bool bParentsCrop)
+	UMaterialInterface* Paper, UMaterialInterface* Hidden, UMaterialInterface* Glass, bool bParentsCrop, float WearSeed)
 {
 	const int32 PaperIndex = Frame->GetMaterialIndex(TEXT("M_Portrait"));
 	UMaterialInstanceDynamic* MID = Frame->CreateDynamicMaterialInstance(PaperIndex, Paper);
 	if (!MID) return;
 	// All original scans are 4:5. Crop to the moulding while retaining the faces' proportions.
 	const double PrintWidth = FMath::Max(S.Width, S.Height * .8) / (bParentsCrop ? .53 : 1.);
-	MID->SetVectorParameterValue(TEXT("PhotoU"), AxisParameter(S.Right / PrintWidth, S.Center, bParentsCrop ? .49 : .5));
-	MID->SetVectorParameterValue(TEXT("PhotoV"), AxisParameter(-S.Up / (PrintWidth / .8), S.Center, bParentsCrop ? .30 : .5));
+	const float CenterU = bParentsCrop ? .49f : .5f;
+	const float CenterV = bParentsCrop ? .30f : .5f;
+	MID->SetVectorParameterValue(TEXT("PhotoU"), AxisParameter(S.Right / PrintWidth, S.Center, CenterU));
+	MID->SetVectorParameterValue(TEXT("PhotoV"), AxisParameter(-S.Up / (PrintWidth / .8), S.Center, CenterV));
+	const bool bOval = Frame->GetStaticMesh()->GetFName() == TEXT("SM_Portrait_Oval");
+	MID->SetVectorParameterValue(TEXT("PaperShape"), FLinearColor(PrintWidth / S.Width, PrintWidth / (.8 * S.Height), bOval ? 1.f : 0.f));
+	MID->SetVectorParameterValue(TEXT("PaperWeather"), FLinearColor(CenterU, CenterV, WearSeed));
 	MID->SetTextureParameterValue(TEXT("Photograph"), Print);
 	// The kit builds a mannequin face above the canvas out of several separate mesh sections.
 	for (const TCHAR* Slot : {TEXT("M_PortraitFace"),TEXT("M_PortraitDark"),TEXT("M_Soot"),TEXT("M_EyeGlow")})
@@ -97,6 +102,8 @@ void UWCFamilyPhotos::OnWorldBeginPlay(UWorld& World)
 	UMaterialInterface* Paper = Material(TEXT("M_FamilyPrint"));
 	UMaterialInterface* Hidden = Material(TEXT("M_HidePortraitRelief"));
 	UMaterialInterface* Glass = Material(TEXT("M_PhotoGlass"));
+	UMaterialInterface* Wood = Material(TEXT("MI_FrameWood"));
+	UMaterialInterface* Brass = Material(TEXT("MI_FrameBrass"));
 	UMaterialInterface* Scratches = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/WC/Decals/MD_scratches"));
 	if (!Paper || !Hidden || !Glass) return;
 	TMap<FName, UTexture2D*> Prints;
@@ -145,7 +152,15 @@ void UWCFamilyPhotos::OnWorldBeginPlay(UWorld& World)
 		UTexture2D*& Photo = Prints.FindOrAdd(Name);
 		if (!Photo) Photo = LoadObject<UTexture2D>(nullptr, *(Folder + Name.ToString()));
 		if (!Photo) continue;
-		MountPrint(Frame, *Surface, Photo, Paper, Hidden, Glass, bFallingClue);
+		// Both poses of the falling clue share a stain pattern. Other prints weather independently.
+		const float WearSeed = bFallingClue ? .42f : (GetTypeHash(Cell) % 1021) / 1021.f;
+		MountPrint(Frame, *Surface, Photo, Paper, Hidden, Glass, bFallingClue, WearSeed);
+		for (const FName Slot : {FName(TEXT("M_WoodBlack")), FName(TEXT("M_WoodLight")), FName(TEXT("M_Gold"))})
+		{
+			const int32 Index = Frame->GetMaterialIndex(Slot);
+			UMaterialInterface* Finish = Slot == TEXT("M_Gold") ? Brass : Wood;
+			if (Index != INDEX_NONE && Finish) Frame->SetMaterial(Index, Finish);
+		}
 		if (bClaws) { ScoreFrame(Frame, Scratches); ++Clawed; }
 		++Count;
 	}
