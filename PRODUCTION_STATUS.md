@@ -1,8 +1,52 @@
 # Edith's Last Call: production status
 
-(Working title "Wellness Check"; the project folder keeps that name.) Updated 2026-11-19 02:45 UTC, session 1, in progress.
+(Working title "Wellness Check"; the project folder keeps that name.) Updated 2026-11-19 06:25 UTC, session 1, PAUSED (see the first section).
 Engine: UE 5.9.0. Project: `C:\GameDev\Unreal\WellnessCheck`. Git: local repo on `main`, remote
 `github.com/cnolanestimates-max/Edith-s-Last-Call` (private). Pushed; checkpoints are pushed as work lands.
+
+## PAUSED 2026-11-19 06:25 UTC (Cheyenne went to bed; resume when she says so)
+
+Everything is committed and pushed. No game or editor process is running. Code builds (last build OK at 06:19 UTC, passes 81
+to 90) and the map was rebuilt after the last lighting change. Nothing below has been played by a person yet; Cheyenne will
+play-test in the morning.
+
+**Done tonight (03:14 to 06:25 UTC), all at Cheyenne's direction**
+- Television in the living room (S13) with three approved tapes (`bedtime8`, `living8`, `porch8`, Seedance 2.5): already on
+  when he first comes in; he has to crouch right up to the set to switch it off (nothing happens the first time); it comes on
+  again after the head-by-the-ceiling scare, and switching it off then shows her in the dead glass (doorway, then running).
+  No camera takeover (she decided against it). Tested with `-WCHerLook -WCTVOnly` (`Saved/TV9`).
+- The eye in the dark (S14): total blackout, her eye up by the ceiling down the hall, gone under the flashlight, back when the
+  light moves off. Now waits until after the long hall (S3). Tested with `-WCHerLook -WCEyeOnly` (`Saved/Eye5`).
+- Record player (S11) and "you left me" (S12): built, never yet seen in a run.
+- The Company is black smoke (road, house, memory 3); tree-tunnel forest road with the road shadow.
+- Flashlight: 150 lm with a 3.9 m cut-off (was 980 lm, 26 m): about five feet of clear sight. Moonlight through the windows
+  cut from 9000 to 2600 lm. She carries a faint cold light (`FarLight`, 320 lm) beyond 2.3 m so the far scares still read;
+  Cheyenne said keep it until she has play-tested.
+- Reach: a thing must be within about a metre on the floor plan to use it (`InteractReach` 105, trace 190).
+
+**Open, in this order**
+1. **The first peek (S1) does not yet leave when the light hits her.** Test `-WCHerLook -WCPeekOnly` (`Saved/peek2`, log
+   `Saved/Logs/peek2.log`): at 3.2 m with the light on her she was still there 1.7 s later (`her=1 dist=321`). Look at the peek
+   block in `StoryTick` (`WCStory.cpp`, "S1: the peek is watching you back"): `Seen` only counts when the flashlight is on and
+   `PlayerSees(head, 0.86, 360)` is true; check whether the look-test bot has its flashlight on, whether the line of sight to
+   her head is blocked by the door frame, and whether 360 cm is too short for where the hall lets him stand. Wanted: barely
+   visible, only found when already close to the doorway, gone the instant the light is on her. Also look at `Saved/_s/peek2_sheet.jpg`
+   to confirm she no longer shows against the hall window from the stairs (the window light is dimmed to 4% during the peek).
+2. **Bot regression run** with the short reach and short flashlight: `chain.ps1 -NoBuild -Run auto13` (fast), then a real-pace
+   run (`-Real`) to see S11, S12, S13 and S14 in order and to check that the far scares (long hall, ceiling, hunts) read.
+   The 05:52 real-pace run (`auto12`) was stopped at about 15 minutes: it showed the TV as the first scare (now fixed) and
+   reached S3.
+3. `m_whyleave` voice line still missing (TTS quota, one attempt only); a scream stands in.
+4. Docs to bring up to date for the 06:05 changes: scare manifest rows for S1 and S13, QA report, the status sections below
+   (they still describe 02:45 UTC).
+5. Then: honest re-score against the rubric with run evidence; menu test review; cruiser Ford badge; packaging only when asked.
+
+**Spend tonight:** Higgsfield 948.75 to 698.75 credits (250: Grok Lite attempts 110, stills 20, Seedance 2.5 clips 120).
+Cheyenne asked for no more tape spending unless she asks. Google TTS: one line.
+
+**How to resume:** read this section, then `Docs/SCARE_MANIFEST.md`; helpers are `Scripts/tools/chain.ps1` (build, import,
+level, tests), `wc.ps1 game <tag> "<flags>"`, `commit_push.ps1`. Run the game alone (starting it while a build, ffmpeg or a
+generation is running has crashed it at start-up twice).
 
 ## Build ID
 `elc-0.5-dev`. **No packaged build exists** (Cheyenne asked for no interim package). Nothing below has been played start to

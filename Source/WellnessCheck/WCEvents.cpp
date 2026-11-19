@@ -196,7 +196,18 @@ bool AWCDirector::EventsEvent(FName Id)
 {
 	if (Id == TEXT("use:tv"))
 	{
-		if (TVPhase == 1) TVOff(true);
+		if (TVPhase == 1)
+		{
+			AWCCharacter* Pl = Player();
+			AWCInteractable* Tv = Thing(TEXT("tv"));
+			const bool bClose = Pl && Tv && FVector::Dist2D(Pl->GetActorLocation(), Tv->GetActorLocation()) < 175.f;
+			if (Pl && Pl->bIsCrouched && bClose) TVOff(true);
+			else
+			{
+				Think(TEXT("The switch is low on the front. I have to get right down to it."));
+				ShowHint(TEXT("C: crouch, close to the set, then E to switch it off"), 6.f);
+			}
+		}
 		else if (TVPhase == 0) Think(TEXT("An old console set. The screen is grey with dust, except where a hand has wiped it."));
 		return true;
 	}
@@ -268,7 +279,8 @@ void AWCDirector::TVOn()
 	TVAt = Clock;
 	Tension = FMath::Max(Tension, 0.6f);
 	UE_LOG(LogWCEvents, Display, TEXT("WCTV t=%.1f switched itself on, tape %d of %d"), PlaySeconds, N, Tapes);
-	if (!Has(TEXT("tv_seen"))) { Set(TEXT("tv_seen")); After(2.5f, [this]() { Think(TEXT("That set was not on.")); }); }
+	if (!Has(TEXT("tv_seen"))) Set(TEXT("tv_seen"));
+	else if (!Has(TEXT("tv_again"))) { Set(TEXT("tv_again")); After(2.5f, [this]() { Think(TEXT("I switched that off.")); }); }
 }
 
 void AWCDirector::TVOff(bool bByHim, bool bForceScare)
@@ -282,7 +294,7 @@ void AWCDirector::TVOff(bool bByHim, bool bForceScare)
 	PlayAt(TEXT("bulb_die"), At, 0.5f, 1.3f, 1200.f);
 	if (TVGlow) TVGlow->SetIntensity(0.f);
 	Tv->Prompt = TEXT("Look at the television");
-	const bool bScare = P && (bForceScare || (bByHim && !Has(TEXT("tv_scare")) && Clock >= NextScareAt && StalkState == 0 && !bEventBusy && !bBusy));
+	const bool bScare = P && (bForceScare || (bByHim && TVTape >= 2 && !Has(TEXT("tv_scare")) && Clock >= NextScareAt && StalkState == 0 && !bEventBusy && !bBusy));
 	if (!bScare)
 	{
 		TVScreen->SetScalarParameterValue(TEXT("Mode"), 0.f);
@@ -366,8 +378,12 @@ void AWCDirector::TickTV(float Dt)
 	const FVector At = Tv->GetActorLocation() + FVector(0, 0, 55);
 	if (TVPhase == 0)
 	{
-		if (!Has(TEXT("locked_in")) || Has(TEXT("dawn")) || Has(TEXT("sprint_started"))) return;
-		if (TVNextAt < 0.0) TVNextAt = Clock + 150.0 * FMath::Max(TestPace, 0.25f);
+		if (Has(TEXT("dawn")) || Has(TEXT("sprint_started"))) return;
+		// already on when he first comes in ("he turns it off, but that's the first time and nothing happens")
+		if (Has(TEXT("inside")) && !Has(TEXT("tv_first"))) { Set(TEXT("tv_first")); TVOn(); After(6.f, [this]() { Think(TEXT("Somebody left the television on.")); }); return; }
+		// the second time is about the middle of the game: not before the head by the ceiling
+		if (!Has(TEXT("ceiling_done")) && !Has(TEXT("tv_test"))) { TVNextAt = -1.0; return; }
+		if (TVNextAt < 0.0) TVNextAt = Clock + 100.0 * FMath::Max(TestPace, 0.25f);
 		// he is near enough to see it come on, and nothing else is happening
 		if (Clock >= TVNextAt && Gate() && !bBusy && !P->IsDown() && FVector::Dist(P->GetActorLocation(), At) < 760.f && FMath::Abs(P->GetActorLocation().Z - 88.f - Tv->GetActorLocation().Z) < 120.f) TVOn();
 		return;
@@ -377,8 +393,9 @@ void AWCDirector::TickTV(float Dt)
 		const float T = (float)(Clock - TVAt);
 		if (TVScreen) TVScreen->SetScalarParameterValue(TEXT("Frame"), (float)(FMath::FloorToInt(T * GTapeFps) % GTapeFrames));
 		if (TVGlow) TVGlow->SetIntensity(1500.f * (0.72f + 0.2f * FMath::Sin(T * 23.f) * FMath::Sin(T * 7.1f) + 0.08f * FMath::Sin(T * 61.f)));
-		if (TVAudio.IsValid() && !TVAudio->IsPlaying() && T < 58.f) TVAudio->Play();          // the tape comes round again
-		if (T > 60.f) TVOff(false);
+		const float Runs = TVTape <= 1 ? 420.f : 75.f;
+		if (TVAudio.IsValid() && !TVAudio->IsPlaying() && T < Runs - 2.f) TVAudio->Play();          // the tape comes round again
+		if (T > Runs) TVOff(false);
 		return;
 	}
 	// ---- the reflection
@@ -392,6 +409,7 @@ void AWCDirector::TickTV(float Dt)
 		// in the doorway behind him, standing quite still: only the glass can see her
 		const FVector Far = Pos(TEXT("Her_TVFar"));
 		H->Appear(Far, (P->GetActorLocation() - Far).Rotation().Yaw, TEXT("Idle"));
+		H->SetFarGlow(0.f);
 		TInlineComponentArray<UPrimitiveComponent*> Prims(H);
 		for (UPrimitiveComponent* C : Prims) { C->bVisibleInSceneCaptureOnly = !bDbg; C->MarkRenderStateDirty(); }
 		TVHerLight = NewObject<UPointLightComponent>(H);
@@ -506,7 +524,7 @@ void AWCDirector::TickEye(float Dt)
 	if (!P || !H) return;
 	if (EyePhase == 0)
 	{
-		if (Has(TEXT("eye_done")) || !Has(TEXT("peek_done")) || Has(TEXT("dawn")) || Has(TEXT("sprint_started")) || bBusy || P->IsDown()) return;
+		if (Has(TEXT("eye_done")) || !Has(TEXT("lockin_done")) || Has(TEXT("dawn")) || Has(TEXT("sprint_started")) || bBusy || P->IsDown()) return;
 		if (EyeNextAt < 0.0) EyeNextAt = Clock + 260.0 * FMath::Max(TestPace, 0.25f);
 		if (Clock < EyeNextAt || !Gate()) return;
 		if (!EyeTry(false)) EyeNextAt = Clock + 3.0;                 // not a hall: look again in a moment
@@ -519,6 +537,7 @@ void AWCDirector::TickEye(float Dt)
 	auto Show = [this, H, P](bool bDark)
 	{
 		H->Appear(EyeSpot, (P->GetActorLocation() - EyeSpot).Rotation().Yaw, TEXT("Tall"));
+		H->SetFarGlow(0.f);
 		H->SetGlow(bDark ? 55.f : 2.5f);
 		H->SetEyeShine(bDark ? 2400.f : 150.f, 2.3f);
 	};

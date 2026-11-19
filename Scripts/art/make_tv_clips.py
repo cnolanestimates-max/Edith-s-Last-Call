@@ -20,7 +20,7 @@ TAPES = {
     "t_living": (["HARROW FAMILY", "HOME MOVIES", "", "REEL 4"], "HE LIKES TO WATCH US", ["THERE IS ALWAYS", "ROOM FOR ONE MORE"], (0.66, 0.36)),
     "t_yard": (["HARROW FAMILY", "HOME MOVIES", "", "REEL 6"], "HE NEVER MISSES A SUMMER", ["HE CAME TO STAY", "", "HE NEVER LEAVES"], (0.45, 0.5)),
     "t_rocker": (["A WORD FROM", "MRS. EDITH HARROW", "", "REEL 31"], "EVERYBODY LEFT. HE STAYED.", ["ASK AND YOU WILL", "HAVE COMPANY"], (0.62, 0.5)),
-    "hall8": (["HARROW FAMILY", "HOME MOVIES", "", "REEL 11"], "", ["NOBODY IN THIS HOUSE", "SLEEPS ALONE"], (0.5, 0.5)),
+    "nursery8": (["HARROW RESIDENCE", "NURSERY MONITOR", "", "CAM 2"], "", ["NOBODY IN THIS HOUSE", "SLEEPS ALONE"], (0.5, 0.5)),
     "porch8": (["HARROW FAMILY", "HOME MOVIES", "", "REEL 17"], "", ["HE CAME TO STAY", "", "HE NEVER LEAVES"], (0.5, 0.5)),
     "living8": (["HARROW FAMILY", "HOME MOVIES", "", "REEL 4"], "HE LIKES TO WATCH US", ["HE LIKES TO WATCH US", "", "THERE IS ALWAYS ROOM"], (0.5, 0.5)),
     "bedtime8": (["HARROW FAMILY", "HOME MOVIES", "", "REEL 9"], "HE TUCKS HER IN NOW", ["SAY GOODNIGHT", "TO OUR FRIEND"], (0.5, 0.5)),
@@ -35,7 +35,7 @@ DATEFIX = {"bedtime7": "OCT 31 1991", "t_living": "NOV 24 1991", "t_yard": "JUL 
 
 
 # shots that move for their whole length (Cheyenne: "they're like moving stills"): no frozen push-in; a caption card instead
-DYNAMIC = {"bedtime8": 10, "living8": 15, "hall8": 15, "porch8": 15}      # seconds of real video in the shot
+DYNAMIC = {"bedtime8": 10, "living8": 15, "nursery8": 15, "porch8": 15}      # seconds of real video in the shot
 
 
 def ff(args):

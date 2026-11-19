@@ -51,6 +51,14 @@ AWCEntity::AWCEntity()
 	EyeGlint->SetAttenuationRadius(90.f);
 	EyeGlint->SetLightColor(FLinearColor(0.75f, 0.85f, 1.f));
 	EyeGlint->SetCastShadows(false);
+	FarLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("FarLight"));
+	FarLight->SetupAttachment(Root);
+	FarLight->SetRelativeLocation(FVector(80.f, 0.f, 160.f));
+	FarLight->SetIntensityUnits(ELightUnits::Lumens);
+	FarLight->SetIntensity(0.f);
+	FarLight->SetAttenuationRadius(460.f);
+	FarLight->SetLightColor(FLinearColor(0.72f, 0.82f, 1.f));
+	FarLight->SetCastShadows(false);
 	SetActorHiddenInGame(true);
 }
 
@@ -149,6 +157,8 @@ void AWCEntity::Vanish()
 	bShown = false;
 	bFacePlayer = false;
 	EyeGlint->SetIntensity(0.f);
+	FarLight->SetIntensity(0.f);
+	FarGlow = DefaultFarGlow;
 	if (IrisMID) IrisMID->SetScalarParameterValue(TEXT("Glow"), 0.06f);
 	Eye->SetRelativeScale3D(FVector(1.f));
 	ScreamTarget = ScreamAlpha = 0.f;
@@ -237,6 +247,8 @@ void AWCEntity::Tick(float Dt)
 {
 	Super::Tick(Dt);
 	if (!bShown) return;
+	// beyond his flashlight she is a pale shape in the dark; inside it, his light does the work
+	FarLight->SetIntensity(FarGlow * FMath::Clamp((DistToPlayer() - 230.f) / 260.f, 0.f, 1.f));
 	{
 		// her face is never still: the jaw works when she speaks and hangs a little when she breathes, the brow
 		// creeps, and one side of her mouth twitches up off the teeth

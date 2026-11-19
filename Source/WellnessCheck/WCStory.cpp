@@ -660,17 +660,20 @@ void AWCDirector::StoryTick(float Dt)
 	{
 		static double Seen = 0.0, Started = 0.0;
 		if (!Has(TEXT("peek_timing"))) { Set(TEXT("peek_timing")); Seen = 0.0; Started = Clock; }
-		if (PlayerSees(H->HeadLocation(), 0.80f, 1600.f)) Seen += Dt;
+		// "as soon as your light hits her, she goes poof": lit means inside the beam and inside its short reach
+		AWCCharacter* Pk = Player();
+		if (Pk && Pk->IsFlashlightOn() && PlayerSees(H->HeadLocation(), 0.86f, 360.f)) Seen += Dt;
 		const double Waited = Clock - Started;
 		if (Waited > 9.0 && !Has(TEXT("peek_whisper"))) { Set(TEXT("peek_whisper")); Say(TEXT("m_whisper1")); }
-		if (Seen > 1.25 || H->DistToPlayer() < 380.f || Waited > 26.0)
+		if (Seen > 0.16 || H->DistToPlayer() < 210.f || Waited > 45.0)
 		{
 			Set(TEXT("peek_leaving"));
-			if (Seen > 0.2) Play2D(TEXT("sting_soft"), 0.8f, EWCSnd::Music);
-			H->Slide(Pos(TEXT("Her_PeekBack")), 0.85f, [this]()
+			if (Seen > 0.1) Play2D(TEXT("sting_soft"), 0.8f, EWCSnd::Music);
+			H->Slide(Pos(TEXT("Her_PeekBack")), 0.5f, [this]()
 			{
 				if (AWCEntity* E = Her()) E->Vanish();
 				if (AWCDoor* D = Door(TEXT("up_master"))) D->SetOpen(false, 2.8f);
+				SetLightsTagged(TEXT("W_U_hall"), 1.f);
 				Set(TEXT("peek_done"));
 				Rest(150.f);
 				float T = Say(TEXT("d_peek"), 1.4f);
@@ -779,7 +782,9 @@ void AWCDirector::ScarePeek()
 	if (!H) { Set(TEXT("peek_done")); return; }
 	if (AWCDoor* D = Door(TEXT("up_master"))) D->SetOpen(true, 0.01f, true);
 	H->Appear(Pos(TEXT("Her_Peek")), YawOf(TEXT("Her_Peek")), TEXT("Peek"));
-	H->SetGlow(0.8f);
+	H->SetGlow(0.2f);
+	H->SetFarGlow(0.f);                 // barely there: only his own light, close to, finds her
+	SetLightsTagged(TEXT("W_U_hall"), 0.04f);      // and no moonlit window behind her to give her outline away from the stairs
 	PlayAt(TEXT("creak"), H->GetActorLocation(), 1.f, 0.8f);
 	UE_LOG(LogWCStory, Display, TEXT("WCSCARE t=%.1f S1_peek"), PlaySeconds);
 }

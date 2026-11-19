@@ -135,28 +135,28 @@ FULL["living8"] = ("Hand-held VHS camcorder home video from 1991, starting on th
                    "afraid; an ordinary happy evening. Keep the creature's design, the grey mask, the room and the people exactly as in the "
                    "frame. Heavy VHS tape noise, dull washed colour, a date stamp in the corner. No cuts, no gore.")
 # Tapes 3 and 4 (Cheyenne 05:26 UTC: "I like 3 and 4"; 05:27: the porch is "straight nighttime ... out in the cornfield").
-ENGINE["hall8"] = ENGINE["porch8"] = ("seedance_2_5", SEEDANCE + ["--duration", "15"])
-START["hall8"] = OUT + "/hall3am_still.png"
-START["porch8"] = OUT + "/porchnight_still.png"
-FULL["hall8"] = ("Hand-held VHS camcorder home video in the middle of the night, 1991, starting on this exact frame, lit only by the weak "
-                 "little lamp on the camcorder. Whoever is filming is frightened: the camera shakes, and the sound is their unsteady breathing "
-                 "and a soft whispering from inside the room. The camera pushes slowly forward through the half-open door. Everything is "
-                 "in fluid, natural, continuous motion. The family stand in a row facing the wall, asleep on their feet, swaying very "
-                 "slightly, heads bowed. The tall folded smoke-black creature moves along the row like a mother at bedtime: its long thin "
-                 "legs step carefully behind them like a spider's, black smoke rolling off it, and with its long fingers it draws the quilt "
-                 "up round the boy's shoulders, smooths the little girl's hair, and straightens the father's collar, its upside-down grey "
-                 "mask head swinging low beside each sleeping face in turn and whispering to it. A child's sleepy voice murmurs: "
-                 "\"Goodnight.\" Then the mask stops, turns slowly, and looks straight into the camera. The camera jerks back and the door "
-                 "swings shut. Keep the creature's design, the grey mask, the room and the people exactly as in the frame. Heavy VHS tape "
-                 "noise, dull washed colour, a date stamp in the corner. No cuts, no gore.")
+ENGINE["nursery8"] = ENGINE["porch8"] = ("seedance_2_5", SEEDANCE + ["--duration", "15"])
+START["nursery8"] = OUT + "/nursery2_still.png"       # (the 3 AM hall idea was rejected and is not made)
+START["porch8"] = OUT + "/porchnight4_still.png"
+FULL["nursery8"] = ("Footage from a 1990s baby-monitor camera fixed high in the corner of a child's bedroom at night, starting on this exact "
+                    "frame: black-and-white infrared night vision, grainy, scan lines, the CAM 2 and 03:07 AM text staying fixed on screen. "
+                    "The camera does not move, but everything in the room does, in fluid, natural, continuous motion. The tall folded black "
+                    "creature rocks the empty crib slowly back and forth with both long hands; the crib creaks, the mobile above it turns and "
+                    "tinkles, black smoke rolls off the creature along the ceiling, and its upside-down mask head sways gently over the "
+                    "empty mattress, its eyes shining white. It hums, low and tuneless. The rocking horse begins to rock by itself. The door "
+                    "on the left swings slowly further open. Then the creature stops rocking, lets go of the rail, and its mask head turns, "
+                    "slowly, all the way round, until the two white eyes are looking straight up into the camera. It unfolds one long arm "
+                    "and reaches toward the lens, and the picture breaks into static. Keep the creature's design, the mask and the room "
+                    "exactly as in the frame. No cuts, no people, no gore.")
 FULL["porch8"] = ("Hand-held VHS camcorder home video at night, 1992, starting on this exact frame. Full darkness beyond the one yellow porch "
                   "bulb; crickets. The camera sways gently in someone's hands. Everything is in fluid, natural, continuous motion. The old "
-                  "woman rocks slowly on the creaking porch swing, humming an old lullaby in a frail voice, and lifts one hand to wave back "
-                  "at the field. Out in the corn the tall folded smoke-black creature sways with the tune: its long raised arm waves slowly "
-                  "from side to side in time with her humming, the corn stalks bend and rustle round its long legs, black smoke drifts off "
-                  "it into the night, and its upside-down grey mask head tilts from side to side like a curious bird. The camera drifts off "
-                  "her and zooms clumsily in on the thing in the corn. It stops waving. It begins to walk toward the porch through the corn "
-                  "on its long legs, slowly, the mask held perfectly level. The old woman says softly and fondly: \"There you are. Come on "
+                  "woman rocks slowly on the creaking porch swing, humming an old lullaby in a frail voice, and lifts one hand to wave at "
+                  "the field. Out in the corn, waist-deep, the tall upright smoke-black creature sways with the tune: it lifts one very "
+                  "long thin arm high out of the corn and waves slowly from side to side in time with her humming, the corn stalks bend "
+                  "and rustle round it in the night wind, black smoke drifts off its shoulders, and its grey mask head tilts from side to "
+                  "side like a curious bird. The camera drifts off her and zooms clumsily in on the thing in the corn. It stops waving. It "
+                  "begins to wade toward the porch through the corn, slowly, the stalks parting and shaking in front of it, the mask held "
+                  "perfectly level and getting larger. The old woman says softly and fondly: \"There you are. Come on "
                   "in, then.\" Keep the creature's design, the grey mask, the porch and the old woman exactly as in the frame. Heavy VHS "
                   "tape noise, dull washed colour, a date stamp in the corner. No cuts, no gore.")
 SHOTS.update(FULL)

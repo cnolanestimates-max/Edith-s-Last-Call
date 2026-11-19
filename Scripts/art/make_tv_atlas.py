@@ -5,7 +5,7 @@ The order of the tapes is the order they play in the game.  ffmpeg only."""
 import os, subprocess
 
 ROOT = "C:/GameDev/Unreal/WellnessCheck/SourceArt"
-ORDER = ["bedtime8", "living8"]      # the moving versions Cheyenne asked for (2026-11-19 05:24 UTC); everything else is retired
+ORDER = ["bedtime8", "living8", "porch8"]      # the moving versions Cheyenne asked for (2026-11-19 05:24 to 05:55 UTC); everything else is retired
 n = 0
 for name in ORDER:
     src = f"{ROOT}/TV/tape_{name}.mp4"

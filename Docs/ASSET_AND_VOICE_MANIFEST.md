@@ -32,7 +32,7 @@ required); "Library" means her own Forklight audio library on OneDrive (files ar
 | The house itself, the exterior, porch, stairs, road, cabin of the cruiser, light fixtures, switches, fuse box, bookshelf | Built by script from boxes, cylinders and kit pieces: `Scripts/level/build_house.py`, `exterior.py`, `ell.py`, `forest.py`, `switches.py`, `watchers.py`, `decay.py`, `lighting.py`, `looks.py`, `settle.py`, `nav.py`. | Re-running `build_house.py` rebuilds the whole map from nothing. |
 | Carried things and the television (`SM_Item_*`: keys, ring, fuse, shears, dog tags, pistol, radio, console TV) | Built by script in Blender: `Scripts/art/build_items.py`. | Shown in the inventory (Tab) with Use / Inspect / Drop. No paid generation. |
 | The Company (`AWCSmokeMan`, `M_Smoke`) | Built in code: about 45 spheres in the shape of a 3 m man with a panning-noise translucent material (`Scripts/art/gen_noise.py`). | The road, the house, memory 3. No paid generation. |
-| The Harrow family tapes on the television (`/Game/WC/TV/T_Tape_n`, `tv_tape_n`) | Generated: Higgsfield `grok_video_v15_lite`, 10 s at 480p 4:3, 10 credits a shot (`Scripts/art/gen_tv_clips.py`), then cut to a 20 s tape with title and end cards, VHS wear and sound by ffmpeg (`make_tv_clips.py`) and packed as a 240-frame sheet (`make_tv_atlas.py`). | Cheyenne approved Higgsfield for these (2026-11-19) and signs off each look before it goes in. Raw shots and job ids: `SourceArt/TV/raw`. |
+| The Harrow family tapes on the television (`/Game/WC/TV/T_Tape_n`, `tv_tape_n`) | Generated on Higgsfield, each look approved by Cheyenne as a still first (`Scripts/art/gen_tv_still.py`, nano_banana_pro, 2 credits), then animated from that still with Seedance 2.5 at 480p 4:3 with sound (`gen_tv_clips.py`, 30 credits for 10 s, 45 for 15 s), cut to a 20 s tape with title and end cards, VHS wear and steady date stamp by ffmpeg (`make_tv_clips.py`) and packed as a 240-frame sheet (`make_tv_atlas.py`). | In the game: bedtime (`bedtime8`), living room (`living8`); porch at night (`porch8`) once approved. Retired and not imported: every Grok Lite version, the rocking chair, clothesline, 3 AM hall and nursery ideas. Raw shots, stills and job ids: `SourceArt/TV/raw`. |
 
 ## Audio
 
@@ -61,8 +61,8 @@ Higgsfield: started the day at 1,206.5 credits; about 955 left when Cheyenne ask
 Nothing has been spent on Higgsfield since. Google TTS since then: 13 short lines (the deputy's two re-written radio lines and
 Edith's eleven new ones). The pistol, the face, the drawings, the footsteps and the many-voiced treatment cost nothing.
 
-2026-11-19: Higgsfield for the television tapes only, with Cheyenne's approval: 948.75 credits before, 70 spent so far (four first
-shots at 10 each, then three more versions of tape 1), about 879 left. Google TTS: one line (`m_left`).
+2026-11-19: Higgsfield for the television tapes only, with Cheyenne's approval: 948.75 credits before, about 252 spent
+(Grok Lite attempts 110, stills 22, Seedance 2.5 clips 120), about 697 left. Google TTS: one line (`m_left`).
 
 ## To check before a Steam release
 

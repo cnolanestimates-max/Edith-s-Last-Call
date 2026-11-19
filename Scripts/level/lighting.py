@@ -103,7 +103,7 @@ def shaft(name, x, y, z, yaw, pitch=-15.0):
     x += math.cos(math.radians(yaw)) * 78.0
     y += math.sin(math.radians(yaw)) * 78.0
     z -= 42.0
-    m_ = light_spot(name + "_moon", x, y, z, yaw, pitch, 9000, (0.5, 0.63, 1.0), 900, 36, 62, "Lights/Windows", tags=["Hide_dawn"], shadows=True, vol=2.0)
+    m_ = light_spot(name + "_moon", x, y, z, yaw, pitch, 2600, (0.5, 0.63, 1.0), 900, 36, 62, "Lights/Windows", tags=["Hide_dawn", name], shadows=True, vol=1.5)
     m_.light_component.set_editor_property("lighting_channels", LC_SHAFT)
     light_spot(name + "_dawn", x, y, z, yaw, pitch + 4, 9000, (0.72, 0.76, 0.92), 1100, 36, 62, "Lights/Windows", tags=["Show_dawn"], shadows=True, vol=2.4)
 

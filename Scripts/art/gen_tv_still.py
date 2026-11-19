@@ -159,6 +159,31 @@ STILLS = {
         "long hanging arms and small pale mask rising high over the corn tops against the black sky. Because it is farther away it is "
         "smaller in the frame and darker, lit only faintly. Photorealistic VHS home video still, heavy noise, no gore.",
         ["raw/porchnight2_still.png"]),
+    # Cheyenne 05:42 UTC: "he's at the corn line ... the bottom half of his body needs to be [hidden] in the corn ... the top half
+    # standing up outside of the corn"; nursery: "zoom out ... we're too close ... make it different in some way".
+    "porchnight4": (
+        "Edit the reference image. Keep everything exactly as it is: the porch, the bulb, the swing, the old woman, the night sky, the "
+        "framing, the date stamp, and the design of the tall upright smoke-black creature with its grey pointed mask. Change only this: "
+        "the creature is WAIST-DEEP in the corn, standing in the middle of the field several rows back from its edge. Tall corn stalks "
+        "and leaves stand in front of it and completely cover its legs, hips and hands: the whole lower half of its body cannot be seen "
+        "at all, there is only corn there. Only the upper half of its body rises out of the top of the corn: its narrow chest, its "
+        "shoulders, the upper parts of its long arms, its thin neck and the small pale grey mask, a tall black shape standing up out of "
+        "the field against the black sky, with thin smoke drifting off its shoulders. The corn is one unbroken field with no gap in "
+        "front of it. Photorealistic VHS home video still, heavy noise, no gore.",
+        ["raw/porchnight3_still.png"]),
+    "nursery2": (
+        "A new still frame from a 1990s baby-monitor camera mounted high in the corner of a child's bedroom at night, looking down "
+        "across the WHOLE room in a very wide shot, 4:3. Black-and-white infrared night vision: grey, grainy, low resolution, soft, "
+        "slightly fish-eyed, scan lines, white on-screen text CAM 2 in the top left corner and 03:07 AM in the lower right corner. The "
+        "entire room is visible from wall to wall: floorboards and a rug, a window with thin curtains, a toy chest, a rocking horse, a "
+        "chest of drawers, a door standing ajar on the left with blackness beyond it, and against the far wall a wooden crib with a "
+        "mobile above it. The crib is EMPTY. Far across the room, small in the frame, the SAME creature as in the reference image is "
+        "folded over the crib in the same folded pose: an impossibly lanky black figure bent double with its back along the ceiling, its "
+        "long thin legs and arms hanging straight down, black smoke drifting off it, and its upside-down grey mask face with sharp "
+        "pointed cheekbones and a fixed grin hanging just above the empty crib, its hollow eyes shining white in the infrared like an "
+        "animal's. Both long-fingered hands hold the crib rail, rocking it. The creature takes up no more than a third of the picture; "
+        "there is a lot of empty dark room round it. Nobody else is there. Still, quiet, and deeply uncanny. No gore.",
+        ["raw/bedtime7_still.png"]),
 }
 
 

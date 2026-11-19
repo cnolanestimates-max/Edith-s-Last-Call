@@ -53,6 +53,11 @@ public:
 	void SetScream(float Amount) { ScreamTarget = FMath::Clamp(Amount, 0.f, 1.f); }
 	/** Faint cold light on her face (lumens; 0 = off). */
 	void SetGlow(float Lumens);
+	/** A faint cold light she carries while she is beyond the reach of his flashlight (0 = none: she is only found close to). */
+	void SetFarGlow(float Lumens) { FarGlow = Lumens; }
+	static constexpr float DefaultFarGlow = 320.f;
+	float FarGlow = DefaultFarGlow;
+	UPROPERTY(VisibleAnywhere, Category = "WC") TObjectPtr<UPointLightComponent> FarLight;
 	/** How brightly her iris shines by itself (0.06 is the ordinary faint gleam). */
 	void SetEyeShine(float Glow, float Swell = 1.f);
 	UPROPERTY(Transient) TObjectPtr<class UMaterialInstanceDynamic> IrisMID;

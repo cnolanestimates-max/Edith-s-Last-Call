@@ -71,8 +71,10 @@ public:
 	UPROPERTY(EditAnywhere, Category = "WC") float WalkSpeed = 100.f;
 	UPROPERTY(EditAnywhere, Category = "WC") float SprintSpeed = 190.f;
 	UPROPERTY(EditAnywhere, Category = "WC") float CrouchSpeed = 62.f;
-	UPROPERTY(EditAnywhere, Category = "WC") float InteractRange = 230.f;
-	UPROPERTY(EditAnywhere, Category = "WC") float FlashLumens = 980.f;
+	UPROPERTY(EditAnywhere, Category = "WC") float InteractRange = 190.f;        // along the line of sight: long enough to reach the floor at his feet
+	/** ... but the thing itself has to be this close to him on the floor plan (arm's length). */
+	UPROPERTY(EditAnywhere, Category = "WC") float InteractReach = 105.f;
+	UPROPERTY(EditAnywhere, Category = "WC") float FlashLumens = 150.f;       // Cheyenne: about five feet of sight, the rest black (was 980 with a 26 m reach)
 
 	int32 Ammo = 8;
 	int32 Reserve = 16;

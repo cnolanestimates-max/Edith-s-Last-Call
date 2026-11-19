@@ -44,7 +44,7 @@ AWCCharacter::AWCCharacter()
 	Flash->SetIntensity(0.f);
 	Flash->SetInnerConeAngle(10.f);
 	Flash->SetOuterConeAngle(31.f);
-	Flash->SetAttenuationRadius(2600.f);
+	Flash->SetAttenuationRadius(390.f);
 	Flash->SetLightColor(FLinearColor(1.f, 0.91f, 0.78f));
 	Flash->SetSourceRadius(1.5f);
 	Flash->SetCastShadows(true);
@@ -58,7 +58,7 @@ AWCCharacter::AWCCharacter()
 	Spill->SetIntensity(0.f);
 	Spill->SetInnerConeAngle(20.f);
 	Spill->SetOuterConeAngle(52.f);
-	Spill->SetAttenuationRadius(900.f);
+	Spill->SetAttenuationRadius(300.f);
 	Spill->SetLightColor(FLinearColor(1.f, 0.9f, 0.76f));
 	Spill->SetCastShadows(false);
 	Spill->SetVolumetricScatteringIntensity(0.4f);
@@ -101,8 +101,8 @@ AWCCharacter::AWCCharacter()
 	Fill = CreateDefaultSubobject<UPointLightComponent>(TEXT("Fill"));
 	Fill->SetupAttachment(Cam);
 	Fill->SetIntensityUnits(ELightUnits::Lumens);
-	Fill->SetIntensity(2.2f);
-	Fill->SetAttenuationRadius(520.f);
+	Fill->SetIntensity(1.2f);
+	Fill->SetAttenuationRadius(260.f);
 	Fill->SetLightColor(FLinearColor(0.55f, 0.66f, 1.f));
 	Fill->SetCastShadows(false);
 	Fill->SetVolumetricScatteringIntensity(0.f);
@@ -612,7 +612,7 @@ void AWCCharacter::Tick(float Dt)
 		if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, P))
 		{
 			AWCInteractable* T = Cast<AWCInteractable>(Hit.GetActor());
-			if (T && T->CanInteract()) Focus = T;
+			if (T && T->CanInteract() && FVector::Dist2D(Hit.ImpactPoint, GetActorLocation()) <= InteractReach) Focus = T;
 		}
 	}
 	TickDust(Dt);
