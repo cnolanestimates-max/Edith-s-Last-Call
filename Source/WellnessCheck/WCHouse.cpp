@@ -464,7 +464,7 @@ void AWCDirector::BeginDrive()
 	DriveHeading = (PathPoint(DrivePts, DriveLen, 400.f) - PathPoint(DrivePts, DriveLen, 0.f)).Rotation().Yaw;
 	PC->SetControlRotation(FRotator(0.f, DriveHeading, 0.f));
 	ShowTagged(TEXT("CarRunning"), true);
-	SetLoop(TEXT("car"), TEXT("amb_car"), 0.9f, 1.5f);
+	SetLoop(TEXT("car"), TEXT("amb_car"), 1.f, 1.2f);
 	SetLoop(TEXT("amb"), TEXT(""), 0.f, 1.f);              // windows up: the night is not heard until he gets out
 	// the opening shot: high over the forest, his headlights threading the road, then down and into the car
 	bAir = !FParse::Param(FCommandLine::Get(), TEXT("WCNoAir"));
@@ -692,7 +692,8 @@ void AWCDirector::TickDrive(float Dt)
 		}
 		else DriveCam->SetActorLocationAndRotation(SeatPos, SeatRot);
 	}
-	if (FLoop* Eng = Loops.Find(TEXT("car"))) Eng->Target = (0.55f + 0.4f * Rough) * (0.10f + 0.90f * AirS * AirS);      // from the air the engine is a long way down
+	// a 1990s V8 cruiser: it is always there, idling or pulling, and it can be heard from the air too (Cheyenne: "amplified ... engines were louder")
+	if (FLoop* Eng = Loops.Find(TEXT("car"))) Eng->Target = (0.80f + 0.20f * Rough) * (0.45f + 0.55f * AirS * AirS);
 
 	if (Left < 4.f && DriveSpeed < 70.f) EndDrive();
 }

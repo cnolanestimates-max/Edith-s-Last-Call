@@ -553,7 +553,7 @@ for _k in range(9):
 for _k in range(3):
     box(f"WallNail_{_k}", SX0 + 110 + _k * 60, SX0 + 111 + _k * 60, SY0 + 8, SY0 + 13, 150, 151, "Rust", SH, collide=False, shadow=False)
 # the first tape: on the bench, among the junk.  Taking it is what lets him into the house.
-pickup("pick_tape1", "tape1", "VHS tape", ("Tape1", CUBE, (0.187, 0.103, 0.025), {0: "BrassOld"}), SX1 - 46, _ridge - 52, 50.4, 25, grab=(13, 10, 6))
+pickup("pick_tape1", "tape1", "VHS tape", ("Tape1", CUBE, (0.187, 0.103, 0.025), {0: "BrassOld"}), SX1 - 46, _ridge - 52, 50.4, 25, grab=(20, 18, 9))
 # the trash can by the back of the house: standing until he takes the tape, then on its side with everything out of it
 _TX, _TY = XB + 105.0, -340.0
 if ITEM("TrashCan"):

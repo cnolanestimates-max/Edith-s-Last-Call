@@ -304,7 +304,9 @@ void AWCDirector::TickFlies(float Dt)
 			F.Radii.X * (FMath::Sin(T * F.Freq.X + F.Phase.X) * 0.7f + FMath::Sin(T * F.Freq.Y * 2.3f + F.Phase.Z) * 0.3f),
 			F.Radii.Y * (FMath::Sin(T * F.Freq.Y + F.Phase.Y) * 0.7f + FMath::Sin(T * F.Freq.Z * 1.9f + F.Phase.X) * 0.3f),
 			F.Radii.Z * FMath::Sin(T * F.Freq.Z + F.Phase.Z));
-		Flies->UpdateInstanceTransform(i, FTransform(FQuat::Identity, P, FVector(0.0055f, 0.0035f, 0.0035f)), true, i == N - 1, true);
+		// (never bMarkRenderStateDirty here: it rebuilds the whole proxy every frame, and that crashed; see fix_pass126.py)
+		Flies->UpdateInstanceTransform(i, FTransform(FQuat::Identity, P, FVector(0.0055f, 0.0035f, 0.0035f)), true, false, true);
+
 	}
 }
 

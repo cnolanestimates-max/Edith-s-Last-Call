@@ -486,7 +486,9 @@ void AWCCharacter::TickDust(float Dt)
 		FTransform T;
 		Dust->GetInstanceTransform(i, T, true);
 		T.SetLocation(P);
-		Dust->UpdateInstanceTransform(i, T, true, k == Slice - 1, bWrap);
+		// (never bMarkRenderStateDirty here: it rebuilds the whole proxy every frame, and that crashed; see fix_pass126.py)
+		Dust->UpdateInstanceTransform(i, T, true, false, bWrap);
+
 	}
 	Cursor = (Cursor + Slice) % N;
 }
@@ -647,6 +649,17 @@ void AWCCharacter::Tick(float Dt)
 		{
 			AWCInteractable* T = Cast<AWCInteractable>(Hit.GetActor());
 			if (T && T->CanInteract() && FVector::Dist2D(Hit.ImpactPoint, GetActorLocation()) <= InteractReach) Focus = T;
+			// a description never stands in front of something he can take or use: look on through it
+			AWCInteractable* Through = T;
+			for (int32 k = 0; k < 3 && Through && Through->IsA<AWCLook>(); ++k)
+			{
+				P.AddIgnoredActor(Through);
+				FHitResult H2;
+				if (!GetWorld()->LineTraceSingleByChannel(H2, Start, End, ECC_Visibility, P)) break;
+				Through = Cast<AWCInteractable>(H2.GetActor());
+				if (Through && !Through->IsA<AWCLook>() && Through->CanInteract() && FVector::Dist2D(H2.ImpactPoint, GetActorLocation()) <= InteractReach) { Focus = Through; break; }
+			}
+
 		}
 	}
 	TickDust(Dt);
