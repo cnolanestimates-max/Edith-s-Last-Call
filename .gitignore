@@ -25,3 +25,6 @@ Content/Developers/
 
 # Untouched copies pulled out of the Sonniss / Night Shift library zips (about 1 GB); Scripts/audio/lib_sfx.py re-extracts them
 SourceArt/Audio/raw_lib/
+
+# a reference photo Cheyenne sent (not ours to redistribute)
+SourceArt/TV/refs/figure_face_ref.png

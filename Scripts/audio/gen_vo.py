@@ -28,6 +28,8 @@ STYLE = {
 }
 # per-line direction (added to the speaker style)
 DIRECT = {
+    "m_left": "Whispered very fast, breathless, the same three words over and over without a pause, hurt and accusing, getting more urgent. An old woman, close to the microphone.",
+    "m_whyleave": "Not a whisper: SCREAMED at full force, raw, furious and heartbroken, right in the listener's face, the last word drawn out into a shriek.",
     "m_laugh1": "No words at all: only laughter. A very old woman giggling quietly to herself, dry, breathy and childlike, as if at a private joke. Eerie.",
     "m_laugh2": "No words at all: only a soft, pleased, slightly unhinged little laugh, under her breath.",
     "m_cry1": "No real words: a very old woman crying softly, alone, thin wet hopeless sobs.",

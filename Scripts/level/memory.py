@@ -68,6 +68,17 @@ def figure(name, x, y, z, yaw, scale, clip, group, void=False, at=1.0):
     return a
 
 
+def smoke_man(name, x, y, z, yaw, tall, group):
+    """The Company: black smoke in the shape of a man (AWCSmokeMan), hidden until the story shows it."""
+    a = actors.spawn_actor_from_class(WC["WCSmokeMan"], V(x, y, z), R(yaw))
+    a.set_actor_label(name)
+    a.set_editor_property("tall", float(tall))
+    a.set_actor_hidden_in_game(True)
+    tag(a, [group])
+    a.set_folder_path("House/" + MF)
+    return a
+
+
 def mem_light(name, x, y, z, lumens, group, col=(1.0, 0.78, 0.5), radius=900.0):
     a = light_point(name, x, y, z, lumens, col, radius, MF, tags=[group], shadows=True, vol=1.4, source=6.0)
     a.light_component.set_visibility(False)
@@ -110,7 +121,7 @@ mem_cam("Mem2", 1090, -250, AZ + 118, 215, -9)
 # 3. The ninth: she asks, and something comes to stand in the corner where the lamp does not reach.
 mem_prop("Rocking_Chair", 1200, 400, UZ, 150, "Mem3")
 figure("Mem3_Edith", 1200, 400, UZ + 14, 150, 0.60, "Sit", "Mem3")
-figure("Mem3_Company", 1520, 545, UZ, 205, 0.86, "Tall", "Mem3", void=True, at=3.0)
+smoke_man("Mem3_Company", 1520, 545, UZ, 205, 290, "Mem3")
 mem_light("Mem3_Candles", 1200, 380, UZ + 60, 7000, "Mem3", (1.0, 0.62, 0.3), 620)
 mem_cam("Mem3", 905, 265, UZ + 150, 24, -7)
 

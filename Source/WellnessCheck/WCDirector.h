@@ -143,7 +143,7 @@ public:
 	float LineSeconds(FName LineId);
 	/** A line of on-screen text with no voice: what he notices. */
 	void Think(const FString& Text, float Seconds = -1.f);
-		bool Gate() const { return Clock >= NextScareAt && StalkState == 0 && !bDriving; }
+		bool Gate() const { return Clock >= NextScareAt && StalkState == 0 && !bDriving && !bEventBusy; }
 	void Rest(float Seconds) { NextScareAt = FMath::Max(NextScareAt, Clock + Seconds * 1.6f * TestPace); }       // 1.6: she asked for them further apart
 	/** Run Go at the next quiet stretch (now, if it is quiet). If Valid turns false first, run Skip instead. */
 	void WhenQuiet(TFunction<void()> Go, TFunction<bool()> Valid, TFunction<void()> Skip, float MaxWait);
@@ -243,6 +243,38 @@ private:
 	TArray<FVector> DrivePts;
 	TArray<float> DriveLen;
 	float DriveTotal = 0.f, DriveDist = 0.f, DriveSpeed = 0.f, DriveHeading = 0.f;
+	// things that act by themselves (WCEvents.cpp)
+	bool bEventBusy = false;                  // one of them is playing: no other scare and no hunt starts
+	int32 RecordPhase = 0;
+	double RecordAt = 0.0, RecordSeenAt = -1.0;
+	TWeakObjectPtr<UAudioComponent> RecordAudio;
+	void TickRecord(float Dt);
+	void RecordPlay(bool bOn);
+	bool EventsEvent(FName Id);
+	void LeftScare();
+	// the television
+	int32 TVPhase = 0, TVTape = 0;              // 0 off, 1 playing, 2 the reflection
+	double TVAt = 0.0, TVNextAt = -1.0, TVHerAt = -1.0, TVRunAt = -1.0;
+	TWeakObjectPtr<UAudioComponent> TVAudio;
+	UPROPERTY(Transient) TObjectPtr<class UMaterialInstanceDynamic> TVScreen;
+	UPROPERTY(Transient) TObjectPtr<class UPointLightComponent> TVGlow;
+	UPROPERTY(Transient) TObjectPtr<class UPointLightComponent> TVHerLight;
+	UPROPERTY(Transient) TObjectPtr<class USceneCaptureComponent2D> TVCapture;
+	UPROPERTY(Transient) TObjectPtr<class UTextureRenderTarget2D> TVTarget;
+	void TickTV(float Dt);
+	// the eye in the dark (S14)
+	void TickEye(float Dt);
+	bool EyeTry(bool bForce);
+	void EyeEnd(bool bSeenTwice);
+	int32 EyePhase = 0;                         // 0 waiting, 1 black, 2 the eye, 3 light back and nothing there, 4 the eye again, 5 going out
+	double EyeAt = 0.0, EyeNextAt = -1.0;
+	FVector EyeSpot = FVector::ZeroVector;
+	bool bEyeLooked = false;
+	void TVOn();
+	void TVOff(bool bByHim, bool bForceScare = false);
+	void TVReflectionEnd();
+	float ShadowDist = -1.f, ShadowT = 0.f;       // the thing on the road: how far along it stands; time in the present phase
+	int32 ShadowPhase = 0;                        // 0 not reached, 1 rolling to a stop, 2 stopped and looking back, 3 driving on
 	TWeakObjectPtr<AActor> Car;
 	TWeakObjectPtr<AActor> Seat;
 	TWeakObjectPtr<class ACameraActor> DriveCam;

@@ -2,6 +2,7 @@
 #include "WCCharacter.h"
 #include "WCDirector.h"
 #include "Components/BoxComponent.h"
+#include "Components/InstancedStaticMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -251,24 +252,13 @@ void AWCWatcher::BeginPlay()
 	};
 	if (Kind == 2)
 	{
-		// the thing she asked in: her own outline, drawn longer and thinner, with no light on it at all
-		USkeletalMesh* SK = LoadObject<USkeletalMesh>(nullptr, TEXT("/Game/WC/Her/SK_Her.SK_Her"));
-		UAnimSequence* Pose = LoadObject<UAnimSequence>(nullptr, TEXT("/Game/WC/Her/A_Her_Tall.A_Her_Tall"));
-		UMaterialInterface* Void = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/WC/Materials/M_Void.M_Void"));
-		if (SK)
-		{
-			USkeletalMeshComponent* C = NewObject<USkeletalMeshComponent>(this);
-			C->SetupAttachment(Turn);
-			C->SetSkeletalMeshAsset(SK);
-			C->SetRelativeRotation(FRotator(0.f, -90.f, 0.f));
-			C->SetRelativeScale3D(FVector(0.74f, 0.74f, 1.2f * (Radius / 5.2f)));
-			C->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-			C->SetCastShadow(false);
-			for (int32 i = 0; i < C->GetNumMaterials(); ++i) if (Void) C->SetMaterial(i, Void);
-			C->SetAnimationMode(EAnimationMode::AnimationSingleNode);
-			C->RegisterComponent();
-			if (Pose) { C->PlayAnimation(Pose, true); C->SetPlayRate(0.25f); }
-		}
+		// the thing she asked in: not her outline, and not solid.  Black smoke standing like a man.
+		UInstancedStaticMeshComponent* C = NewObject<UInstancedStaticMeshComponent>(this);
+		C->SetupAttachment(Turn);
+		C->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		C->SetCastShadow(false);
+		C->RegisterComponent();
+		AWCSmokeMan::Build(C, 300.f * (Radius / 5.2f), GetTypeHash(WCId));
 	}
 	else if (Kind == 0)
 	{
@@ -378,4 +368,72 @@ void AWCWatcher::Tick(float Dt)
 	const bool bLooked = Dist < 1100.f && D->PlayerSees(Mid, Kind == 0 ? 0.988f : 0.965f, 1100.f) && P->IsFlashlightOn();
 	Seen = bLooked ? Seen + Dt : FMath::Max(0.f, Seen - Dt * 0.5f);
 	if (Seen > (Kind == 0 ? 0.55f : 0.9f) || Dist < (Kind == 0 ? 120.f : 230.f)) Withdraw();
+}
+
+// ================================================================================================ the Company, as smoke
+AWCSmokeMan::AWCSmokeMan()
+{
+	PrimaryActorTick.bCanEverTick = false;
+	Smoke = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("Smoke"));
+	RootComponent = Smoke;
+	Smoke->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	Smoke->SetCastShadow(false);
+	Smoke->bAffectDynamicIndirectLighting = false;
+	Smoke->bAffectDistanceFieldLighting = false;
+}
+
+void AWCSmokeMan::BeginPlay()
+{
+	Super::BeginPlay();
+	Build(Smoke, Tall, GetTypeHash(GetName()));
+}
+
+void AWCSmokeMan::Build(UInstancedStaticMeshComponent* C, float Height, int32 Seed)
+{
+	if (!C) return;
+	UStaticMesh* Sphere = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Sphere.Sphere"));
+	UMaterialInterface* Mat = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/WC/Materials/M_Smoke.M_Smoke"));
+	if (!Sphere) return;
+	C->SetStaticMesh(Sphere);
+	if (Mat) C->SetMaterial(0, Mat);
+	C->ClearInstances();
+	const float K = Height / 300.f;
+	FRandomStream Rs(Seed);
+	// (centre x forward, y left, z up; size across, deep, high), all in cm for a 3 m figure
+	auto Blob = [C, K](float X, float Y, float Z, float W, float D, float H)
+	{
+		C->AddInstance(FTransform(FRotator::ZeroRotator, FVector(X, Y, Z) * K, FVector(D, W, H) * K / 100.f));
+	};
+	// a long head with nothing on it, a thick neck, shoulders far too wide, a narrow waist
+	Blob(4, 0, 274, 30, 32, 50);
+	Blob(2, 0, 246, 22, 22, 26);
+	Blob(0, 0, 216, 104, 40, 50);
+	Blob(0, 0, 184, 78, 38, 54);
+	Blob(-2, 0, 150, 58, 34, 52);
+	Blob(-2, 0, 118, 54, 34, 44);
+	for (int32 Side = -1; Side <= 1; Side += 2)
+	{
+		// arms that hang past the knee and end in nothing
+		Blob(0, Side * 56.f, 196, 22, 22, 66);
+		Blob(4, Side * 62.f, 142, 18, 18, 72);
+		Blob(8, Side * 65.f, 92, 15, 15, 56);
+		Blob(10, Side * 66.f, 58, 11, 12, 34);
+		// legs that thin out and never reach the floor
+		Blob(-2, Side * 17.f, 84, 26, 26, 62);
+		Blob(-4, Side * 16.f, 44, 20, 22, 54);
+		Blob(-8, Side * 14.f, 14, 13, 18, 34);
+	}
+	// what drifts off it: behind, above the shoulders, round the feet
+	for (int32 i = 0; i < 22; ++i)
+	{
+		const float Z = Rs.FRandRange(6.f, 286.f);
+		const float Wide = Z > 170.f && Z < 240.f ? 62.f : 36.f;
+		const float S = Rs.FRandRange(14.f, 34.f);
+		Blob(Rs.FRandRange(-34.f, -6.f), Rs.FRandRange(-Wide, Wide), Z, S, S * Rs.FRandRange(0.9f, 1.6f), S * Rs.FRandRange(1.1f, 2.2f));
+	}
+	for (int32 i = 0; i < 8; ++i)
+	{
+		const float S = Rs.FRandRange(16.f, 30.f);
+		Blob(Rs.FRandRange(-30.f, 16.f), Rs.FRandRange(-34.f, 34.f), Rs.FRandRange(0.f, 26.f), S * 1.4f, S * 1.4f, S * 0.8f);
+	}
 }

@@ -462,6 +462,20 @@
   "style": "A very old, frail woman in her late eighties. Thin, dry, trembling voice, slow, breathy, barely above a whisper, lonely and eerily gentle. Rural American. At peace, a faint relieved whisper, fading."
  },
  {
+  "id": "m_left",
+  "who": "mabel",
+  "text": "You left me. You left me. You left me. You left me.",
+  "fx": "ghost",
+  "style": "A very old, frail woman in her late eighties. Thin, dry, trembling voice, slow, breathy, barely above a whisper, lonely and eerily gentle. Rural American. Whispered very fast, breathless, the same three words over and over without a pause, hurt and accusing, getting more urgent. An old woman, close to the microphone."
+ },
+ {
+  "id": "m_whyleave",
+  "who": "mabel",
+  "text": "WHY DID YOU LEAVE ME!",
+  "fx": "ghost",
+  "style": "A very old, frail woman in her late eighties. Thin, dry, trembling voice, slow, breathy, barely above a whisper, lonely and eerily gentle. Rural American. Not a whisper: SCREAMED at full force, raw, furious and heartbroken, right in the listener's face, the last word drawn out into a shriek."
+ },
+ {
   "id": "m_laugh1",
   "who": "mabel",
   "text": "Heh heh heh heh... hee hee hee.",

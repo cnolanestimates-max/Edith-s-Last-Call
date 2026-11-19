@@ -30,6 +30,9 @@ required); "Library" means her own Forklight audio library on OneDrive (files ar
 | Vintage Radio | Fab | Walter's radio and Daniel's radio. |
 | Sheriff's cruiser (`SM_Cruiser`), fridge, toilet | Generated: image to 3D (Higgsfield). | **Before release: the cruiser image has a Ford badge; paint it out or replace the car.** |
 | The house itself, the exterior, porch, stairs, road, cabin of the cruiser, light fixtures, switches, fuse box, bookshelf | Built by script from boxes, cylinders and kit pieces: `Scripts/level/build_house.py`, `exterior.py`, `ell.py`, `forest.py`, `switches.py`, `watchers.py`, `decay.py`, `lighting.py`, `looks.py`, `settle.py`, `nav.py`. | Re-running `build_house.py` rebuilds the whole map from nothing. |
+| Carried things and the television (`SM_Item_*`: keys, ring, fuse, shears, dog tags, pistol, radio, console TV) | Built by script in Blender: `Scripts/art/build_items.py`. | Shown in the inventory (Tab) with Use / Inspect / Drop. No paid generation. |
+| The Company (`AWCSmokeMan`, `M_Smoke`) | Built in code: about 45 spheres in the shape of a 3 m man with a panning-noise translucent material (`Scripts/art/gen_noise.py`). | The road, the house, memory 3. No paid generation. |
+| The Harrow family tapes on the television (`/Game/WC/TV/T_Tape_n`, `tv_tape_n`) | Generated: Higgsfield `grok_video_v15_lite`, 10 s at 480p 4:3, 10 credits a shot (`Scripts/art/gen_tv_clips.py`), then cut to a 20 s tape with title and end cards, VHS wear and sound by ffmpeg (`make_tv_clips.py`) and packed as a 240-frame sheet (`make_tv_atlas.py`). | Cheyenne approved Higgsfield for these (2026-11-19) and signs off each look before it goes in. Raw shots and job ids: `SourceArt/TV/raw`. |
 
 ## Audio
 
@@ -43,6 +46,9 @@ required); "Library" means her own Forklight audio library on OneDrive (files ar
 | 43 effects and beds (nail scratches, skittering, chimney wind, car interior, light switch, bulb buzz and pop, fridge hum, radio tuning, creaky seat, her flinch and hurt, stalk drone, low bed, stings, far doors, steps overhead) | Library: Sonniss GDC 2026 Game Audio Bundle and the Night Shift package (`Scripts/audio/lib_sfx.py`). | Royalty-free, commercial use, no attribution required. Each file's origin is listed in `SourceArt/Audio/AUDIO_CREDITS.md`. No credits spent. |
 | Footsteps, clicks | Library: Kenney (CC0). | |
 | Music: "Long Note Four", "Ossuary 6 - Air", "Gathering Darkness" (Kevin MacLeod), "Sanctuary" (Scott Buckley) | Library. CC BY 4.0. | **Credit is required and is in the in-game credits.** |
+| Record player tune (`record_tune`) | Library: "Sweet Little Lullaby", Darren Curtis (darrencurtismusic.com), slowed and worn by ffmpeg (`Scripts/audio/make_event_sfx.py`). | **Credit is required and is in the in-game credits.** |
+| Record stop, clock tick, bell toll, television snow | Built from library sounds by `make_event_sfx.py`. | No paid generation. |
+| "You left me" (`m_left`, human voice) and "WHY DID YOU LEAVE ME!" (`m_whyleave`, many-voiced) | Gemini TTS. | `m_whyleave` is not recorded yet: the service refused three times for quota on 2026-11-19; a scream stands in. One attempt only when it is tried again. |
 
 ## Writing
 
@@ -55,9 +61,12 @@ Higgsfield: started the day at 1,206.5 credits; about 955 left when Cheyenne ask
 Nothing has been spent on Higgsfield since. Google TTS since then: 13 short lines (the deputy's two re-written radio lines and
 Edith's eleven new ones). The pistol, the face, the drawings, the footsteps and the many-voiced treatment cost nothing.
 
+2026-11-19: Higgsfield for the television tapes only, with Cheyenne's approval: 948.75 credits before, 70 spent so far (four first
+shots at 10 each, then three more versions of tape 1), about 879 left. Google TTS: one line (`m_left`).
+
 ## To check before a Steam release
 
 1. The Ford badge on the generated cruiser.
-2. Kevin MacLeod / Scott Buckley credits must stay in the credits roll (they are).
+2. Kevin MacLeod / Scott Buckley / Darren Curtis credits must stay in the credits roll (they are).
 3. Fab Standard License covers shipping these assets inside a game; do not redistribute the source assets.
 4. The Sonniss GDC bundle licence text is inside each bundle zip in the Forklight library; keep a copy with the project records.

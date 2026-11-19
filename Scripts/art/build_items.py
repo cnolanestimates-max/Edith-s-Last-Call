@@ -15,7 +15,7 @@ PREVIEW = "--preview" in argv
 os.makedirs(OUT, exist_ok=True)
 COL = {"Brass": (0.55, 0.38, 0.12, 1), "Iron": (0.09, 0.08, 0.075, 1), "Gold": (0.83, 0.62, 0.2, 1), "Steel": (0.5, 0.5, 0.5, 1),
        "Glass": (0.6, 0.72, 0.7, 1), "Ceramic": (0.78, 0.74, 0.66, 1), "Ribbon": (0.3, 0.03, 0.04, 1),
-       "Polymer": (0.02, 0.02, 0.022, 1), "Gunmetal": (0.07, 0.07, 0.075, 1)}
+       "Polymer": (0.02, 0.02, 0.022, 1), "Gunmetal": (0.07, 0.07, 0.075, 1), "Wood": (0.2, 0.11, 0.06, 1), "Screen": (0.03, 0.04, 0.04, 1)}
 
 
 def mat(name):
@@ -26,7 +26,7 @@ def mat(name):
         b = m.node_tree.nodes.get("Principled BSDF")
         if b:
             b.inputs["Base Color"].default_value = COL[name]
-            b.inputs["Metallic"].default_value = 0.0 if name in ("Glass", "Ceramic", "Ribbon", "Polymer") else 1.0
+            b.inputs["Metallic"].default_value = 0.0 if name in ("Glass", "Ceramic", "Ribbon", "Polymer", "Wood", "Screen") else 1.0
             b.inputs["Roughness"].default_value = 0.35
     return m
 
@@ -272,6 +272,32 @@ def radio():
     return P
 
 
+def tv():
+    # a 1960s console television on four legs: front toward -Y.  The picture is one flat piece with its own 0..1 UVs.
+    P = [box(0.92, 0.46, 0.62, (0, 0, 0.51), m="Wood", bevel=0.012)]
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            P.append(cyl(0.024, 0.20, (sx * 0.40, sy * 0.17, 0.10), m="Wood", v=12, r2=0.015))
+    P.append(box(0.62, 0.02, 0.49, (-0.11, -0.232, 0.53), m="Polymer", bevel=0.004))
+    bpy.ops.mesh.primitive_plane_add(size=1, location=(-0.11, -0.2435, 0.53), rotation=(math.pi / 2, 0, 0))
+    scr = bpy.context.object
+    scr.scale = (0.54, 0.41, 1)
+    bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+    scr.data.materials.append(mat("Screen"))
+    P.append(scr)
+    P.append(box(0.21, 0.012, 0.46, (0.335, -0.232, 0.53), m="Gunmetal"))
+    for z in (0.67, 0.56):
+        P.append(cyl(0.027, 0.03, (0.335, -0.25, z), (math.pi / 2, 0, 0), "Brass", 20))
+        P.append(box(0.006, 0.012, 0.03, (0.335, -0.268, z), m="Polymer"))
+    for k in range(7):
+        P.append(box(0.16, 0.004, 0.007, (0.335, -0.2395, 0.345 + 0.018 * k), m="Polymer"))
+    P.append(cyl(0.045, 0.02, (0.05, 0.02, 0.83), m="Polymer", v=20))
+    for sgn in (-1, 1):
+        P.append(cyl(0.0035, 0.52, (0.05 + sgn * 0.13, 0.02, 1.06), (0, sgn * 0.5, 0), "Gunmetal", 8))
+    return P
+
+
+build("TV", tv)
 build("Pistol", pistol)
 build("Radio", radio)
 build("Key", lambda: key_parts("Brass"))

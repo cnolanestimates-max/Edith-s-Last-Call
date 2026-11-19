@@ -175,6 +175,7 @@ def step_her():
     m = tools.create_asset("M_Her", H, unreal.Material, unreal.MaterialFactoryNew())
     m.set_editor_property("two_sided", True)
     usage(m, "SKELETAL_MESH")
+    usage(m, "MORPH_TARGETS")
     tb = mel.create_material_expression(m, unreal.MaterialExpressionTextureSample, -700, -200)
     tb.set_editor_property("texture", bc)
     tint = vparam(m, "Tint", (0.21, 0.19, 0.17, 1), -700, -420)        # Cheyenne: "way darker"; was (0.50, 0.46, 0.41)
@@ -242,6 +243,59 @@ def flat_material(name, rgb, rough=0.8, emissive=0.0, unlit=False, two_sided=Fal
     return m
 
 
+def smoke_material():
+    """Black smoke: unlit, see-through at the edge of every blob, with noise drifting up through it and the whole shape swaying."""
+    src = SRC + "/Textures/misc/T_SmokeNoise.png"
+    if not os.path.exists(src):
+        log("no smoke noise texture (run Scripts/art/gen_noise.py)")
+        return None
+    import_files([src], G + "/Materials")
+    nt = eal.load_asset(G + "/Materials/T_SmokeNoise")
+    try:
+        nt.set_editor_property("srgb", False)
+        nt.set_editor_property("compression_settings", unreal.TextureCompressionSettings.TC_GRAYSCALE)
+        eal.save_loaded_asset(nt, False)
+    except Exception as exc:
+        log(f"smoke noise settings: {exc}")
+    m = new_material("M_Smoke")
+    m.set_editor_property("blend_mode", unreal.BlendMode.BLEND_TRANSLUCENT)
+    m.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_UNLIT)
+    m.set_editor_property("two_sided", False)
+    usage(m, "INSTANCED_STATIC_MESHES")
+    mel.connect_material_property(const3(m, (0.0, 0.0, 0.0), -300, -200), "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
+    wp = mel.create_material_expression(m, unreal.MaterialExpressionWorldPosition, -1300, 0)
+    tm = mel.create_material_expression(m, unreal.MaterialExpressionTime, -1300, 200)
+    uv1 = _custom(m, "return WP.yz * 0.0052 + WP.x * 0.0021 + float2(0.0, T * 0.09);", ["WP", "T"], unreal.CustomMaterialOutputType.CMOT_FLOAT2, -1000, 0)
+    uv2 = _custom(m, "return WP.xz * 0.0125 + float2(T * 0.04, T * 0.21);", ["WP", "T"], unreal.CustomMaterialOutputType.CMOT_FLOAT2, -1000, 200)
+    for u_ in (uv1, uv2):
+        mel.connect_material_expressions(wp, "", u_, "WP")
+        mel.connect_material_expressions(tm, "", u_, "T")
+    n1 = mel.create_material_expression(m, unreal.MaterialExpressionTextureSample, -700, 0)
+    n2 = mel.create_material_expression(m, unreal.MaterialExpressionTextureSample, -700, 200)
+    for n_, u_ in ((n1, uv1), (n2, uv2)):
+        n_.set_editor_property("texture", nt)
+        n_.set_editor_property("sampler_type", unreal.MaterialSamplerType.SAMPLERTYPE_LINEAR_GRAYSCALE)
+        mel.connect_material_expressions(u_, "", n_, "UVs")
+    fr = mel.create_material_expression(m, unreal.MaterialExpressionFresnel, -700, 420)
+    fr.set_editor_property("exponent", 1.0)
+    fr.set_editor_property("base_reflect_fraction", 0.0)
+    op = _custom(m, "float edge = saturate(1.0 - F); float n = saturate(N1 * 1.25 + N2 * 0.55 - 0.3); return saturate(edge * (0.95 + 0.6 * n) + n * 0.12) * 0.98;",
+                 ["F", "N1", "N2"], unreal.CustomMaterialOutputType.CMOT_FLOAT1, -350, 200)
+    mel.connect_material_expressions(fr, "", op, "F")
+    mel.connect_material_expressions(n1, "R", op, "N1")
+    mel.connect_material_expressions(n2, "R", op, "N2")
+    mel.connect_material_property(op, "", unreal.MaterialProperty.MP_OPACITY)
+    wo = _custom(m, "float a = T * 1.25 + WP.z * 0.021; return float3(sin(a) * 4.5 + sin(T * 0.7 + WP.z * 0.05) * 2.5, cos(a * 0.83) * 4.5, sin(T * 0.9 + WP.x * 0.03) * 2.0);",
+                 ["WP", "T"], unreal.CustomMaterialOutputType.CMOT_FLOAT3, -350, 500)
+    mel.connect_material_expressions(wp, "", wo, "WP")
+    mel.connect_material_expressions(tm, "", wo, "T")
+    mel.connect_material_property(wo, "", unreal.MaterialProperty.MP_WORLD_POSITION_OFFSET)
+    mel.recompile_material(m)
+    eal.save_loaded_asset(m, False)
+    log("M_Smoke made")
+    return m
+
+
 def step_mats():
     eal.make_directory(G + "/Materials")
     flat_material("M_Dust", (0.9, 0.86, 0.78), 1.0)
@@ -257,8 +311,21 @@ def step_mats():
     mel.recompile_material(mv_)
     eal.save_loaded_asset(mv_, False)
     flat_material("M_Hair", (0.36, 0.33, 0.27), 0.55)
+    smoke_material()
     flat_material("M_EyeBlack", (0.002, 0.002, 0.002), 0.05)
     flat_material("M_EyeIris", (0.30, 0.36, 0.40), 0.3, emissive=0.06)
+    # the same iris with its glow on a dial (the eye in the dark, S14)
+    mg = new_material("M_EyeIrisGlow")
+    cg = const3(mg, (0.30, 0.36, 0.40), -600, 0)
+    mel.connect_material_property(cg, "", unreal.MaterialProperty.MP_BASE_COLOR)
+    mel.connect_material_property(const1(mg, 0.3, -600, 200), "", unreal.MaterialProperty.MP_ROUGHNESS)
+    gg = sparam(mg, "Glow", 0.06, -600, 400)
+    mu = mel.create_material_expression(mg, unreal.MaterialExpressionMultiply, -300, 400)
+    mel.connect_material_expressions(cg, "", mu, "A")
+    mel.connect_material_expressions(gg, "", mu, "B")
+    mel.connect_material_property(mu, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
+    mel.recompile_material(mg)
+    eal.save_loaded_asset(mg, False)
     flat_material("M_GlowBulb", (1.0, 0.62, 0.22), 0.5, emissive=14.0)
     flat_material("M_BulbOff", (0.09, 0.08, 0.06), 0.3)
     flat_material("M_Dash", (0.012, 0.012, 0.013), 0.55)

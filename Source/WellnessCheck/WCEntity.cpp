@@ -9,6 +9,7 @@
 #include "Engine/StaticMesh.h"
 #include "Kismet/GameplayStatics.h"
 #include "Materials/MaterialInterface.h"
+#include "Materials/MaterialInstanceDynamic.h"
 #include "ReferenceSkeleton.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogWCHer, Log, All);
@@ -148,6 +149,8 @@ void AWCEntity::Vanish()
 	bShown = false;
 	bFacePlayer = false;
 	EyeGlint->SetIntensity(0.f);
+	if (IrisMID) IrisMID->SetScalarParameterValue(TEXT("Glow"), 0.06f);
+	Eye->SetRelativeScale3D(FVector(1.f));
 	ScreamTarget = ScreamAlpha = 0.f;
 	Body->SetMorphTarget(TEXT("Scream"), 0.f);
 	Body->Stop();
@@ -157,6 +160,19 @@ void AWCEntity::Vanish()
 void AWCEntity::SetGlow(float Lumens)
 {
 	EyeGlint->SetIntensity(Lumens);
+}
+
+void AWCEntity::SetEyeShine(float Glow, float Swell)
+{
+	Eye->SetRelativeScale3D(FVector(Swell));
+	if (!IrisMID)
+	{
+		UMaterialInterface* M = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/WC/Materials/M_EyeIrisGlow.M_EyeIrisGlow"));
+		if (!M || !Iris) return;
+		IrisMID = UMaterialInstanceDynamic::Create(M, this);
+		Iris->SetMaterial(0, IrisMID);
+	}
+	IrisMID->SetScalarParameterValue(TEXT("Glow"), Glow);
 }
 
 void AWCEntity::StopMoving()

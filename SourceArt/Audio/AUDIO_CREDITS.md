@@ -81,3 +81,11 @@ Dialogue generated with Google Gemini TTS (see VO/_manifest.json). Radio and pho
 - her_step_02: Epic Stock Media - Tower Defense Game/WOODImpt_Hit Blood Spill Splat Wood Impact Light Hit Squelch Small Thump 03_ESM_TDG.wav + our own step_wood_03
 - her_step_03: Epic Stock Media - Tower Defense Game/WOODImpt_Hit Blood Spill Splat Wood Impact Light Hit Squelch Small Thump 03_ESM_TDG.wav + our own step_wood_02
 - her_step_04: Epic Stock Media - Tower Defense Game/WOODImpt_Hit Blood Spill Splat Wood Impact Light Hit Squelch Small Thump 03_ESM_TDG.wav + our own step_wood_05
+
+## Things that act by themselves
+
+- record_tune: Darren Curtis, "Sweet Little Lullaby" (darrencurtismusic.com; free for commercial use with credit), processed to sound like a horn gramophone
+- record_stop: made from record_tune and our own shelf_scrape
+- clock_tick: 344 Audio - Antique Clocks/CLOCKTick_Crooked Antique Clock_344 Audio_Antique Clocks.wav
+- bell_toll: Ivo Vicic - Church Bells/04 Church Bells, Near Distance, In Church Tower-3 Different Bell 02.wav (first stroke, pitched down)
+- tv_static: synthesised (noise, 60 Hz hum, line whine)

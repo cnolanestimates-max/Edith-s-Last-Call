@@ -199,7 +199,7 @@ def point(name, x, y, z, yaw=0.0, tags=None, folder="Points"):
 
 
 WC = {}
-for cls in ("WCDoor", "WCNote", "WCPickup", "WCUsable", "WCTrigger", "WCEntity", "WCLook", "WCWatcher"):
+for cls in ("WCDoor", "WCNote", "WCPickup", "WCUsable", "WCTrigger", "WCEntity", "WCLook", "WCWatcher", "WCSmokeMan"):
     WC[cls] = unreal.load_class(None, "/Script/WellnessCheck." + cls)
 
 
@@ -589,17 +589,21 @@ note("note_mail", "Letters_Scattered", 300, 150, GZ + 99, 20)
 # ---- living room (front left)
 L = D + "Living"
 place("Rug_Persian_Worn", 420, -400, GZ, 0, L, collide=False)
-place("Sofa_Sagging_Broken", 420, -540, GZ, 0, L)
-place("Armchair_Wingback_Torn", 230, -330, GZ, 60, L)
-place("Armchair_Tipped", 620, -330, GZ, 120, L)
+place("Sofa_Sagging_Broken", 370, -300, GZ, 180, L)          # in the middle of the room, facing the television on the south wall
+place("Armchair_Wingback_Torn", 545, -265, GZ, 205, L)
+place("Armchair_Tipped", 615, -415, GZ, 120, L)
 place("Fireplace_Wood_Overmantel", 600, -562, GZ, 0, L)
 place("Mantel_Clock", 600, -548, GZ + 132, 0, L, collide=False)
 place("Piano_Upright", 90, -420, GZ, 90, L)
 place("Piano_Stool", 170, -420, GZ, 0, L)
 place(TABLE, 720, -250, GZ, 0, L)
 place("Rocking_Chair_Shawl", 690, -500, GZ, 150, L, tags=["RockingChair"])
-place("Portrait_Slashed", 300, -581, GZ + 150, 0, L, collide=False)
-place("Portrait_Small", 430, -581, GZ + 170, 0, L, collide=False)
+place("Portrait_Slashed", 250, -581, GZ + 165, 0, L, collide=False)
+place("Portrait_Small", 470, -581, GZ + 175, 0, L, collide=False)
+# the television: against the south wall between the portraits, facing the hall doors
+if ITEM("TV"):
+    interact("WCUsable", "tv", ITEM("TV"), 360, -548, GZ, float(os.environ.get("WC_TV_YAW", "0")), "Look at the television", (48, 28, 44), (0, 0, 52))
+    point("Her_TVFar", 200, -110, GZ, -60)          # in the hall doorway, behind anyone at the set
 place("Portrait_Oval", 783, -420, GZ + 150, 270, L, collide=False)
 place("Portrait_Small", 783, -300, GZ + 160, 270, L, collide=False)
 place("Plant_Stand_Dead_Fern", 60, -250, GZ, 0, L)
@@ -649,7 +653,8 @@ place("Rug_Persian_Worn", 1200, -400, GZ, 90, S, collide=False)
 place("Rocking_Chair", 1150, -470, GZ, 30, S)
 place("Desk_Writing", 1500, -420, GZ, 270, S)
 place("Chair_Dining_HighBack", 1430, -420, GZ, 90, S)
-place("Phonograph", 880, -540, GZ, 20, S)
+interact("WCUsable", "phonograph", "Phonograph", 880, -540, GZ, 20, "Look at the phonograph", (32, 32, 46), (0, 0, 62))
+point("Her_RecordDoor", 1392, -188, GZ, -144)
 place("Wardrobe_Mirror_Cracked", 1300, -560, GZ, 0, S)
 place("Folding_Screen_Victorian", 900, -280, GZ, 60, S)
 place("Candle_Melted_Puddle", 1500, -470, GZ + 101, 0, S, collide=False)
@@ -878,7 +883,7 @@ trigger("t_attic", 420, 1560, -560, 560, AZ, AZ + 250)
 trigger("t_hall_mid", 900, 1500, -180, 180, GZ, GZ + 250)
 
 # ================================================================== AUTO-PLAY / TOUR POINTS
-for n, x, y, z, yaw in (("A_Porch", -150, 0, GZ, 0), ("A_Foyer", 220, 60, GZ, 0), ("A_Living", 380, -330, GZ, 200), ("A_Dining", 300, 300, GZ, 30),
+for n, x, y, z, yaw in (("A_Porch", -150, 0, GZ, 0), ("A_Foyer", 220, 60, GZ, 0), ("A_Living", 372, -425, GZ, 270), ("A_Dining", 300, 300, GZ, 30),
                         ("A_Kitchen", 1000, 380, GZ, 20), ("A_BackDoor", 2700, 0, GZ, 0), ("A_Den", 2000, -380, GZ, 250), ("A_Sickroom", 2400, 380, GZ, 60), ("A_Pantry", 1800, 400, GZ, 60), ("A_BathG", 2600, -380, GZ, 250),
                         ("A_Daniel", 2000, -380, UZ, 250), ("A_Sewing", 2600, -380, UZ, 250), ("A_Aide", 2000, 380, UZ, 60), ("A_Bath2", 2600, 380, UZ, 60), ("A_UpEll", 1750, 0, UZ, 0), ("A_Sitting", 1250, -350, GZ, 200),
                         ("A_StairsTop", 900, 60, UZ, 160), ("A_Master", 380, 330, UZ, 30), ("A_Kids", 420, -330, UZ, 250),

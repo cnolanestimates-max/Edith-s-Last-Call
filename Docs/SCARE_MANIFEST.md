@@ -1,7 +1,8 @@
 # Edith's Last Call: scare manifest
 
-Ten authored scares, repeating hunts, three memories, a set of quiet "she was there the whole time" sightings, and a long build-up in which nothing is seen at all. Code:
-`Source/WellnessCheck/WCStory.cpp` (S1 to S8) and `Source/WellnessCheck/WCHouse.cpp` (build-up, lights, hunts, grabs, memories, S9, S10), `WCWorld.cpp` (`AWCWatcher`).
+Fourteen authored scares, repeating hunts, three memories, a set of quiet "she was there the whole time" sightings, and a long build-up in which nothing is seen at all. Code:
+`Source/WellnessCheck/WCStory.cpp` (S1 to S8) and `Source/WellnessCheck/WCHouse.cpp` (build-up, lights, hunts, grabs, memories, S9, S10), `WCEvents.cpp` (S11 record player, S12 voice, S13 television, S14 the eye in the dark), `WCWorld.cpp` (`AWCWatcher`, `AWCSmokeMan`).
+Scares that are not tied to a place are deferred with `WhenQuiet` so they never run back to back (Cheyenne: "horror happens slowly and then all at once").
 Every scare is driven by story flags, so it fires once, survives a checkpoint reload in a valid state, and cannot overlap another
 (`Gate()` is false while another sequence or a stalk is running, and each scare buys a rest period with `Rest()`).
 "Evidence" means automatic play-through logs and screenshots (`Saved/Auto*/`, `Saved/Logs/*.log`); see the QA report for what was and
@@ -41,6 +42,16 @@ skittering, scratching in the walls, knocks, far doors, steps overhead, whispers
 | **S5 The attic** | Daniel's truth, and punishment for finding it. | Opening the footlocker (attic key is in Daniel's room; taking it makes his radio tune itself and something whisper "is that you, Danny?"). | She comes the length of the attic on all fours, stops in arm's reach, rises over him screaming; dark; gone. | Full. | Dog tags and the cellar padlock key. Checkpoint. | One-shot. |
 | **S6 The cellar door** | She does not want that door opened. | Unlocking the cellar padlock. | She runs the hall at him; on contact he is thrown down the cellar stairs and the door locks above him. | Full until contact. | Wakes at the foot of the stairs. Checkpoint. | Resolves after 9 s. |
 | **S8 The root cellar** | Climax: break the pact while she begs him not to. | Laying the three keepsakes at her body, then cutting each knot with the shears. | "Don't." / "Don't you leave me too." / "Everybody leaves!" Each cut brings her closer; at the third she is in his face: "STAY!" Black. "...thank you." | Free between cuts. | Dawn. Doors open. | More than 95 s and she keeps him ("You stayed."); checkpoint reloads. |
+| **S11 The record player** (slow) | The house acts by itself; she is not needed for fear. Cheyenne's design. | The horn phonograph in Edith's sitting room starts by itself when he is near and things are quiet. | A lullaby plays. He switches it off and walks away; it starts again. Off again; it starts a third time and his flashlight flickers out. He stands in the dark with the record turning. The light returns, he switches it off, turns to leave, and she is standing in a doorway at the edge of his sight, gone the instant he looks. | Full, except the light. | Rest period before anything else. | One-shot; each stage waits for him to walk away. |
+| **S12 "You left me"** (sound only) | Her voice, coming closer, with nothing to see. Cheyenne's design. | Entering Daniel's room (`t_daniel`), deferred with `WhenQuiet` until nothing else is running. | A clock starts ticking. Barely audible whispers far off, then nearer: "you left me, you left me, you left me", fast, in her own human voice. A beat of complete silence. Then right behind him, many-voiced: "WHY DID YOU LEAVE ME!" with a struck bell, screen shake and a flicker. | Full. | Nothing is there. | One-shot. The shouted line is not recorded yet (voice quota); a scream stands in for it and the words are subtitled. |
+| **S13 The television** | Analog horror in the room, then the oldest trick: the reflection. Cheyenne's design. | After the door locks, when he walks past the living room and things are quiet, the set switches itself on and plays one of the Harrow family tapes (a different one each time). When he switches it off, once only: | The tube dies and his light sinks. In the dead glass the room behind him is reflected, and she is in it, screaming, running at him. The screen shakes. He turns: nothing. | Full. | "...Nothing. Nothing behind me." Long rest. Checkpoint. | The set plays again later with another tape and no scare. It turns itself off after a minute if ignored. |
+| **S14 The eye in the dark** (quiet) | Nothing happens to him at all, and it is the worst minute in the house. Cheyenne's design. | After the first sight of her, when things have been quiet for some minutes and he is looking down at least 7 m of hall. | Every light dies, the house and the flashlight, with no bang. Black for about three seconds. Then, far down the hall and up by the ceiling, only her eye. A low tone, her breath, a whisper from that end. After five seconds his flashlight comes back and the hall is empty. When he takes the light off that spot the eye is back, at the edge of his sight, with a whisper. If the light swings toward it, it goes out before the light arrives. | Full; only the flashlight is taken for eight seconds. | "Up by the ceiling. It was up by the ceiling." House lights stay dead for a while. Long rest. | One-shot. If he never looks away, it ends quietly after 18 s. No sting, no scream, no contact. |
+
+## Before the house: the road
+
+Slow. A tunnel of tall trees that close over the road, the headlights, the radio. About halfway something stands in the road: a
+man-shaped column of black smoke, taller than a man. He drives past it, rolls to a stop, looks back over his shoulder for a long
+moment. Nothing there. He drives on. Code: `forest.py` (`RoadShadow`), drive phases in `WCHouse.cpp`.
 
 ## The hunts (repeat; the gun matters)
 
@@ -75,7 +86,8 @@ Code: `PlayMemory` (`Cam_MemN`, actors tagged `MemN`, `PP_Memory`), level `Scrip
   If he notices and looks straight at one, it sinks back into the dark. If he does not notice, nothing happens.
 - **Hair.** Five places where her long grey-blonde hair hangs down from a gap in the ceiling or the rafters. When he gets
   close or holds the light on it, it is drawn slowly up out of sight.
-- **The Company.** The thing she asked in: a tall, featureless black outline, seen at most four times after the first sight
+- **The Company.** The thing she asked in: not Edith's shape and not solid, but black smoke in the shape of a tall man, moving
+  and unravelling at the edges (`AWCSmokeMan`, material `M_Smoke`). It is the thing on the road and on the family tapes. Seen at most four times after the first sight
   of her (end of the upstairs rear hall, the attic, the cellar, the sickroom). The light stutters and the corner is empty.
   "That wasn't her. That was taller."
 - **Her drawings.** Childlike crayon drawings of herself and the black shape (holding hands, at supper, "HE NEVER LEVES") on her

@@ -405,7 +405,7 @@ void AWCHUD::DrawCredits(AWCDirector* D)
 		TEXT("#Created by"), TEXT("Cheyenne"), TEXT(""),
 		TEXT("#Design, writing, code, animation"), TEXT("Built with Claude"), TEXT(""),
 		TEXT("#Voices"), TEXT("Deputy Cole Brandt"), TEXT("Dispatch"), TEXT("Edith Harrow"), TEXT("Synthesised with Google Gemini text-to-speech"), TEXT(""),
-		TEXT("#Music"), TEXT("Kevin MacLeod (incompetech.com)"), TEXT("Licensed under Creative Commons: By Attribution 4.0"), TEXT(""),
+		TEXT("#Music"), TEXT("Kevin MacLeod (incompetech.com)"), TEXT("Darren Curtis (darrencurtismusic.com)"), TEXT("Licensed under Creative Commons: By Attribution 4.0"), TEXT(""),
 		TEXT("#Sound"), TEXT("Sonniss GDC Game Audio Bundle"), TEXT("Kenney (CC0)"), TEXT(""),
 		TEXT("#Environment and props"), TEXT("Assets from Fab, used under the Fab Standard License"), TEXT("Megascans and Megaplants by Quixel"), TEXT(""),
 		TEXT("#Made with"), TEXT("Unreal Engine"), TEXT(""), TEXT(""),

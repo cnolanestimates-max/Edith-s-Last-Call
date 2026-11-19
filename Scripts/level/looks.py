@@ -31,7 +31,7 @@ LOOKS = [
     ("pantry_shelves", 1930, 550, 110, "Preserves, labelled by year. The newest ones are not fruit.", (60, 22, 90)),
     # ---- her sitting room
     ("drawings", 824, -410, 160, "Crayon, like a child's. A small woman and a tall black shape, holding hands. MY FREND. She was eighty-six.", (10, 160, 80)),
-    ("phonograph", 880, -540, 100, "The record is worn white in one groove. One song. I can almost hear which.", (30, 30, 40)),
+    
     ("sitting_wardrobe", 1300, -560, 120, "The mirror is cracked from the inside of the glass, if that is a thing that can happen.", (50, 26, 100)),
     # ---- den, bath, sickroom
     ("gun_cabinet", 2352, -530, 110, "Rack for a shotgun. No shotgun. One box of cartridges left on the shelf.", (26, 46, 90)),

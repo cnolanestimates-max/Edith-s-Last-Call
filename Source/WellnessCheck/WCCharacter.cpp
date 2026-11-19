@@ -691,3 +691,13 @@ void AWCCharacter::HideInspect()
 	Dust->SetHiddenInGame(false);
 	if (GEngine) GEngine->Exec(GetWorld(), TEXT("r.SetNearClipPlane 10"));
 }
+
+void AWCCharacter::SetDarkAdapt(float Stops)
+{
+	const bool bOn = Stops > 0.01f;
+	Cam->PostProcessSettings.bOverride_AutoExposureMethod = bOn;
+	Cam->PostProcessSettings.AutoExposureMethod = EAutoExposureMethod::AEM_Manual;
+	Cam->PostProcessSettings.bOverride_AutoExposureBias = bOn;
+	Cam->PostProcessSettings.AutoExposureBias = -5.f - Stops;            // the night grade is -5 (lighting.py NIGHT_EV)
+	Cam->PostProcessBlendWeight = bOn ? 1.f : 0.f;
+}

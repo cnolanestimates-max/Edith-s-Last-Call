@@ -53,6 +53,9 @@ public:
 	void SetScream(float Amount) { ScreamTarget = FMath::Clamp(Amount, 0.f, 1.f); }
 	/** Faint cold light on her face (lumens; 0 = off). */
 	void SetGlow(float Lumens);
+	/** How brightly her iris shines by itself (0.06 is the ordinary faint gleam). */
+	void SetEyeShine(float Glow, float Swell = 1.f);
+	UPROPERTY(Transient) TObjectPtr<class UMaterialInstanceDynamic> IrisMID;
 	bool SegmentHits(const FVector& A, const FVector& B) const;
 	FVector HeadLocation() const;
 	FVector EyeLocation() const;

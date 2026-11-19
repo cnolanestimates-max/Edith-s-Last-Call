@@ -9,7 +9,7 @@ import glob, os, subprocess, sys
 
 ROOT = "C:/GameDev/Unreal/WellnessCheck/SourceArt/Audio"
 DRY, OUT = ROOT + "/VO_dry", ROOT + "/VO"
-HUMAN = ("m_mem", "m_end")
+HUMAN = ("m_mem", "m_end", "m_left")
 # (pitch ratio, delay ms, gain): herself, two lower voices, something very deep under them, and a thin high one that is late
 LAYERS = [(1.00, 0, 0.85), (0.80, 22, 0.80), (0.67, 41, 0.75), (0.50, 63, 0.55), (1.26, 78, 0.28), (0.90, 115, 0.35)]
 

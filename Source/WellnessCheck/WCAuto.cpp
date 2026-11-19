@@ -15,6 +15,7 @@
 #include "GameFramework/PlayerController.h"
 #include "HAL/FileManager.h"
 #include "Kismet/GameplayStatics.h"
+#include "Materials/MaterialInstanceDynamic.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Components/CapsuleComponent.h"
 #include "Misc/CommandLine.h"
@@ -91,7 +92,35 @@ void AWCDirector::AutoBegin()
 		Fade = 0.f; FadeTarget = 0.f;
 		SwitchRoom(TEXT("hall"), true, false);
 		Wait(4.f);
-		if (FParse::Param(FCommandLine::Get(), TEXT("WCCarOnly")))
+		if (FParse::Param(FCommandLine::Get(), TEXT("WCSmokeOnly")))
+		{
+			AutoSteps.Add({ A_Tele, TEXT("A_UpEll"), 0.f }); Wait(1.0f); AutoSteps.Add({ A_Look, TEXT("W_company_uprear"), -1.f }); Wait(0.15f); Shot(TEXT("smoke_1_hall_far"));
+			AutoSteps.Add({ A_Do, TEXT("at:2330,10,442,0,4"), 0.f }); Wait(0.25f); Shot(TEXT("smoke_2_hall_near")); Wait(0.5f); Shot(TEXT("smoke_3_hall_near_later"));
+		}
+		else if (FParse::Param(FCommandLine::Get(), TEXT("WCEyeOnly")))
+		{
+			Set(TEXT("locked_in")); Set(TEXT("peek_done"));
+			AutoSteps.Add({ A_Do, TEXT("at:2600,0,92,180,0"), 0.f }); Wait(1.5f); Shot(TEXT("eye_0_hall_before"));
+			AutoSteps.Add({ A_Do, TEXT("eye"), 0.f }); Wait(1.8f); Shot(TEXT("eye_1_black"));
+			Wait(3.2f); Shot(TEXT("eye_2_the_eye")); Wait(1.6f); Shot(TEXT("eye_2b_the_eye"));
+			Wait(2.4f); Shot(TEXT("eye_3_light_back_nothing")); Wait(1.2f);
+			AutoSteps.Add({ A_Do, TEXT("at:2600,0,92,146,-8"), 0.f }); Wait(1.6f); Shot(TEXT("eye_4_light_away_eye_back")); Wait(1.0f); Shot(TEXT("eye_4b_still_there"));
+			AutoSteps.Add({ A_Do, TEXT("at:2600,0,92,180,0"), 0.f }); Wait(0.7f); Shot(TEXT("eye_5_gone")); Wait(4.0f); Shot(TEXT("eye_6_after"));
+		}
+		else if (FParse::Param(FCommandLine::Get(), TEXT("WCTVOnly")))
+		{
+			Set(TEXT("locked_in"));
+			AutoSteps.Add({ A_Tele, TEXT("A_Living"), 0.f }); Wait(1.0f); AutoSteps.Add({ A_Look, TEXT("tv"), 0.f }); Wait(0.5f); Shot(TEXT("tv_0_off"));
+			AutoSteps.Add({ A_Do, TEXT("tvon"), 0.f }); Wait(1.6f); Shot(TEXT("tv_1_title")); Wait(3.0f); Shot(TEXT("tv_2_playing")); Wait(3.0f); Shot(TEXT("tv_3_playing"));
+			AutoSteps.Add({ A_Do, TEXT("tvgain:90"), 0.f }); Wait(0.5f); Shot(TEXT("tv_3b_gain90"));
+			AutoSteps.Add({ A_Do, TEXT("tvgain:1000"), 0.f }); Wait(0.5f); Shot(TEXT("tv_3c_gain1000"));
+			AutoSteps.Add({ A_Do, TEXT("tvgain:420"), 0.f });
+			AutoSteps.Add({ A_Do, TEXT("at:250,-215,92,-70,-10"), 0.f }); Wait(1.2f); Shot(TEXT("tv_4_room_lit_by_it"));
+			AutoSteps.Add({ A_Tele, TEXT("A_Living"), 0.f }); Wait(0.6f); AutoSteps.Add({ A_Look, TEXT("tv"), 0.f }); Wait(0.6f);
+			if (FParse::Param(FCommandLine::Get(), TEXT("WCTVDebug"))) { AutoSteps.Add({ A_Do, TEXT("at:372,-470,92,97,4"), 0.f }); Wait(0.5f); }
+			AutoSteps.Add({ A_Do, TEXT("tvoff"), 0.f }); Wait(0.9f); Shot(TEXT("tv_5_dead_glass")); Wait(5.0f); Shot(TEXT("tv_6_after")); Wait(2.0f);
+		}
+		else if (FParse::Param(FCommandLine::Get(), TEXT("WCCarOnly")))
 		{
 			static const TCHAR* Views[][2] = {
 				{ TEXT("at:-1180,60,52,141,-6"), TEXT("car_1_front_quarter") }, { TEXT("at:-1480,-60,52,90,-6"), TEXT("car_2_side") },
@@ -499,6 +528,10 @@ void AWCDirector::AutoTick(float Dt)
 				}
 			}
 		}
+		else if (S.Arg == TEXT("tvon")) { bBusy = false; TVOn(); }
+		else if (S.Arg == TEXT("eye")) { bBusy = false; EyeTry(true); }
+		else if (S.Arg.ToString().StartsWith(TEXT("tvgain:"))) { if (TVScreen) TVScreen->SetScalarParameterValue(TEXT("Gain"), FCString::Atof(*S.Arg.ToString().Mid(7))); }
+		else if (S.Arg == TEXT("tvoff")) { TVOff(true, true); }
 		else if (S.Arg == TEXT("s7")) { bBusy = false; ScareUnderBed(); }
 		else if (S.Arg == TEXT("grab"))
 		{

@@ -74,7 +74,7 @@ void AWCDirector::SwitchRoom(FName Room, bool bOn, bool bClick)
 	{
 		R->FlickUntil = Clock + Rng.FRandRange(0.35, 0.9);
 		// she lets it burn a while, less and less as the night goes on
-		const float Patience = FMath::Lerp(95.f, 28.f, FMath::Clamp(Tension * 1.3f, 0.f, 1.f));
+		const float Patience = FMath::Lerp(58.f, 18.f, FMath::Clamp(Tension * 1.3f, 0.f, 1.f));          // lights go out often, for no reason
 		R->KillAt = Clock + Rng.FRandRange(Patience * 0.6f, Patience * 1.5f);
 	}
 	else
@@ -137,6 +137,7 @@ bool AWCDirector::HouseEvent(FName Id)
 {
 	AWCCharacter* P = Player();
 	if (!P) return false;
+	if (EventsEvent(Id)) return true;
 	const FString S = Id.ToString();
 
 	if (S.StartsWith(TEXT("use:sw_")))
@@ -387,6 +388,7 @@ static FVector PathPoint(const TArray<FVector>& Pts, const TArray<float>& Len, f
 void AWCDirector::BeginDrive()
 {
 	ShowTagged(TEXT("CabinOnly"), true);          // the inside of the car exists only while he is in it
+	if (Car.IsValid()) Car->SetActorHiddenInGame(true);      // and the outside does not (its aerial stood in the windscreen like a black pole)
 	DrivePts.Reset(); DriveLen.Reset();
 	TArray<TPair<FString, FVector>> Raw;
 	for (TActorIterator<AActor> It(GetWorld()); It; ++It)
@@ -406,7 +408,19 @@ void AWCDirector::BeginDrive()
 	}
 	DriveTotal = Acc;
 	DriveDist = 0.f;
-	DriveSpeed = 800.f;
+	DriveSpeed = 620.f;
+	ShadowDist = -1.f; ShadowPhase = 0; ShadowT = 0.f;
+	if (AActor* Sh = Find(TEXT("RoadShadow")))
+	{
+		float Best = 1e9f;
+		for (float D0 = 0.f; D0 < DriveTotal; D0 += 100.f)
+		{
+			const float Dd = FVector::Dist2D(PathPoint(DrivePts, DriveLen, D0), Sh->GetActorLocation());
+			if (Dd < Best) { Best = Dd; ShadowDist = D0; }
+		}
+		ShowTagged(TEXT("RoadShadow"), true);
+		UE_LOG(LogWCHouse, Display, TEXT("WCDRIVE the thing on the road stands %.0f m in"), ShadowDist / 100.f);
+	}
 	bDriving = true;
 	P->SetInputLocked(true);
 	P->SetFlashlight(false, false);
@@ -415,7 +429,7 @@ void AWCDirector::BeginDrive()
 	ACameraActor* Cam = GetWorld()->SpawnActor<ACameraActor>(Seat->GetActorLocation(), FRotator::ZeroRotator, SP);
 	if (Cam)
 	{
-		Cam->GetCameraComponent()->SetFieldOfView(Settings.FOV - 8.f);
+		Cam->GetCameraComponent()->SetFieldOfView(FMath::Min(Settings.FOV - 8.f, 66.f));      // tighter, so the windscreen fills the picture
 		Cam->GetCameraComponent()->bConstrainAspectRatio = false;
 		DriveCam = Cam;
 		PC->SetViewTargetWithBlend(Cam, 0.f);
@@ -443,10 +457,44 @@ void AWCDirector::TickDrive(float Dt)
 		HintUntil = 0.0;
 		FadeTo(0.f, 1.f);
 		DriveDist = DriveTotal - 3000.f;
+		ShadowPhase = 3;
+		ShowTagged(TEXT("RoadShadow"), false);
 	}
 	const float Left = DriveTotal - DriveDist;
-	const float Want = Left < 2600.f ? FMath::Max(55.f, 800.f * FMath::Sqrt(FMath::Max(Left, 0.f) / 2600.f)) : 800.f;
-	DriveSpeed = FMath::FInterpTo(DriveSpeed, Want, Dt, 2.5f);
+	const float Cruise = 620.f;                   // slow: a deputy on a dirt road at night he does not know
+	float Want = Left < 2600.f ? FMath::Max(55.f, Cruise * FMath::Sqrt(FMath::Max(Left, 0.f) / 2600.f)) : Cruise;
+	float Ease = 2.5f;
+	float LookBack = 0.f;
+	if (ShadowDist > 0.f && ShadowPhase < 3)
+	{
+		ShadowT += Dt;
+		if (ShadowPhase == 0 && DriveDist > ShadowDist + 230.f)
+		{
+			// it has just left the headlights: and it is not there any more
+			ShadowPhase = 1; ShadowT = 0.f;
+			ShowTagged(TEXT("RoadShadow"), false);
+			UE_LOG(LogWCHouse, Display, TEXT("WCEVENT t=%.1f passed the thing on the road"), PlaySeconds);
+		}
+		else if (ShadowPhase == 1)
+		{
+			if (ShadowT > 1.3f) { Want = 0.f; Ease = 0.75f; }
+			if (ShadowT > 1.3f && DriveSpeed < 14.f) { ShadowPhase = 2; ShadowT = 0.f; DriveSpeed = 0.f; }
+			if (ShadowT > 1.9f && ShadowT - Dt <= 1.9f) Think(TEXT("...Was somebody standing there?"), 4.5f);
+		}
+		else if (ShadowPhase == 2)
+		{
+			Want = 0.f; DriveSpeed = 0.f;
+			// a slow turn in the seat, a long look down the road behind, a slow turn back
+			if (ShadowT < 1.2f) LookBack = 0.f;
+			else if (ShadowT < 5.0f) LookBack = FMath::InterpEaseInOut(0.f, 1.f, (ShadowT - 1.2f) / 3.8f, 2.f);
+			else if (ShadowT < 9.0f) LookBack = 1.f;
+			else if (ShadowT < 12.4f) LookBack = FMath::InterpEaseInOut(1.f, 0.f, (ShadowT - 9.0f) / 3.4f, 2.f);
+			else { ShadowPhase = 3; ShadowT = 0.f; }
+			if (ShadowT > 6.4f && ShadowT - Dt <= 6.4f) Think(TEXT("Nothing. Just the road."), 4.f);
+		}
+	}
+	else if (ShadowPhase == 3 && ShadowDist > 0.f && DriveSpeed < Cruise * 0.9f && Left > 2600.f) Ease = 0.5f;      // and he pulls away gently
+	DriveSpeed = FMath::FInterpTo(DriveSpeed, Want, Dt, Ease);
 	DriveDist = FMath::Min(DriveTotal, DriveDist + DriveSpeed * Dt);
 	if (bAuto && !AutoShotDir.IsEmpty())
 	{
@@ -466,6 +514,7 @@ void AWCDirector::TickDrive(float Dt)
 	FRotator Rel = PC ? (PC->GetControlRotation() - FRotator(0.f, DriveHeading, 0.f)).GetNormalized() : FRotator::ZeroRotator;
 	Rel.Yaw = FMath::Clamp(Rel.Yaw, -80.f, 80.f);
 	Rel.Pitch = FMath::Clamp(Rel.Pitch, -30.f, 28.f);
+	if (ShadowPhase == 2) { Rel.Yaw = 154.f * LookBack; Rel.Pitch = -2.f * LookBack; }      // over his right shoulder, where it stood
 	DriveHeading = Heading;
 	Car->SetActorLocationAndRotation(FVector(Pos0.X, Pos0.Y, CarHome.Z + Bump * 0.5f), FRotator(0.f, Heading + CarHomeRot.Yaw, Roll * 0.6f));
 	if (PC) PC->SetControlRotation(FRotator(Rel.Pitch, Heading + Rel.Yaw, 0.f));
@@ -483,6 +532,7 @@ void AWCDirector::EndDrive()
 	bDriving = false;
 	Set(TEXT("arrived"));
 	ShowTagged(TEXT("CabinOnly"), false);
+	if (Car.IsValid()) Car->SetActorHiddenInGame(false);
 	if (FParse::Param(FCommandLine::Get(), TEXT("WCDriveOnly")))
 	{
 		const FString Dir0 = AutoShotDir;
@@ -528,7 +578,7 @@ void AWCDirector::TickStalk(float Dt)
 	if (StalkState == 0)
 	{
 		const bool bMay = Has(TEXT("lockin_done")) && !Has(TEXT("sprint_started")) && !Has(TEXT("dawn")) && !bBusy && !H->IsShown() && !ActiveNote.IsValid()
-			&& !Has(TEXT("phone_ringing")) && Clock >= NextScareAt && Clock >= NextStalkAt && StalksDone < 4 && L.Z > -60.f && L.Z < 560.f && !P->IsDown();
+			&& !Has(TEXT("phone_ringing")) && Clock >= NextScareAt && Clock >= NextStalkAt && StalksDone < 4 && !bEventBusy && L.Z > -60.f && L.Z < 560.f && !P->IsDown();
 		if (!bMay) return;
 		// somewhere on this floor, not too near, where he is not looking
 		FVector Best = FVector::ZeroVector; float BestScore = -1.f;
@@ -584,7 +634,7 @@ void AWCDirector::TickStalk(float Dt)
 			for (FVector& V : Route) V.Z = FMath::RoundToFloat(V.Z / 350.f) * 350.f;
 			const bool bClose = Dist < 420.f;
 			// she comes fast: quicker than he can run, and faster again for the last few steps
-			if (bAmbush || bClose) H->MoveAlong(Route, bAmbush ? 1350.f : 1150.f, TEXT("Run"));
+			if (bAmbush || bClose) H->MoveAlong(Route, bAmbush ? 2000.f : 1725.f, TEXT("Run"));      // half as fast again (Cheyenne, 03:54)
 			else H->MoveAlong(Route, 165.f, TEXT("Walk"));          // as fast as her walk plays without her feet sliding; he hears every step
 			if (bClose && !Has(TEXT("stalk_rushing"))) { Set(TEXT("stalk_rushing")); Play2D(TEXT("her_scream"), 0.9f); }
 		}
@@ -712,6 +762,9 @@ void AWCDirector::HouseTick(float Dt)
 	TickHouseLights(Dt);
 	TickBuildUp(Dt);
 	TickStalk(Dt);
+	TickRecord(Dt);
+	TickTV(Dt);
+	TickEye(Dt);
 }
 
 // ================================================================================================ S9: the sewing room

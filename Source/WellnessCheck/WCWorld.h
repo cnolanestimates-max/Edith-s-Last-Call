@@ -9,6 +9,7 @@
 class AWCCharacter;
 class UStaticMeshComponent;
 class UBoxComponent;
+class UInstancedStaticMeshComponent;
 
 UCLASS()
 class WELLNESSCHECK_API AWCInteractable : public AActor
@@ -161,4 +162,20 @@ private:
 	float LeaveT = -1.f;
 	FVector Home = FVector::ZeroVector;
 	FQuat HomeQuat = FQuat::Identity;
+};
+
+/** The Company: black smoke in the shape of a tall man. It has no face and nothing about it is solid. */
+UCLASS()
+class WELLNESSCHECK_API AWCSmokeMan : public AActor
+{
+	GENERATED_BODY()
+public:
+	AWCSmokeMan();
+	/** Height in cm. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WC") float Tall = 300.f;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "WC") TObjectPtr<UInstancedStaticMeshComponent> Smoke;
+	/** Fill an instanced-mesh component with the figure (it faces the component's +X). */
+	static void Build(UInstancedStaticMeshComponent* C, float Height, int32 Seed);
+protected:
+	virtual void BeginPlay() override;
 };

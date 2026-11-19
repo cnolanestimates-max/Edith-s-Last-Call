@@ -87,6 +87,8 @@ static const FWCLine GLines[] = {
 	{ TEXT("d_knot3"), TEXT("Deputy Brandt"), TEXT("It's alright, Edith. You're not alone. You can let go."), 0 },
 	{ TEXT("m_fin4"), TEXT("Edith"), TEXT("STAY!"), 2 },
 	{ TEXT("m_end"), TEXT("Edith"), TEXT("...thank you."), 2 },
+	{ TEXT("m_left"), TEXT(""), TEXT("You left me. You left me. You left me. You left me."), 2 },
+	{ TEXT("m_whyleave"), TEXT("Edith"), TEXT("WHY DID YOU LEAVE ME!"), 3 },
 	{ TEXT("m_laugh1"), TEXT(""), TEXT("Heh heh heh heh... hee hee hee."), 2 },
 	{ TEXT("m_laugh2"), TEXT(""), TEXT("Hm hm hm hm hm. Ha... ha ha ha."), 2 },
 	{ TEXT("m_cry1"), TEXT(""), TEXT("Ohh... oh... oh no... ohh."), 2 },
@@ -696,7 +698,7 @@ void AWCDirector::StoryTick(float Dt)
 				P->AddShake(0.5f);
 			}
 			TArray<FVector> Pts; Pts.Add(FVector(P->GetActorLocation().X, P->GetActorLocation().Y, H->GetActorLocation().Z));
-			H->MoveAlong(Pts, bLockInRun ? 1000.f : 125.f, bLockInRun ? TEXT("Run") : TEXT("Walk"));
+			H->MoveAlong(Pts, bLockInRun ? 1500.f : 125.f, bLockInRun ? TEXT("Run") : TEXT("Walk"));
 		}
 		static int32 LastShots = 0;
 		if (ShotsAtHer != LastShots)
@@ -734,7 +736,7 @@ void AWCDirector::StoryTick(float Dt)
 		{
 			SprintRetarget = Clock + 0.25;
 			TArray<FVector> Pts; Pts.Add(FVector(P->GetActorLocation().X, P->GetActorLocation().Y, P->GetActorLocation().Z - 88.f));
-			H->MoveAlong(Pts, 1250.f, TEXT("Run"));
+			H->MoveAlong(Pts, 1875.f, TEXT("Run"));
 		}
 	}
 	if (bSprintActive && H->IsShown() && (H->DistToPlayer() < 175.f || Clock - SprintStart > 9.0))
@@ -873,7 +875,7 @@ void AWCDirector::ScarePhone()
 						Play2D(TEXT("sting_hit"), 1.f, EWCSnd::Music);
 						E2->SetStutter(14.f);
 						TArray<FVector> Pts; Pts.Add(FVector(Q2->GetActorLocation().X, Q2->GetActorLocation().Y, E2->GetActorLocation().Z));
-						E2->MoveAlong(Pts, 1300.f, TEXT("Run"), [this]()
+						E2->MoveAlong(Pts, 1950.f, TEXT("Run"), [this]()
 						{
 							Grab(1.3f, [this]()
 							{
@@ -929,7 +931,7 @@ void AWCDirector::ScareCeiling()
 			Play2D(TEXT("her_scream"), 1.f);
 			E->SetStutter(0.f);
 			TArray<FVector> Pts; Pts.Add(FVector(Pl->GetActorLocation().X, Pl->GetActorLocation().Y, E->GetActorLocation().Z));
-			E->MoveAlong(Pts, 1250.f, TEXT("Run"));
+			E->MoveAlong(Pts, 1875.f, TEXT("Run"));
 			Pl->SetLightScale(0.55f);
 			Pl->FlickerLight(2.f, 0.95f);
 			SprintStart = -1.0;
@@ -1065,7 +1067,7 @@ void AWCDirector::AtticCrawl()
 			TArray<FVector> Pts;
 			const FVector Dir = (Pl->GetActorLocation() - E->GetActorLocation()).GetSafeNormal2D();
 			Pts.Add(FVector(Pl->GetActorLocation().X, Pl->GetActorLocation().Y, E->GetActorLocation().Z) - Dir * 150.f);
-			E->MoveAlong(Pts, 860.f, TEXT("Crawl"), [this]()
+			E->MoveAlong(Pts, 1250.f, TEXT("Crawl"), [this]()
 			{
 				AWCEntity* E2 = Her();
 				AWCCharacter* Q = Player();
@@ -1139,7 +1141,7 @@ void AWCDirector::CellarSprint()
 		Play2D(TEXT("her_scream"), 1.f);
 		Play2D(TEXT("sting_rise"), 1.f, EWCSnd::Music);
 		TArray<FVector> Pts; Pts.Add(FVector(P->GetActorLocation().X, P->GetActorLocation().Y, H->GetActorLocation().Z));
-		H->MoveAlong(Pts, 1200.f, TEXT("Run"));
+		H->MoveAlong(Pts, 1800.f, TEXT("Run"));
 		P->FlickerLight(1.6f, 0.8f);
 		SprintStart = -1.0;
 		bSprintActive = true;
@@ -1188,7 +1190,7 @@ void AWCDirector::FinaleStep(int32 Knot)
 		Say(TEXT("d_knot2"));
 		TArray<FVector> Pts; Pts.Add(Pos(TEXT("Her_Fin2")));
 		H->SetStutter(14.f);
-		H->MoveAlong(Pts, 760.f, TEXT("Run"), [this]()
+		H->MoveAlong(Pts, 1140.f, TEXT("Run"), [this]()
 		{
 			if (AWCEntity* E = Her()) { E->SetStutter(0.f); E->Play(TEXT("Rise"), false, 1.f); E->FacePlayer(true); }
 		});
@@ -1256,7 +1258,7 @@ void AWCDirector::FinaleCaught()
 	Play2D(TEXT("her_scream"), 1.f);
 	TArray<FVector> Pts; Pts.Add(FVector(P->GetActorLocation().X, P->GetActorLocation().Y, H->GetActorLocation().Z));
 	if (!H->IsShown()) H->Appear(Pos(TEXT("Her_Fin1")), YawOf(TEXT("Her_Fin1")), TEXT("Run"));
-	H->MoveAlong(Pts, 1100.f, TEXT("Run"), [this]()
+	H->MoveAlong(Pts, 1650.f, TEXT("Run"), [this]()
 	{
 		if (AWCCharacter* Pl = Player()) { Pl->AddShake(1.f); Pl->Knockdown(8.f); }
 		FadeTo(1.f, 0.3f);
