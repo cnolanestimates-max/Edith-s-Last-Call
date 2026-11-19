@@ -88,7 +88,12 @@ void AWCDirector::AutoBegin()
 		Fade = 0.f; FadeTarget = 0.f;
 		SwitchRoom(TEXT("hall"), true, false);
 		Wait(4.f);
-		if (FParse::Param(FCommandLine::Get(), TEXT("WCHerLook")))
+		if (FParse::Param(FCommandLine::Get(), TEXT("WCGrabOnly")))
+		{
+			AutoSteps.Add({ A_Tele, TEXT("A_Foyer"), 0.f }); Wait(1.0f); AutoSteps.Add({ A_Her, TEXT("Idle"), 400.f }); Wait(0.5f);
+			AutoSteps.Add({ A_Do, TEXT("grab"), 0.f }); Wait(0.75f); Shot(TEXT("grab_face_1")); Wait(0.45f); Shot(TEXT("grab_face_2")); Wait(2.5f);
+		}
+		else if (FParse::Param(FCommandLine::Get(), TEXT("WCHerLook")))
 		{
 			AutoSteps.Add({ A_Tele, TEXT("A_Foyer"), 0.f });
 			Wait(1.f);
@@ -551,6 +556,14 @@ void AWCDirector::AutoTick(float Dt)
 				AutoPath.Reset();
 				if (In > 25.0)
 				{
+					{
+						FHitResult Hit;
+						FCollisionQueryParams Q(SCENE_QUERY_STAT(WCAutoWall), false, P);
+						const FVector From = Loc - FVector(0, 0, 30.f);
+						const bool bHit = GetWorld()->SweepSingleByChannel(Hit, From, From + Dir * 90.f, FQuat::Identity, ECC_Pawn, FCollisionShape::MakeSphere(22.f), Q);
+						UE_LOG(LogWCAuto, Error, TEXT("WCAUTO WHY %s: walking into %s (%s) %.0f cm ahead, at (%.0f,%.0f,%.0f) heading (%.2f,%.2f)"), *S.Arg.ToString(),
+							bHit && Hit.GetActor() ? *Hit.GetActor()->GetActorNameOrLabel() : TEXT("nothing found"), bHit && Hit.GetComponent() ? *Hit.GetComponent()->GetName() : TEXT("-"), bHit ? Hit.Distance : -1.f, Loc.X, Loc.Y, Loc.Z, Dir.X, Dir.Y);
+					}
 					UE_LOG(LogWCAuto, Error, TEXT("WCAUTO FAIL unreachable %s%s"), *S.Arg.ToString(), bForce ? TEXT(" -> teleported") : TEXT(""));
 					if (bForce)
 					{

@@ -580,7 +580,7 @@ void AWCDirector::TickStalk(float Dt)
 			const bool bClose = Dist < 420.f;
 			// she comes fast: quicker than he can run, and faster again for the last few steps
 			if (bAmbush || bClose) H->MoveAlong(Route, bAmbush ? 1350.f : 1150.f, TEXT("Run"));
-			else H->MoveAlong(Route, 250.f, TEXT("Walk"));
+			else H->MoveAlong(Route, 165.f, TEXT("Walk"));          // as fast as her walk plays without her feet sliding; he hears every step
 			if (bClose && !Has(TEXT("stalk_rushing"))) { Set(TEXT("stalk_rushing")); Play2D(TEXT("her_scream"), 0.9f); }
 		}
 		if (Dist < 165.f)
@@ -820,8 +820,13 @@ void AWCDirector::ScareBook()
 }
 
 // ================================================================================================ the grab
+static float GrabSink = 30.f;       // how far she stoops to him (cm); -WCGrabSink=<n> to try others
+static float GrabDist = 150.f;      // how far her feet are from his; -WCGrabDist=<n>
+
 void AWCDirector::Grab(float Hold, TFunction<void()> Then)
 {
+	FParse::Value(FCommandLine::Get(), TEXT("WCGrabSink="), GrabSink);
+	FParse::Value(FCommandLine::Get(), TEXT("WCGrabDist="), GrabDist);
 	AWCEntity* H = Her();
 	AWCCharacter* P = Player();
 	if (!H || !P) { if (Then) Then(); return; }
@@ -832,7 +837,7 @@ void AWCDirector::Grab(float Hold, TFunction<void()> Then)
 	const FVector Feet = P->GetActorLocation() - FVector(0, 0, 88.f);
 	const FVector To = (H->GetActorLocation() - Feet).GetSafeNormal2D();
 	const FVector Dir = (FVector::DotProduct(To, Fwd) > 0.2f ? To : Fwd);
-	H->SetActorLocation(Feet + Dir * 118.f);
+	H->SetActorLocation(Feet + Dir * GrabDist - FVector(0, 0, GrabSink));
 	H->SetYaw((-Dir).Rotation().Yaw);
 	H->FacePlayer(true);
 	H->Play(TEXT("Lunge"), false);

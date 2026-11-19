@@ -142,14 +142,14 @@ def main():
             print("  FAILED", name, str(exc)[:200])
     for name, (pitch, wood, delay) in HER_STEPS.items():
         dst = f"{OUT}/{name}.wav"
-        if os.path.exists(dst) and not force:
+        if os.path.exists(dst) and not force and "--steps" not in sys.argv:
             continue
         try:
             slap, origin = raw_copy(*SLAP)
             ff(["-i", slap, "-i", f"{OUT}/step_wood_0{wood}.wav", "-filter_complex",
                 f"[0]aresample=48000,pan=mono|c0=0.5*c0+0.5*c1,asetrate=48000*{pitch},aresample=48000,lowpass=f=5200,adelay={delay}:all=1,volume=0.9[w];"
                 f"[1]asetrate=48000*0.55,aresample=48000,lowpass=f=650,volume=2.0[t];"
-                f"[w][t]amix=inputs=2:normalize=0,apad=pad_dur=0.15,areverse,afade=t=in:d=0.12,areverse,alimiter=limit=0.9,volume=1.3[o]",
+                f"[w][t]amix=inputs=2:normalize=0,apad=pad_dur=0.15,areverse,afade=t=in:d=0.12,areverse,alimiter=limit=0.9,volume=0.68[o]",
                 "-map", "[o]", "-ac", "1", "-ar", "48000", "-c:a", "pcm_s16le", dst])
             credits.append(f"- {name}: {origin} + our own step_wood_0{wood}")
             print("  ", name, round(dur(dst), 2), "s")

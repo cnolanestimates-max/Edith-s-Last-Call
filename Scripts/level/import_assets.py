@@ -123,7 +123,11 @@ def fbx_task(path, dest, name, skeleton=None):
         ui.set_editor_property("import_textures", False)
         ui.set_editor_property("mesh_type_to_import", unreal.FBXImportType.FBXIT_SKELETAL_MESH)
         sd = ui.get_editor_property("skeletal_mesh_import_data")
-        sd.set_editor_property("normal_import_method", unreal.FBXNormalImportMethod.FBXNIM_IMPORT_NORMALS_AND_TANGENTS)
+        sd.set_editor_property("normal_import_method", unreal.FBXNormalImportMethod.FBXNIM_IMPORT_NORMALS)
+        try:
+            sd.set_editor_property("normal_generation_method", unreal.FBXNormalGenerationMethod.MIKK_T_SPACE)
+        except Exception as exc:
+            log(f"mikk: {exc}")
         sd.set_editor_property("import_morph_targets", True)
     else:
         ui.set_editor_property("import_mesh", False)
