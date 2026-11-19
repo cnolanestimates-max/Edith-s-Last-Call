@@ -226,9 +226,25 @@ void AWCHUD::DrawHUD()
 	else if (Screen != EWCScreen::None) DrawMenu(D);
 	if (!InvTestDir.IsEmpty() && D->Mode == EWCMode::Playing)
 	{
-		// -WCInvTest=<dir>: fill the bag, open it, photograph each page, quit
-		static const TCHAR* Give[] = { TEXT("key_sitting"), TEXT("key_prayer"), TEXT("key_ell"), TEXT("fuse"), TEXT("shears"), TEXT("keep_ruth"), TEXT("keep_walter"), TEXT("keep_daniel") };
-		static const TCHAR* Shots[] = { TEXT("inv_1_list"), TEXT("inv_2_iron_key"), TEXT("inv_3_keyring_inspect"), TEXT("inv_4_shears_inspect"), TEXT("inv_5_tags"), TEXT("inv_6_music_box"), TEXT("inv_7_pistol"), TEXT("inv_8_papers") };
+		// -WCInvTest=<dir>: fill the bag, open it, photograph every thing in Inspect (the doll from both sides, and emptied), quit
+		struct FInvShot { const TCHAR* Item; float Yaw, Pitch; const TCHAR* Name; const TCHAR* Before; };
+		static const FInvShot Shots[] = {
+			{ TEXT(""), 0.f, 0.f, TEXT("inv_00_list"), nullptr },
+			{ TEXT("doll"), 0.f, 0.f, TEXT("inv_01_doll_front"), nullptr }, { TEXT("doll"), 180.f, -10.f, TEXT("inv_02_doll_back_prompt"), nullptr },
+			{ TEXT("doll_empty"), 180.f, -10.f, TEXT("inv_03_doll_emptied"), TEXT("inspect:doll") }, { TEXT("key_box"), 20.f, 0.f, TEXT("inv_04_small_key"), nullptr },
+			{ TEXT("screwdriver"), 25.f, 0.f, TEXT("inv_05_screwdriver"), nullptr }, { TEXT("keep_eye"), 0.f, 0.f, TEXT("inv_06_glass_eye"), nullptr },
+			{ TEXT("keep_eye"), 0.f, -55.f, TEXT("inv_07_glass_eye_iris"), nullptr }, { TEXT("key_sitting"), 20.f, 0.f, TEXT("inv_08_brass_key"), nullptr },
+			{ TEXT("key_prayer"), 20.f, 0.f, TEXT("inv_09_iron_key"), nullptr }, { TEXT("key_desk"), 20.f, 0.f, TEXT("inv_10_desk_key"), nullptr },
+			{ TEXT("key_ell"), 15.f, 0.f, TEXT("inv_11_keyring"), nullptr }, { TEXT("key_attic"), 20.f, 0.f, TEXT("inv_12_long_key"), nullptr },
+			{ TEXT("key_cellar"), 20.f, 0.f, TEXT("inv_13_padlock_key"), nullptr }, { TEXT("fuse"), 30.f, 10.f, TEXT("inv_14_fuse"), nullptr },
+			{ TEXT("shears"), 35.f, 18.f, TEXT("inv_15_shears"), nullptr }, { TEXT("keep_walter"), 30.f, 20.f, TEXT("inv_16_ring"), nullptr },
+			{ TEXT("keep_daniel"), 10.f, 0.f, TEXT("inv_17_tags"), nullptr }, { TEXT("keep_ruth"), 30.f, 10.f, TEXT("inv_18_music_box"), nullptr },
+			{ TEXT("pistol"), 0.f, 0.f, TEXT("inv_19_pistol"), nullptr }, { TEXT("!papers"), 0.f, 0.f, TEXT("inv_20_papers"), nullptr },
+		};
+		static const TCHAR* Give[] = { TEXT("doll"), TEXT("screwdriver"), TEXT("keep_eye"), TEXT("key_sitting"), TEXT("key_prayer"), TEXT("key_desk"), TEXT("key_ell"), TEXT("key_attic"),
+			TEXT("key_cellar"), TEXT("fuse"), TEXT("shears"), TEXT("keep_ruth"), TEXT("keep_walter"), TEXT("keep_daniel") };
+		const int32 NShots = UE_ARRAY_COUNT(Shots);
+		static int32 SetFor = -1;
 		if (InvTestStage == 0 && D->PlaySeconds > 7.f && Screen == EWCScreen::None)
 		{
 			for (const TCHAR* G : Give) D->Items.Add(G);
@@ -239,24 +255,29 @@ void AWCHUD::DrawHUD()
 			InvTestStage = 1;
 			InvTestAt = RealNow + 2.5;
 		}
-		else if (InvTestStage >= 1 && InvTestStage <= 8 && RealNow > InvTestAt && Screen == EWCScreen::Inventory)
+		else if (InvTestStage >= 1 && InvTestStage <= NShots && Screen == EWCScreen::Inventory)
 		{
-			FScreenshotRequest::RequestScreenshot(InvTestDir / (FString(Shots[InvTestStage - 1]) + TEXT(".png")), true, false);
-			++InvTestStage;
-			InvTestAt = RealNow + 2.2;
+			const FInvShot& S = Shots[InvTestStage - 1];
+			if (SetFor != InvTestStage && RealNow > InvTestAt - 1.9)
+			{
+				SetFor = InvTestStage;
+				if (S.Before) D->Event(S.Before);
+				TArray<FInvItem> Now;
+				BuildInventory(D, Now);
+				const bool bPapers = FCString::Strcmp(S.Item, TEXT("!papers")) == 0;
+				InvTab = bPapers ? 1 : 0;
+				bInvInspect = !bPapers && S.Item[0] != 0;
+				for (int32 i = 0; i < Now.Num(); ++i) if (Now[i].Id == FName(S.Item)) InvSel = i;
+			}
+			if (SetFor == InvTestStage) { InvYaw = S.Yaw; InvPitch = S.Pitch; InvTouchedAt = RealNow; }
+			if (RealNow > InvTestAt)
+			{
+				FScreenshotRequest::RequestScreenshot(InvTestDir / (FString(S.Name) + TEXT(".png")), true, false);
+				++InvTestStage;
+				InvTestAt = RealNow + 2.2;
+			}
 		}
-		else if (InvTestStage >= 2 && InvTestStage <= 8 && RealNow > InvTestAt - 1.7 && Screen == EWCScreen::Inventory)
-		{
-			// set up the next picture a moment after the last one was taken
-			static const int32 SelFor[] = { 0, 0, 4, 5, 7, 10, 8, 1, 0 };
-			InvTouchedAt = RealNow;
-			InvSel = SelFor[InvTestStage];
-			bInvInspect = InvTestStage == 3 || InvTestStage == 4;
-			InvTab = InvTestStage == 8 ? 1 : 0;
-			InvYaw = InvTestStage == 4 ? 35.f : 0.f;
-			InvPitch = InvTestStage == 4 ? 18.f : 0.f;
-		}
-		else if (InvTestStage == 9 && RealNow > InvTestAt)
+		else if (InvTestStage == NShots + 1 && RealNow > InvTestAt)
 		{
 			++InvTestStage;
 			UKismetSystemLibrary::QuitGame(this, PC, EQuitPreference::Quit, false);
@@ -290,7 +311,7 @@ static FString ItemName(FName Id)
 {
 	static const TMap<FName, FString> Names = {
 		{ TEXT("key_sitting"), TEXT("Small brass key") }, { TEXT("key_prayer"), TEXT("Iron key on a ribbon") },
-		{ TEXT("key_attic"), TEXT("Attic key") }, { TEXT("key_cellar"), TEXT("Padlock key") },
+		{ TEXT("key_attic"), TEXT("Long key") }, { TEXT("key_cellar"), TEXT("Padlock key") },
 		{ TEXT("keep_ruth"), TEXT("Ruth's music box") }, { TEXT("keep_walter"), TEXT("Walter's wedding ring") },
 		{ TEXT("keep_daniel"), TEXT("Daniel's dog tags") }, { TEXT("key_desk"), TEXT("Small desk key") },
 		{ TEXT("key_ell"), TEXT("Walter's keys (upstairs back rooms)") }, { TEXT("fuse"), TEXT("Spare fuse") }, { TEXT("shears"), TEXT("Sewing shears") } };
@@ -630,17 +651,27 @@ namespace
 		{ TEXT("flashlight"), TEXT("Flashlight"), TEXT("County issue, three cells. It goes dim when she is close, and out when she is closer."), TEXT("/Game/HorrorHouseKit/Meshes/Lights_Ambience/SM_Flashlight_Off.SM_Flashlight_Off") },
 		{ TEXT("pistol"), TEXT("Service pistol"), TEXT("Eight to the magazine. It does not hurt her. She cannot stand the noise and the flash: three or four shots and she goes, for a while."), TEXT("/Game/WC/Props/SM_Item_Pistol.SM_Item_Pistol") },
 		{ TEXT("radio"), TEXT("Radio"), TEXT("Clear as a bell in the car. Inside this house it gives nothing but static."), TEXT("/Game/WC/Props/SM_Item_Radio.SM_Item_Radio") },
-		{ TEXT("key_sitting"), TEXT("Small brass key"), TEXT("From the kitchen drawer that was shut a minute before. Worn smooth. Her sitting room is the only door downstairs that is locked."), TEXT("/Game/WC/Props/SM_Item_Key.SM_Item_Key") },
-		{ TEXT("key_prayer"), TEXT("Iron key on a ribbon"), TEXT("Heavy and old, on a faded red ribbon. For the locked room upstairs, the one she prayed in."), TEXT("/Game/WC/Props/SM_Item_KeyIron.SM_Item_KeyIron") },
-		{ TEXT("key_desk"), TEXT("Small desk key"), TEXT("It was inside a hollow book. Walter's desk, in the den."), TEXT("/Game/WC/Props/SM_Item_Key.SM_Item_Key") },
-		{ TEXT("key_ell"), TEXT("Walter's keys"), TEXT("Three on a ring, from his desk. The door across the upstairs hall, and the rooms behind it."), TEXT("/Game/WC/Props/SM_Item_Keyring.SM_Item_Keyring") },
-		{ TEXT("key_attic"), TEXT("Attic key"), TEXT("It was in Daniel's room, kept where a boy keeps things. The attic door."), TEXT("/Game/WC/Props/SM_Item_Key.SM_Item_Key") },
-		{ TEXT("key_cellar"), TEXT("Padlock key"), TEXT("From the bottom of Daniel's footlocker. The padlock on the cellar door."), TEXT("/Game/WC/Props/SM_Item_KeyIron.SM_Item_KeyIron") },
-		{ TEXT("fuse"), TEXT("Spare fuse"), TEXT("A screw-in plug fuse, the old kind. The fuse box is in the pantry."), TEXT("/Game/WC/Props/SM_Item_Fuse.SM_Item_Fuse") },
+		{ TEXT("keep_eye"), TEXT("Glass eye"), TEXT("Pale blue, painted by hand, older than I am. It was wrapped in a handkerchief. Hers."), TEXT("/Game/WC/Props/SM_Item_GlassEye.SM_Item_GlassEye") },
+		{ TEXT("screwdriver"), TEXT("Screwdriver"), TEXT("A flat-head with a turned wooden handle. The tip is bright: somebody has used it not long ago."), TEXT("/Game/WC/Props/SM_Item_Screwdriver.SM_Item_Screwdriver") },
+		{ TEXT("doll"), TEXT("Rag doll"), TEXT("A child's rag doll, pushed deep into the duct. One button eye is gone. There is something hard inside her."), TEXT("/Game/WC/Props/SM_Item_Doll.SM_Item_Doll") },
+		{ TEXT("doll_empty"), TEXT("Rag doll"), TEXT("Ruth's, I would guess. The seam down her back has been cut and sewn up again more than once."), TEXT("/Game/WC/Props/SM_Item_DollEmpty.SM_Item_DollEmpty") },
+		{ TEXT("key_box"), TEXT("Small key"), TEXT("Small and fancy, with a heart worked into the bow. Too small for any door in this house."), TEXT("/Game/WC/Props/SM_Item_KeyHeart.SM_Item_KeyHeart") },
+		{ TEXT("key_sitting"), TEXT("Small brass key"), TEXT("Worn smooth, two little scrolls in the bow. It was lying in a drawer that had been shut."), TEXT("/Game/WC/Props/SM_Item_Key.SM_Item_Key") },
+		{ TEXT("key_prayer"), TEXT("Iron key on a ribbon"), TEXT("Heavy and old, on a faded red ribbon gone grey where it was held."), TEXT("/Game/WC/Props/SM_Item_KeyIron.SM_Item_KeyIron") },
+		{ TEXT("key_desk"), TEXT("Small desk key"), TEXT("It was inside a hollow book. A barrel key, too small for a door."), TEXT("/Game/WC/Props/SM_Item_KeyDesk.SM_Item_KeyDesk") },
+		{ TEXT("key_ell"), TEXT("Walter's keys"), TEXT("Three that do not match, on a split ring with a leather fob. W.H. From his desk."), TEXT("/Game/WC/Props/SM_Item_Keyring.SM_Item_Keyring") },
+		{ TEXT("key_attic"), TEXT("Long key"), TEXT("It was in Daniel's room, kept where a boy keeps things. Long, with a paper tag too worn to read."), TEXT("/Game/WC/Props/SM_Item_KeyLong.SM_Item_KeyLong") },
+		{ TEXT("key_cellar"), TEXT("Padlock key"), TEXT("Flat brass, stamped 27. From the bottom of Daniel's footlocker."), TEXT("/Game/WC/Props/SM_Item_KeyPadlock.SM_Item_KeyPadlock") },
+		{ TEXT("fuse"), TEXT("Spare fuse"), TEXT("A screw-in plug fuse, the old kind. Fifteen amperes."), TEXT("/Game/WC/Props/SM_Item_Fuse.SM_Item_Fuse") },
 		{ TEXT("shears"), TEXT("Sewing shears"), TEXT("Heavy tailor's shears, still sharp. Her hands could not close on them any more. Mine can."), TEXT("/Game/WC/Props/SM_Item_Shears.SM_Item_Shears") },
 		{ TEXT("keep_ruth"), TEXT("Ruth's music box"), TEXT("Her name is scratched into the bottom in a child's capitals. It still plays."), TEXT("") },
 		{ TEXT("keep_walter"), TEXT("Walter's wedding ring"), TEXT("Worn thin. It was lying with her knots."), TEXT("/Game/WC/Props/SM_Item_Ring.SM_Item_Ring") },
 		{ TEXT("keep_daniel"), TEXT("Daniel's dog tags"), TEXT("HARROW, DANIEL. He went, and in March of 1969 a telegram came instead of him."), TEXT("/Game/WC/Props/SM_Item_Tags.SM_Item_Tags") },
+	};
+	// Some things have something hidden on them: turn that side toward him in Inspect and it can be taken.
+	struct FWCHidden { const TCHAR* Item; FVector Side; const TCHAR* Hint; const TCHAR* Prompt; const TCHAR* Found; const TCHAR* Event; };
+	const FWCHidden GWCHidden[] = {
+		{ TEXT("doll"), FVector(0.f, 0.f, -1.f), TEXT("Something hard is sewn inside her. Turn her over."), TEXT("[E]  Work it out through the seam"), TEXT("A small key, sewn into the stuffing."), TEXT("inspect:doll") },
 	};
 	const FWCItemInfo* FindWCItemInfo(FName Id)
 	{
@@ -770,6 +801,8 @@ void AWCHUD::InvUse(AWCDirector* D, FName Id)
 		InvSay(Door ? TEXT("It does not fit this lock.") : TEXT("Nothing here it fits. I have to be standing at the lock."));
 		return;
 	}
+	if (Id == TEXT("doll")) { InvSay(TEXT("There is something hard inside her. Inspect her.")); return; }
+	if (Id == TEXT("screwdriver")) { if (F && F->WCId == TEXT("vent")) OnWhatHeFaces(); else InvSay(TEXT("Nothing here to unscrew.")); return; }
 	if (Id == TEXT("fuse")) { if (F && F->WCId == TEXT("fusebox")) OnWhatHeFaces(); else InvSay(TEXT("It goes in the fuse box.")); return; }
 	if (Id == TEXT("shears")) { if (F && F->WCId.ToString().StartsWith(TEXT("knot"))) OnWhatHeFaces(); else InvSay(TEXT("Nothing here to cut.")); return; }
 	if (S.StartsWith(TEXT("keep_")) && F && F->WCId == TEXT("place")) { OnWhatHeFaces(); return; }
@@ -856,6 +889,26 @@ void AWCHUD::DrawInventory(AWCDirector* D)
 		Text(Cur->Name, W * 0.5f, Px(70.f), Px(40.f), Hot, 1, true);
 		Wrapped(Cur->Desc, W * 0.24f, H - Px(210.f), W * 0.52f, Px(25.f), Ink, 1);
 		Text(TEXT("Drag, or W A S D: turn it      Wheel, or Q / Z: closer, further      Esc: back"), W * 0.5f, H - Px(64.f), Px(19.f), Dim, 1);
+		for (const FWCHidden& Hd : GWCHidden)
+		{
+			if (Cur->Id != Hd.Item) continue;
+			const FQuat Qv = FQuat(FRotator(InvPitch, 0.f, 0.f)) * FQuat(FRotator(0.f, InvYaw, 0.f)) * P->InspectBase();
+			const bool bSide = Qv.RotateVector(Hd.Side).X < -0.62f;                 // that side is toward him
+			if (bSide) InvTouchedAt = RealNow;                                        // hold still while he looks at it
+			Text(bSide ? Hd.Prompt : Hd.Hint, W * 0.5f, H - Px(262.f), Px(25.f), bSide ? Hot : Dim, 1);
+			if (bSide && bGo)
+			{
+				const float Y0 = InvYaw, P0 = InvPitch, Z0 = InvZoom;
+				D->Event(Hd.Event);
+				TArray<FInvItem> Now;
+				BuildInventory(D, Now);
+				for (int32 i = 0; i < Now.Num(); ++i) if (Now[i].Id == TEXT("doll_empty")) InvSel = i;
+				if (Now.IsValidIndex(InvSel)) { ShowInvItem(D, Now[InvSel].Id); InvYaw = Y0; InvPitch = P0; InvZoom = Z0; }
+				InvSay(Hd.Found);
+				return;
+			}
+		}
+		if (RealNow < InvMsgUntil) Text(InvMsg, W * 0.5f, H - Px(262.f), Px(25.f), Hot, 1);
 		if (!bFresh && (PC->WasInputKeyJustPressed(EKeys::RightMouseButton) || PC->WasInputKeyJustPressed(EKeys::BackSpace))) bInvInspect = false;
 		return;
 	}

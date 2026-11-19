@@ -56,7 +56,7 @@ AWCEntity::AWCEntity()
 	FarLight->SetRelativeLocation(FVector(80.f, 0.f, 160.f));
 	FarLight->SetIntensityUnits(ELightUnits::Lumens);
 	FarLight->SetIntensity(0.f);
-	FarLight->SetAttenuationRadius(460.f);
+	FarLight->SetAttenuationRadius(560.f);
 	FarLight->SetLightColor(FLinearColor(0.72f, 0.82f, 1.f));
 	FarLight->SetCastShadows(false);
 	SetActorHiddenInGame(true);
@@ -248,7 +248,7 @@ void AWCEntity::Tick(float Dt)
 	Super::Tick(Dt);
 	if (!bShown) return;
 	// beyond his flashlight she is a pale shape in the dark; inside it, his light does the work
-	FarLight->SetIntensity(FarGlow * FMath::Clamp((DistToPlayer() - 230.f) / 260.f, 0.f, 1.f));
+	FarLight->SetIntensity(FarGlow * FMath::Clamp((DistToPlayer() - 230.f) / 260.f, 0.f, 1.f) * (1.f + 1.6f * FMath::Clamp((DistToPlayer() - 600.f) / 900.f, 0.f, 1.f)));       // further off, she has to be brighter to be seen at all
 	{
 		// her face is never still: the jaw works when she speaks and hangs a little when she breathes, the brow
 		// creeps, and one side of her mouth twitches up off the teeth

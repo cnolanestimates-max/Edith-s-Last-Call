@@ -172,8 +172,15 @@ bool AWCDirector::HouseEvent(FName Id)
 		return true;
 	}
 	if (S.StartsWith(TEXT("look:"))) { LooksSeen.Add(Id); return true; }
+	if (Id == TEXT("take:key_ell"))
+	{
+		if (!Has(TEXT("placed"))) SetObjective(TEXT("Find what Walter's keys open"));
+		Checkpoint(TEXT("desk"));
+		return true;
+	}
 	if (S.StartsWith(TEXT("take:ammo")))
 	{
+		if (Id == TEXT("take:ammo_desk")) Set(TEXT("desk_ammo"));
 		P->Reserve += 8;
 		ShowToast(TEXT("Taken: box of cartridges (+8)"));
 		return true;
@@ -238,14 +245,8 @@ bool AWCDirector::HouseEvent(FName Id)
 		Set(TEXT("desk_open"));
 		Play2D(TEXT("door_unlock"), 0.8f);
 		if (AWCInteractable* Desk = Thing(TEXT("desk"))) Desk->bEnabled = false;
-		After(0.9f, [this]()
-		{
-			GiveItem(TEXT("key_ell"), TEXT("Walter's keys"));
-			if (AWCCharacter* Pl = Player()) Pl->Reserve += 8;
-			Think(TEXT("Walter's key ring. Upstairs, the back rooms. And a box of his cartridges."));
-			if (!Has(TEXT("placed"))) SetObjective(TEXT("Upstairs: the locked back rooms"));
-			Checkpoint(TEXT("desk"));
-		});
+		// the roll-top is open: his key ring and a box of cartridges are lying in it, for him to take
+		After(0.5f, [this]() { ApplyWorldState(); });
 		return true;
 	}
 	if (Id == TEXT("take:key_desk")) { Think(TEXT("The key was in the book. Walter's desk.")); return true; }
@@ -276,7 +277,7 @@ bool AWCDirector::HouseEvent(FName Id)
 	if (Id == TEXT("take:fuse")) { if (!bPowerOut) Think(TEXT("A spare fuse. Might want that.")); return true; }
 	if (Id == TEXT("take:key_attic"))
 	{
-		SetObjective(TEXT("The attic"));
+		SetObjective(TEXT("Find what the long key opens"));
 		// his radio comes on by itself, and something answers to his name
 		After(1.6f, [this]()
 		{
@@ -319,52 +320,10 @@ void AWCDirector::TickBuildUp(float Dt)
 			After(2.2f, [this]() { if (!Has(TEXT("door_stuck"))) Think(TEXT("...The front door.")); });
 		}
 		break;
-	case 1: if (T > 85.f) { ++BuildStep; PlayAt(TEXT("thump_far"), Above(260.f, -180.f), 1.f, 0.95f, 2600.f); } break;
-	case 2: if (T > 150.f) { ++BuildStep; PlayAt(TEXT("steps_above"), Above(-120.f, 60.f), 1.f, 1.f, 2600.f); After(4.f, [this]() { Think(TEXT("Somebody's up there.")); }); } break;
-	case 3:
-		if (T > 215.f)
-		{
-			++BuildStep;
-			if (AActor* Chair = Find(TEXT("RockingChair"))) { RockActor = Chair; RockUntil = Clock + 9.0; RockBase = Chair->GetActorRotation(); PlayAt(TEXT("chair_creak"), Chair->GetActorLocation() + FVector(0, 0, 50), 1.f, 1.f, 2200.f); After(3.2f, [this, Chair]() { if (IsValid(Chair)) PlayAt(TEXT("chair_creak"), Chair->GetActorLocation() + FVector(0, 0, 50), 0.9f, 0.94f, 2200.f); }); }
-		}
-		break;
-	case 4:
-		if (T > 280.f)
-		{
-			++BuildStep;
-			if (AnyRoomOn(Rooms)) { for (TPair<FName, FRoomLights>& R : Rooms) if (R.Value.bOn) { R.Value.KillAt = Clock; break; } NextLightKill = 0.0; }
-			else PlayAt(TEXT("door_far_03"), Above(600.f, 0.f), 1.f, 1.f, 3200.f);
-		}
-		break;
-	case 5:
-		if (T > 345.f)
-		{
-			++BuildStep;
-			const FVector Side = FRotator(0.f, P->GetControlRotation().Yaw + 90.f, 0.f).Vector();
-			PlayAt(TEXT("scratch_wall"), L + Side * 170.f + FVector(0, 0, 30), 1.f, 1.f, 1200.f);
-			After(2.6f, [this, L, Side]() { PlayAt(TEXT("skitter"), L + Side * 260.f + FVector(120, 0, 60), 1.f, 1.f, 1200.f); });
-		}
-		break;
-	case 6:
-		if (T > 400.f)
-		{
-			++BuildStep;
-			PlayAt(TEXT("radio_tune"), Pos(TEXT("RadioPoint")), 1.f, 1.f, 3200.f);
-			After(8.f, [this]() { Play2D(TEXT("breath_near"), 0.55f); if (AWCCharacter* Pl = Player()) Pl->FlickerLight(0.5f, 0.7f); });
-		}
-		break;
+	case 1: BuildStep = 7; break;          // (the rest of the build-up is set off by what he does: WCEvents.cpp, GWCCues)
 	default: break;
 	}
-	if (!Has(TEXT("heard_upstairs")) && T > 640.f && L.Z > 300.f && L.Z < 650.f)
-	{
-		Set(TEXT("heard_upstairs"));
-		UpstairsAt = Clock;
-		PlayAt(TEXT("thump_heavy"), Pos(TEXT("Snd_UpstairsThump")), 1.f);
-		P->AddShake(0.25f);
-		After(1.6f, [this]() { PlayAt(TEXT("drag_floor"), Pos(TEXT("Snd_UpstairsThump")), 1.f); });
-		SetObjective(TEXT("Find her upstairs"));
-		Tension = 0.35f;
-	}
+	// (the thump used to come on a clock here; it is now set off by taking the small key: AWCDirector::UpstairsThump)
 	// the rocking chair
 	if (RockActor.IsValid() && Clock < RockUntil)
 	{
@@ -438,7 +397,7 @@ void AWCDirector::BeginDrive()
 	PC->SetControlRotation(FRotator(0.f, DriveHeading, 0.f));
 	ShowTagged(TEXT("CarRunning"), true);
 	SetLoop(TEXT("car"), TEXT("amb_car"), 0.9f, 1.5f);
-	SetLoop(TEXT("amb"), TEXT("amb_night"), 0.25f, 1.f);
+	SetLoop(TEXT("amb"), TEXT(""), 0.f, 1.f);              // windows up: the night is not heard until he gets out
 		TickDrive(0.f);
 	After(5.f, [this]() { if (bDriving) ShowHint(TEXT("Mouse: look around        Space: skip the drive"), 6.f); });
 	UE_LOG(LogWCHouse, Display, TEXT("WCDRIVE begin: %.0f m of road"), DriveTotal / 100.f);
@@ -765,6 +724,25 @@ void AWCDirector::HouseTick(float Dt)
 	TickRecord(Dt);
 	TickTV(Dt);
 	TickEye(Dt);
+	if (!bFilterInit) bDev = FParse::Param(FCommandLine::Get(), TEXT("WCDev"));
+	if (bDev)
+	{
+		if (APlayerController* DevPC = GetWorld()->GetFirstPlayerController())
+		{
+			if (DevPC->WasInputKeyJustPressed(EKeys::F9) && Has(TEXT("inside")) && !Has(TEXT("heard_upstairs")))
+			{
+				if (!HasItem(TEXT("key_box")) && !Has(TEXT("box_open"))) GiveItem(TEXT("key_box"), TEXT("Small key"));
+				Set(TEXT("doll_opened"));
+				UpstairsThump();                                     // as if he had just taken the small key
+				ShowToast(TEXT("DEV: the upstairs thump is coming. Go up the stairs."));
+			}
+			if (DevPC->WasInputKeyJustPressed(EKeys::F10))
+			{
+				NextScareAt = Clock; EyeNextAt = Clock; TVNextAt = Clock; NextDoorAt = Clock; NextLightKill = Clock;
+				ShowToast(TEXT("DEV: the quiet gap is over. Whatever is waiting may happen now."));
+			}
+		}
+	}
 	if (!bFilterInit) { bFilterInit = true; int32 L = Settings.Filter; FParse::Value(FCommandLine::Get(), TEXT("WCFilter="), L); SetFilter(L); }
 }
 
@@ -985,6 +963,7 @@ void AWCDirector::PlayMemory(int32 N, TFunction<void()> Then)
 		ApplyWorldState();
 		Play2D(TEXT("her_scream_short"), 1.f);
 		if (P) P->SetInputLocked(false);
+		FadeTo(0.f, 1.4f);                      // back to the house (whatever comes next may fade again; it used to stay black)
 		if (Then) Then();
 	});
 }

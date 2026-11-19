@@ -1,33 +1,62 @@
 # Edith's Last Call: production status
 
-(Working title "Wellness Check"; the project folder keeps that name.) Updated 2026-11-19 14:50 UTC, in progress.
+(Working title "Wellness Check"; the project folder keeps that name.) Updated 2026-11-19 16:50 UTC, in progress.
 Engine: UE 5.9.0. Project: `C:\GameDev\Unreal\WellnessCheck`. Git: local repo on `main`, remote
 `github.com/cnolanestimates-max/Edith-s-Last-Call` (private). Pushed; checkpoints are pushed as work lands.
 
-## Resumed 2026-11-19 14:18 UTC (Cheyenne is back; she will play-test today)
+## State 2026-11-19 16:45 UTC (Cheyenne play-tested today and is directing live)
 
-**Since the pause**
-- First peek (S1) fixed and tested (`Saved/peek3`): invisible from the stairs, a glint at 4 m, and once the flashlight is on
-  her she pulls back behind the door frame in half a second. Last night's failure was the test (the look test marks the peek
-  as already done).
-- Whole-game picture filters, one switchable layer (`M_Filter`, `AWCDirector::SetFilter`, `-WCFilter=N`; 1 VHS camcorder,
-  2 old film, 3 cold and drained, 4 fisheye bodycam, 5 black-and-white night vision). Before/after sheets sent
-  (`Saved/_s/filters_*.jpg`, test `-WCHerLook -WCFilterShots`). **Waiting for her pick**; then make it a menu option.
-- The Fab editor plugin updated itself overnight to a build that does not match the installed engine (BuildId 60738873 against
-  60351404) and stopped the editor commandlets from starting. It is disabled in `WellnessCheck.uproject` (`"Fab": false`). The
-  game does not use it; re-enable it after the engine is updated in the Epic launcher if she wants the in-editor Fab browser.
+**Built today from her play-test and design notes** (passes 96 to 105; details in each `Scripts/tools/fix_passNN.py`)
+- Picture: VHS camcorder filter is the default (options row "Picture"; the other four stay switchable).
+- Sound: clean synthesized room tone and night bed (`Scripts/audio/make_ambience.py`), one quiet cue every 35 to 80 s, no
+  looping doors or switches, no birds on the drive. A real door opens by itself twice in the game at most (`WCDOOR`).
+- Deputy: voice and subtitles only to dispatch and to Edith; thought text removed; short feedback kept ("Locked.").
+- Outside first: knock, no answer, round the back (tree line, tool shed, locked back door), then the front door opens.
+- Removed: hair drawn into the ceiling, the smoke figure on the road.
+- Flashlight 20% wider and 30% longer. Flashlight hand mirrored (it was a right hand on the left).
+- First scare is set off by the player, no clock. **Fetch chain:** kitchen wall vent screwed shut, screwdriver upstairs beside
+  the locked jewelry box, rag doll behind the vent, small key sewn in her back (found in Inspect: `GWCHidden` in `WCGame.cpp`),
+  thump, first sight of her on the way back up, jewelry box: Ruth's letter and **Edith's glass eye**.
+- **Ending:** after the third knot and "STAY!", the dark lifts and the last act is putting her eye back (`eye_wanted`,
+  `eye_given`, `FinaleDawn`). Bot run auto14 reached it (`WCENDING ... her eye is given back`, then the ending).
+- **Keys away from their locks:** sitting-room key in a drawer in the upstairs bath (after the phone), hollow book in the
+  living room (desk is in the den), fuse inside the locked sitting room, objectives say "Find what the key opens".
+- **Items:** everything that can be picked up is remodelled with baked wear (`Scripts/art/build_items_fine.py`, 21 models,
+  previews `SourceArt/Props/items_fine/preview`, sheet `Saved/_s/items_fine_sheet.jpg`); imported over the plain models by the
+  `items` step. Each key has its own model.
+- Bug found by the bot and fixed: after a memory (grab) the picture stayed black until some later event faded it in.
+- Trigger sequence document for her: https://claude.ai/artifact/98k2iiutMNma5NAK3a5iUm (kept current). Dev keys with
+  `Play Edith's Last Call (dev).cmd`: F9 thump now (gives the small key), F10 end the quiet gap.
 
-**Open, in this order**
-1. Bot regression run with the short reach and short flashlight (`chain.ps1 -NoBuild -Run auto13`), then a real-pace run
-   (`-Real`) to see S11, S12, S13 and S14 in order and check that the far scares read.
-2. Put her chosen filter in the game (menu option, saved setting).
-3. `m_whyleave` voice line still missing (TTS quota, one attempt only); a scream stands in.
-4. Bring the sections below up to date (they still describe 02:45 UTC) and the QA report; honest re-score with run evidence.
-5. Menu test review; cruiser Ford badge; packaging only when asked.
+**State at 16:50 UTC (pushed because the usage limit was close): RESUME HERE**
+Code builds (`BUILD OK` at 16:48 UTC, passes 96 to 112). Bot run auto15 (before passes 104 to 112) played the new chain to the
+ending: `WCVENT`, `WCDOLL`, `WCTHUMP`, S1 ... `WCENDING her eye is given back`. **Cheyenne asked for no more bot runs for now:**
+she wants the sound and look fixes finished and then to test herself.
 
-**Spend:** Higgsfield 698.75 credits left (250 spent on the television tapes on 2026-11-19; no more tape spending unless she
-asks). **Helpers:** `Scripts/tools/chain.ps1`, `wc.ps1 game <tag> "<flags>"`, `commit_push.ps1`. Run the game alone (starting
-it while a build, ffmpeg or a generation is running has crashed it at start-up).
+Written and compiled but NOT yet in the level or imported (do these in order, none needs a bot run):
+1. `python Scripts/audio/demon_vo.py m_moan1 m_moan2` (the two new moans were generated by TTS at 16:49; dry takes are in VO_dry).
+2. Re-run the aged items: `blender -b --factory-startup -P Scripts/art/build_items_fine.py -- SourceArt/Props/items_fine --preview`
+   (pass 107 added dust, verdigris, rust; the files on disk are the pre-ageing second pass). Look at `Saved/_s/items_fine_sheet.jpg`.
+3. `chain.ps1 -NoBuild -Steps "items,audio" -Level` : imports aged items, clean cellar bed, moans; rebuilds the level with the
+   tall bookcase (pass 108, settlers book at eye level), yard moonlight (pass 104), den chair moved and the desk sight report
+   (pass 109: read `sight Pickup_pick_key_ell` lines in `Saved/Logs/level.log` and move the desk pickups if a standing man
+   cannot see them), bot waypoints, fuse at the table edge.
+4. One short photo check only (about two minutes each, no playthrough): `wc.ps1 game spot1 "-WCHerLook -WCSpotOnly -WCShots=.../Saved/spot1"`
+   (vent, doll, jewelry box, drawer key, fuse, desk, bookcase eye at standing height) and `chain.ps1 -NoBuild -Inv Inv6`
+   (every item in Inspect, the key coming out of the doll). Then tell her the build is ready to play.
+5. Sound (pass 111, compiled, unheard): wind loop removed (it was the repeating thump: `Scripts/audio/find_hits.py`), random
+   noise timer replaced by the trigger table `GWCCues` in `WCEvents.cpp`, whispers kept on a long timer, TV soundtrack quieter.
+   `-WCSndLog` logs every one-shot (`WCSND`).
+6. Seeing (pass 112, compiled, unseen): flashlight throw beam (11 degrees, 10 m), wide beam 6.4 m, her far glow up to 2.6x at 15 m.
+7. Edith's skin: she picked look C (dark and wet) and asked for more texture. `darkwet2` / `darkwet3` exist in
+   `Scripts/her/her_look.py`; sharp previews were rendering to `SourceArt/Her/look/` at 16:50. Send her those, then
+   `her_look.py ... bake <name>` and import as the new `M_Her` maps.
+8. Still open from before: TTS `r_end3` and `m_whyleave` (one attempt each), real-pace spacing check when she allows runs again,
+   honest re-score, QA report, menu test, cruiser Ford badge, packaging only when asked.
+
+**Spend:** Higgsfield 698.75 credits left (250 spent on the television tapes; no more tape spending unless she asks). Nothing
+paid was used for the items or the doll. **Helpers:** `Scripts/tools/chain.ps1`, `wc.ps1 game <tag> "<flags>"`,
+`commit_push.ps1`. Run the game alone at start-up (starting it while a build, ffmpeg or a bake runs has crashed it).
 
 ## Build ID
 `elc-0.5-dev`. **No packaged build exists** (Cheyenne asked for no interim package). Nothing below has been played start to

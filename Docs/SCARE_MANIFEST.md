@@ -112,3 +112,19 @@ out of step with each other; the memories keep her own voice. Code: ambience tab
 
 The front door opening itself; doors that were locked standing open; candles lit in a house with no one in it; flies; the wheelchair
 in the rear hall; the tricycle; Walter's portrait turned back to face the room; the examine lines on about 55 objects.
+
+
+## Changes 2026-11-19 afternoon (Cheyenne's play-test and design notes)
+- **S1 is gated by the player, not a clock.** Chain: kitchen vent (screwed shut) -> screwdriver in the master bedroom ->
+  rag doll behind the vent -> Inspect, turn her over, E: the small key -> heavy thump upstairs 6 s later (`UpstairsThump`,
+  log `WCTHUMP`) -> the walk up, S1 at the master doorway -> jewelry box: Ruth's letter, the glass eye.
+- **S8 (ending) has a last beat:** after "STAY!" and black the dark lifts; putting her glass eye back releases her
+  ("...thank you."), then dawn. The eye is required with the three keepsakes; the cellar door unbolts if anything is missing.
+- **Before the house:** knock, no answer, look round the back (shed, locked back door), then the front door opens. No scare.
+- **Removed:** the smoke figure on the road; the hair drawn up into the ceiling (watchers are the eight eyes only).
+- **New house event:** a door opens by itself with its creak, twice at most, never over another event (`DoorOpensByItself`).
+- **Call-outs:** he calls to her three times while he looks round, before the thump.
+- **After S2 (phone):** a drawer scrapes open upstairs (bathroom) instead of the kitchen drawer; the brass key is there.
+- **Lights after S3:** the spare fuse is in her locked sitting room, so the house stays dark through S2 until then.
+- **S10 (book):** the shelf of county histories is in the living room now; the desk it opens is in the den.
+- **After any grab memory** the picture fades back in by itself (it used to stay black until the next event).

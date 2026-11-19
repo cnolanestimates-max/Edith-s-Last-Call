@@ -42,9 +42,9 @@ AWCCharacter::AWCCharacter()
 	Flash->SetRelativeLocation(FVector(50.f, -23.f, -22.f));
 	Flash->SetIntensityUnits(ELightUnits::Lumens);
 	Flash->SetIntensity(0.f);
-	Flash->SetInnerConeAngle(10.f);
-	Flash->SetOuterConeAngle(31.f);
-	Flash->SetAttenuationRadius(390.f);
+	Flash->SetInnerConeAngle(12.f);
+	Flash->SetOuterConeAngle(37.f);                 // 20% wider
+	Flash->SetAttenuationRadius(640.f);             // longer again (was 510, before that 390)
 	Flash->SetLightColor(FLinearColor(1.f, 0.91f, 0.78f));
 	Flash->SetSourceRadius(1.5f);
 	Flash->SetCastShadows(true);
@@ -56,12 +56,25 @@ AWCCharacter::AWCCharacter()
 	Spill->SetupAttachment(Flash);
 	Spill->SetIntensityUnits(ELightUnits::Lumens);
 	Spill->SetIntensity(0.f);
-	Spill->SetInnerConeAngle(20.f);
-	Spill->SetOuterConeAngle(52.f);
-	Spill->SetAttenuationRadius(300.f);
+	Spill->SetInnerConeAngle(24.f);
+	Spill->SetOuterConeAngle(60.f);
+	Spill->SetAttenuationRadius(390.f);
 	Spill->SetLightColor(FLinearColor(1.f, 0.9f, 0.76f));
 	Spill->SetCastShadows(false);
 	Spill->SetVolumetricScatteringIntensity(0.4f);
+
+	// the throw: a tight, far-reaching centre to the beam, so the middle of what he looks at carries about twice as far
+	Throw = CreateDefaultSubobject<USpotLightComponent>(TEXT("Throw"));
+	Throw->SetupAttachment(Flash);
+	Throw->SetIntensityUnits(ELightUnits::Lumens);
+	Throw->SetIntensity(0.f);
+	Throw->SetInnerConeAngle(4.f);
+	Throw->SetOuterConeAngle(11.f);
+	Throw->SetAttenuationRadius(1000.f);
+	Throw->SetLightColor(FLinearColor(1.f, 0.92f, 0.80f));
+	Throw->SetSourceRadius(1.f);
+	Throw->SetCastShadows(true);
+	Throw->SetVolumetricScatteringIntensity(1.2f);
 
 	GunPivot = CreateDefaultSubobject<USceneComponent>(TEXT("GunPivot"));
 	GunPivot->SetupAttachment(Cam);
@@ -78,6 +91,7 @@ AWCCharacter::AWCCharacter()
 	FlashHand->SetCastShadow(false);
 	FlashHand->SetRelativeRotation(FRotator(0.f, 0.f, 0.f));
 	FlashHand->SetRelativeLocation(FVector(-19.f, 0.f, -1.f));
+	FlashHand->SetRelativeScale3D(FVector(1.f, -1.f, 1.f));          // the model is a right hand; it is held in the left
 
 	Muzzle = CreateDefaultSubobject<UPointLightComponent>(TEXT("Muzzle"));
 	Muzzle->SetupAttachment(Cam);
@@ -582,6 +596,7 @@ void AWCCharacter::Tick(float Dt)
 	}
 	Flash->SetIntensity(FlashLumens * Level);
 	Spill->SetIntensity(FlashLumens * 0.11f * Level);
+	Throw->SetIntensity(FlashLumens * 0.24f * Level);
 	FaceLight->SetIntensity(FaceLumens * FMath::Clamp(Level, 0.25f, 1.f));
 
 	// ---- pistol

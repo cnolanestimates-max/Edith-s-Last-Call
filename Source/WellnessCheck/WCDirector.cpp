@@ -306,8 +306,14 @@ void AWCDirector::TickTriggers()
 	const FVector L = P->GetActorLocation();
 	for (const TWeakObjectPtr<AWCTrigger>& T : Triggers)
 	{
-		if (T.IsValid() && T->Contains(L)) StoryEvent(FName(*FString::Printf(TEXT("trig:%s"), *T->WCId.ToString())));
+		if (!T.IsValid()) continue;
+		const bool bIn = T->Contains(L);
+		if (bIn) StoryEvent(FName(*FString::Printf(TEXT("trig:%s"), *T->WCId.ToString())));
+		// coming into a room is an event of its own (the triggered sounds count them)
+		if (bIn && !TrigInside.Contains(T->WCId)) { TrigInside.Add(T->WCId); CueEvent(FName(*FString::Printf(TEXT("enter:%s"), *T->WCId.ToString()))); }
+		else if (!bIn) TrigInside.Remove(T->WCId);
 	}
+	TickCues(0.f);
 }
 
 // ---------------------------------------------------------------------------------------------- flow
@@ -359,6 +365,7 @@ void AWCDirector::Event(FName Id)
 {
 	if (Mode != EWCMode::Playing) return;
 	UE_LOG(LogWC, Display, TEXT("WCEVENT t=%.1f %s"), PlaySeconds, *Id.ToString());
+	CueEvent(Id);
 	StoryEvent(Id);
 }
 
@@ -601,6 +608,8 @@ UAudioComponent* AWCDirector::Play2D(const FString& Name, float Volume, EWCSnd C
 {
 	USoundBase* S = Snd(Name);
 	if (!S) return nullptr;
+	static const bool bSndLog = FParse::Param(FCommandLine::Get(), TEXT("WCSndLog"));
+	if (bSndLog && Cat != EWCSnd::Music && Name != TEXT("ui_tick")) UE_LOG(LogWC, Display, TEXT("WCSND t=%.1f 2D %s vol %.2f"), PlaySeconds, *Name, Volume);
 	UAudioComponent* A = UGameplayStatics::SpawnSound2D(this, S, FMath::Max(Volume * Vol(Cat), 0.0001f), Pitch, 0.f, nullptr, false, true);
 	return A;
 }
@@ -609,6 +618,8 @@ UAudioComponent* AWCDirector::PlayAt(const FString& Name, const FVector& Where, 
 {
 	USoundBase* S = Snd(Name);
 	if (!S) return nullptr;
+	static const bool bSndLogAt = FParse::Param(FCommandLine::Get(), TEXT("WCSndLog"));
+	if (bSndLogAt && !Name.StartsWith(TEXT("step_"))) UE_LOG(LogWC, Display, TEXT("WCSND t=%.1f at %s vol %.2f, %.0f cm away"), PlaySeconds, *Name, Volume, Player() ? FVector::Dist(Player()->GetActorLocation(), Where) : -1.f);
 	if (!Atten)
 	{
 		Atten = NewObject<USoundAttenuation>(this);

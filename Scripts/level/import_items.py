@@ -201,6 +201,39 @@ def filter_material():
     log("M_Filter made")
 
 
+def fine_material(name, tdir):
+    """One baked item (build_items_fine.py): base colour, normal, and occlusion / roughness / metal in one map."""
+    files = [f"{tdir}/T_Item_{name}_{k}.png" for k in ("C", "N", "ORM")]
+    if not all(os.path.isfile(f) for f in files):
+        return None
+    D = G + "/Props/Tex"
+    eal.make_directory(D)
+    import_files(files, D)
+    c = tex_settings(f"{D}/T_Item_{name}_C", True)
+    n = tex_settings(f"{D}/T_Item_{name}_N", False, normal=True)
+    o = tex_settings(f"{D}/T_Item_{name}_ORM", False)
+    if not (c and n and o):
+        return None
+    n.set_editor_property("flip_green_channel", True)            # Blender bakes +Y normals
+    eal.save_loaded_asset(n, False)
+    m = new_material("M_Item_" + name)
+    tb = mel.create_material_expression(m, unreal.MaterialExpressionTextureSample, -700, -200)
+    tb.set_editor_property("texture", c)
+    mel.connect_material_property(tb, "RGB", unreal.MaterialProperty.MP_BASE_COLOR)
+    tn = mel.create_material_expression(m, unreal.MaterialExpressionTextureSample, -700, 60)
+    tn.set_editor_property("texture", n)
+    tn.set_editor_property("sampler_type", unreal.MaterialSamplerType.SAMPLERTYPE_NORMAL)
+    mel.connect_material_property(tn, "RGB", unreal.MaterialProperty.MP_NORMAL)
+    to = mel.create_material_expression(m, unreal.MaterialExpressionTextureSample, -700, 320)
+    to.set_editor_property("texture", o)
+    to.set_editor_property("sampler_type", unreal.MaterialSamplerType.SAMPLERTYPE_MASKS)
+    mel.connect_material_property(to, "G", unreal.MaterialProperty.MP_ROUGHNESS)
+    mel.connect_material_property(to, "B", unreal.MaterialProperty.MP_METALLIC)
+    mel.recompile_material(m)
+    eal.save_loaded_asset(m, False)
+    return m
+
+
 def step_items():
     filter_material()
     d = SRC + "/Props/items"
@@ -220,6 +253,8 @@ def step_items():
         "Gunmetal": item_material("M_ItemGunmetal", (0.075, 0.075, 0.08), 0.36, 1.0),
         "Wood": item_material("M_ItemWood", (0.13, 0.07, 0.04), 0.55, 0.0),
         "Screen": tv_material(),
+        "Card": item_material("M_ItemCard", (0.085, 0.062, 0.036), 0.9, 0.0),
+        "Label": item_material("M_ItemLabel", (0.070, 0.012, 0.010), 0.75, 0.0),
     }
     # the television's own cabinet: dark old wood and black fittings (plain item colours go cream under the flashlight)
     tvm = dict(mats)
@@ -228,12 +263,17 @@ def step_items():
     tvm["Polymer"] = item_material("M_TVBezel", (0.004, 0.004, 0.0045), 0.35, 0.0)
     tvm["Gunmetal"] = item_material("M_TVPanel", (0.007, 0.0065, 0.006), 0.5, 0.0)
     tvm["Brass"] = item_material("M_TVKnob", (0.16, 0.11, 0.04), 0.4, 1.0)
-    for f in sorted(os.listdir(d)):
-        if not f.lower().endswith(".fbx"):
-            continue
-        name = f[:-4]
+    # the fine versions (real detail, baked wear) replace the plain ones of the same name
+    fbx = {}
+    for dd in (d, SRC + "/Props/items_fine"):
+        if os.path.isdir(dd):
+            for f in sorted(os.listdir(dd)):
+                if f.lower().endswith(".fbx"):
+                    fbx[f[:-4]] = dd
+    for name, dd in sorted(fbx.items()):
+        fine = dd.endswith("items_fine")
         t = unreal.AssetImportTask()
-        t.set_editor_property("filename", f"{d}/{f}")
+        t.set_editor_property("filename", f"{dd}/{name}.fbx")
         t.set_editor_property("destination_path", P)
         t.set_editor_property("destination_name", name)
         t.set_editor_property("replace_existing", True)
@@ -258,7 +298,12 @@ def step_items():
             log(f"item {name}: FAILED to import")
             continue
         slots = []
-        for i, sm_mat in enumerate(sm.static_materials):
+        fm = fine_material(name[len("SM_Item_"):], dd + "/tex") if fine else None
+        if fm:
+            for i in range(len(sm.static_materials)):
+                sm.set_material(i, fm)
+            slots.append("fine, textured")
+        for i, sm_mat in enumerate([] if fm else sm.static_materials):
             slot = str(sm_mat.material_slot_name)
             key = next((k for k in mats if slot.lower().startswith(k.lower())), None)
             if key:

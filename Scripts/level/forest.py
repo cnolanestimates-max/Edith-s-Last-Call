@@ -175,10 +175,11 @@ for i in range(0, len(SAMPLES) - 1):
             px, py = at(_fr.uniform(1000, 1700), _fr.uniform(-200, 200))
             road_tree(px, py, "big", 0.0, None, _fr.uniform(0.9, 1.2))
         # young pines bent right over the road: the roof of the tunnel, low enough for the headlights
+        # (they used to stand at the road edge leaning 16 to 36 degrees: their branches came through the windshield)
         for _rep in range(2):
-            if _fr.random() < 0.62:
-                px, py = at(_fr.uniform(214, 268), _fr.uniform(-125, 125))
-                road_tree(px, py, "small", _fr.uniform(16, 36), mid, _fr.uniform(1.6, 2.7))
+            if _fr.random() < 0.5:
+                px, py = at(_fr.uniform(262, 330), _fr.uniform(-125, 125))
+                road_tree(px, py, "small", _fr.uniform(8, 17), mid, _fr.uniform(1.8, 2.8))
 # round the yard: the forest stands right behind the fence on every side
 for i in range(150):
     x, y = _fr.uniform(-3400, XB + 2300), _fr.uniform(-2600, 2600)
@@ -202,8 +203,13 @@ for i in range(0, len(SAMPLES) - 1, 1):
             continue
         off = _fr.uniform(222, 330) * side
         px, py = x0 - uy * off + ux * _fr.uniform(-120, 120), y0 + ux * off + uy * _fr.uniform(-120, 120)
-        for k in range(3):
-            a = actors.spawn_actor_from_class(unreal.SkeletalMeshActor, V(px + _fr.uniform(-90, 90), py + _fr.uniform(-90, 90), -42), R(_fr.uniform(0, 360)))
+        # dead brush with the ferns, so the ground between the trunks is not bare dirt
+        for k in range(2):
+            bo = _fr.uniform(205, 640) * side
+            bx, by = x0 - uy * bo + ux * _fr.uniform(-130, 130), y0 + ux * bo + uy * _fr.uniform(-130, 130)
+            place(_fr.choice(("Bramble_Bush_Dead", "Bush_Thorny_Dead")), bx, by, -43, _fr.uniform(0, 360), FO + "/Under", scale=_fr.uniform(0.8, 1.6), collide=False)
+        for k in range(6):
+            a = actors.spawn_actor_from_class(unreal.SkeletalMeshActor, V(px + _fr.uniform(-150, 150), py + _fr.uniform(-150, 150), -42), R(_fr.uniform(0, 360)))
             a.set_actor_label("Fern")
             c = a.skeletal_mesh_component
             c.set_skeletal_mesh_asset(_fr.choice(FERNS))
@@ -220,8 +226,7 @@ _si = int(len(SAMPLES) * 0.47)
 _sd = math.hypot(_sx1 - _sx0, _sy1 - _sy0)
 _sux, _suy = (_sx1 - _sx0) / _sd, (_sy1 - _sy0) / _sd
 _shx, _shy = _sx0 + _suy * 168, _sy0 - _sux * 168          # to the driver's right
-_fig = smoke_man("RoadShadow", _shx, _shy, -41, math.degrees(math.atan2(-_suy, -_sux)), 310, "RoadShadow")
-log(f"road shadow at ({_shx:.0f},{_shy:.0f}), sample {_si} of {len(SAMPLES)}")
+# (the smoke figure that stood here was removed 2026-11-19 at Cheyenne's request)
 place("Sign_Turn_Back", -5200, 1010, -40, 200, FO + "/Under", collide=False)
 place("Sign_Keep_Out", -2600, 20, -40, 180, FO + "/Under", collide=False)
 log(f"forest: {n_under} verge pieces")

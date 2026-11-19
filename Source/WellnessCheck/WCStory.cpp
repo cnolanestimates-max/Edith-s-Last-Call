@@ -31,6 +31,9 @@ static const FWCLine GLines[] = {
 	{ TEXT("d_leave_early"), TEXT("Deputy Brandt"), TEXT("Not until I've laid eyes on her."), 0 },
 	{ TEXT("d_knock"), TEXT("Deputy Brandt"), TEXT("Sheriff's office! Mrs. Harrow? Your daughter asked us to check on you."), 0 },
 	{ TEXT("d_dooropen"), TEXT("Deputy Brandt"), TEXT("...Door's open. Mrs. Harrow, I'm coming in."), 0 },
+	{ TEXT("d_call1"), TEXT("Deputy Brandt"), TEXT("Mrs. Harrow?"), 0 },
+	{ TEXT("d_call2"), TEXT("Deputy Brandt"), TEXT("Hello? ...Anybody home?"), 0 },
+	{ TEXT("d_call3"), TEXT("Deputy Brandt"), TEXT("Mrs. Harrow, it's the sheriff's office. Can you hear me?"), 0 },
 	{ TEXT("d_foyer"), TEXT("Deputy Brandt"), TEXT("God, that smell. ...Mrs. Harrow? Deputy Brandt, sheriff's office."), 0 },
 	{ TEXT("d_table"), TEXT("Deputy Brandt"), TEXT("Table's set for four. This food's been sitting here for months."), 0 },
 	{ TEXT("d_phonecord"), TEXT("Deputy Brandt"), TEXT("Cord's cut clean through. Nobody called anybody on this."), 0 },
@@ -97,6 +100,8 @@ static const FWCLine GLines[] = {
 	{ TEXT("m_ear2"), TEXT(""), TEXT("I see you."), 2 },
 	{ TEXT("m_ear3"), TEXT(""), TEXT("Don't go."), 2 },
 	{ TEXT("m_hum"), TEXT(""), TEXT("Mm mm mmm, mm mm mmm, mmm mm, mmm."), 2 },
+	{ TEXT("m_moan1"), TEXT(""), TEXT("Ohhhhhhhhh... ohhhhhhh..."), 2 },
+	{ TEXT("m_moan2"), TEXT(""), TEXT("Mmmmmmmmmhhhh... hhhhhnnnnn..."), 2 },
 	{ TEXT("m_mem1"), TEXT("Edith"), TEXT("Ruthie. Don't go. Stay for supper. Please. I've set your place."), 2 },
 	{ TEXT("m_mem2"), TEXT("Edith"), TEXT("Grandmother Wren's book. ...It will sit with you. It will never go."), 2 },
 	{ TEXT("m_mem3"), TEXT("Edith"), TEXT("I only want company. Please. Never let me be alone again."), 2 },
@@ -188,6 +193,17 @@ void AWCDirector::ApplyWorldState()
 		ShowTagged(TEXT("Show_drawer"), Has(TEXT("phone_done")));
 	ShowTagged(TEXT("Hide_shears"), !HasItem(TEXT("shears")));
 	ShowTagged(TEXT("Show_bookkey"), Has(TEXT("book_done")) && !HasItem(TEXT("key_desk")) && !Has(TEXT("desk_open")));
+	ShowTagged(TEXT("Show_desk"), Has(TEXT("desk_open")) && !HasItem(TEXT("key_ell")));
+	ShowTagged(TEXT("Show_jewel"), Has(TEXT("box_open")));
+	ShowTagged(TEXT("Show_vent"), Has(TEXT("vent_open")));
+	ShowTagged(TEXT("Show_ventkey"), Has(TEXT("vent_open")) && !HasItem(TEXT("doll")) && !HasItem(TEXT("doll_empty")) && !Has(TEXT("doll_opened")));
+	if (AWCInteractable* Vt = Thing(TEXT("vent"))) { Vt->SetActorHiddenInGame(Has(TEXT("vent_open"))); Vt->SetActorEnableCollision(!Has(TEXT("vent_open"))); Vt->bEnabled = !Has(TEXT("vent_open")); }
+	ShowTagged(TEXT("Show_jeweleye"), Has(TEXT("box_open")) && !HasItem(TEXT("keep_eye")) && !Has(TEXT("eye_given")));
+	ShowTagged(TEXT("Show_eyegiven"), Has(TEXT("eye_given")));
+	if (AWCInteractable* Jb = Thing(TEXT("jewelbox"))) { Jb->SetActorHiddenInGame(Has(TEXT("box_open"))); Jb->SetActorEnableCollision(!Has(TEXT("box_open"))); Jb->bEnabled = !Has(TEXT("box_open")); }
+	ShowTagged(TEXT("Show_deskammo"), Has(TEXT("desk_open")) && !Has(TEXT("desk_ammo")));
+	ShowTagged(TEXT("Show_trunktags"), Has(TEXT("attic_started")) && !HasItem(TEXT("keep_daniel")));
+	ShowTagged(TEXT("Show_trunkkey"), Has(TEXT("attic_started")) && !HasItem(TEXT("key_cellar")));
 	if (AWCInteractable* Bk = Thing(TEXT("book_settlers"))) Bk->bEnabled = !Has(TEXT("book_done"));
 	ShowTagged(TEXT("SettlersBook"), !Has(TEXT("book_done")) || LastCheckpoint == TEXT("book"));
 	ShowTagged(TEXT("L_Welcome"), !Has(TEXT("knocked")));
@@ -218,7 +234,7 @@ void AWCDirector::ApplyWorldState()
 	SetLoop(TEXT("amb"), Has(TEXT("dawn")) ? TEXT("amb_dawn") : (bCellar ? TEXT("amb_cellar") : (bIn ? TEXT("amb_house") : TEXT("amb_night"))), 1.f, 3.f);
 	SetLoop(TEXT("drone"), bIn ? TEXT("music_drone") : TEXT(""), bIn ? 0.5f : 0.f, 4.f, EWCSnd::Music);
 		SetLoop(TEXT("low"), bIn ? TEXT("music_low") : TEXT(""), bIn ? 0.25f : 0.f, 6.f, EWCSnd::Music);
-	SetLoop(TEXT("wind"), (bIn || bCellar) ? TEXT("amb_wind") : TEXT(""), bIn ? 0.55f : 0.f, 5.f);
+	SetLoop(TEXT("wind"), TEXT(""), 0.f, 2.f);          // the chimney-wind loop had a bump in it every few seconds: gone
 	SetLoop(TEXT("music"), TEXT(""), 0.f, 2.f, EWCSnd::Music);
 	if (AWCCharacter* P = Player()) P->SetGunAllowed(true);
 }
@@ -271,11 +287,47 @@ void AWCDirector::DriveDone()
 	float T = Say(TEXT("d_arrive2"), 1.2f);
 	T = Say(TEXT("r_arrive3"), T + 0.3f);
 	T = Say(TEXT("d_arrive4"), T + 0.2f);
-	After(bAuto ? 0.5f : T, [this]() { SetObjective(TEXT("Check on Edith Harrow")); Set(TEXT("briefed")); });
+	After(bAuto ? 0.5f : T, [this]()
+	{
+		// the test bot goes straight in; a person looks round the outside first
+		if (bAuto && !FParse::Param(FCommandLine::Get(), TEXT("WCOutside"))) { Set(TEXT("shed_seen")); Set(TEXT("back_tried")); Set(TEXT("knocked_first")); SetObjective(TEXT("Check on Edith Harrow")); }
+		else SetObjective(TEXT("Check on Edith Harrow. Take a look round the outside first."));
+		Set(TEXT("briefed"));
+	});
 }
 
 // ---------------------------------------------------------------------------------------------- events
 static bool Is(FName Id, const TCHAR* S) { return Id == S; }
+
+/** Something heavy goes over upstairs, a few seconds after he pockets the key. */
+void AWCDirector::UpstairsThump()
+{
+	if (Has(TEXT("heard_upstairs"))) return;
+	Set(TEXT("heard_upstairs"));
+	UE_LOG(LogWCStory, Display, TEXT("WCTHUMP t=%.1f (%.0f s after coming in)"), PlaySeconds, PlaySeconds - InsideAt);
+	After(6.f, [this]()
+	{
+		const FVector Up = Pos(TEXT("Snd_UpstairsThump"));
+		PlayAt(TEXT("thump_heavy"), Up, 1.f, 1.f);
+		if (AWCCharacter* Pl = Player()) Pl->AddShake(0.25f);
+		After(1.6f, [this, Up]() { PlayAt(TEXT("drag_floor"), Up, 1.f); });
+		float T = Say(TEXT("d_thump"), 4.2f);
+		After(T, [this]() { SetObjective(TEXT("Check upstairs")); });
+		Tension = 0.3f;
+	});
+}
+
+/** Outside, before he goes in: what is left to look at (the shed, the back door), then round to the front. */
+void AWCDirector::OutsideProgress()
+{
+	if (Has(TEXT("inside"))) return;
+	const bool bShed = Has(TEXT("shed_seen")), bBack = Has(TEXT("back_tried"));
+	if (bShed && bBack) SetObjective(TEXT("Go back round to the front door"));
+	else if (Has(TEXT("knocked_first")) && !bShed && !bBack) SetObjective(TEXT("No answer. Look round the back of the house."));
+	else if (bShed) SetObjective(TEXT("Try the back door"));
+	else if (bBack) SetObjective(TEXT("Look in the shed"));
+	UE_LOG(LogWCStory, Display, TEXT("WCOUTSIDE t=%.1f shed %d back door %d"), PlaySeconds, bShed ? 1 : 0, bBack ? 1 : 0);
+}
 
 void AWCDirector::StoryEvent(FName Id)
 {
@@ -287,6 +339,38 @@ void AWCDirector::StoryEvent(FName Id)
 	if (Is(Id, TEXT("trig:t_yard_edge")))
 	{
 		if (!Has(TEXT("dawn")) && Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 12.0; Feedback(TEXT("Not yet.")); }
+		return;
+	}
+	if (Is(Id, TEXT("trig:t_shed")) && !Has(TEXT("shed_seen")))
+	{
+		Set(TEXT("shed_seen"));
+		OutsideProgress();
+		return;
+	}
+	if (Is(Id, TEXT("locked:back")) && !Has(TEXT("inside")))
+	{
+		if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 4.0; Feedback(TEXT("Locked.")); }
+		if (!Has(TEXT("back_tried")))
+		{
+			Set(TEXT("back_tried"));
+			// the house is not empty: one slow board, somewhere inside, after he lets go of the handle
+			After(2.6f, [this]() { PlayAt(TEXT("creak"), Pos(TEXT("FrontDoorPoint")) + FVector(1900, 0, 120), 0.8f, 0.8f, 2600.f); });
+			OutsideProgress();
+		}
+		return;
+	}
+	if (Is(Id, TEXT("locked:front")) && !Has(TEXT("inside")) && !(Has(TEXT("shed_seen")) && Has(TEXT("back_tried"))))
+	{
+		// the first knock: nobody comes.  The one lit window goes dark.
+		if (!Has(TEXT("knocked_first")))
+		{
+			Set(TEXT("knocked_first"));
+			PlayAt(TEXT("knock"), Pos(TEXT("FrontDoorPoint")), 1.f);
+			After(2.4f, [this]() { ShowTagged(TEXT("L_Welcome"), false); });
+			const float T = Say(TEXT("d_knock"), 0.9f);
+			After(T + 2.5f, [this]() { OutsideProgress(); });
+		}
+		else if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 5.0; PlayAt(TEXT("knock"), Pos(TEXT("FrontDoorPoint")), 0.9f); Feedback(TEXT("No answer.")); }
 		return;
 	}
 	if (Is(Id, TEXT("locked:front")))
@@ -367,21 +451,58 @@ void AWCDirector::StoryEvent(FName Id)
 		return;
 	}
 	if (Is(Id, TEXT("trig:t_kitchen"))) Set(TEXT("seen_kitchen"));
-		if (Id.ToString().StartsWith(TEXT("trig:t_")) && P->GetActorLocation().Z < 250.f && P->GetActorLocation().Z > -50.f
-				&& !Has(TEXT("heard_upstairs")) && Has(TEXT("inside")) && !bBusy
-		&& ((BuildStep >= 7 && PlaySeconds - InsideAt > 450.f * TestPace && NotesRead.Num() + LooksSeen.Num() >= 6) || PlaySeconds - InsideAt > 570.f * TestPace))
+		// the first scare is set off by the player: taking the small key is what brings the thump (no clock)
+	if (Is(Id, TEXT("take:key_box"))) { UpstairsThump(); return; }
+	// the kitchen wall vent: screwed shut until he brings the screwdriver down from her bedroom
+	if (Is(Id, TEXT("use:vent")))
 	{
-		Set(TEXT("heard_upstairs"));
-		After(6.f, [this]()
+		if (Has(TEXT("vent_open"))) return;
+		if (!HasItem(TEXT("screwdriver")))
 		{
-			const FVector Up = Pos(TEXT("Snd_UpstairsThump"));
-			PlayAt(TEXT("thump_heavy"), Up, 1.f, 1.f);
-			if (AWCCharacter* Pl = Player()) Pl->AddShake(0.25f);
-			After(1.6f, [this, Up]() { PlayAt(TEXT("drag_floor"), Up, 1.f); });
-			float T = Say(TEXT("d_thump"), 4.2f);
-			After(T, [this]() { SetObjective(TEXT("Check upstairs")); });
-			Tension = 0.3f;
-		});
+			if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 3.0; Feedback(TEXT("Screwed shut. Something has been pushed in behind the slats.")); PlayAt(TEXT("door_locked"), P->GetActorLocation(), 0.4f, 1.7f, 600.f); }
+			if (!Has(TEXT("vent_seen"))) { Set(TEXT("vent_seen")); if (!Has(TEXT("heard_upstairs"))) SetObjective(TEXT("Search the house. Something is behind the kitchen vent.")); }
+			return;
+		}
+		Items.Remove(TEXT("screwdriver"));
+		Set(TEXT("vent_seen"));
+		Set(TEXT("vent_open"));
+		UE_LOG(LogWCStory, Display, TEXT("WCVENT t=%.1f opened (%.0f s after coming in)"), PlaySeconds, PlaySeconds - InsideAt);
+		for (int32 i = 0; i < 4; ++i) After(0.1f + i * 0.38f, [this, i]() { Play2D(TEXT("switch_click"), 0.45f, EWCSnd::SFX, 0.62f + 0.05f * i); });
+		After(1.75f, [this]() { Play2D(TEXT("door_unlock"), 0.5f, EWCSnd::SFX, 0.75f); ApplyWorldState(); });
+		return;
+	}
+	// the doll from the vent: the small key is sewn inside her, and comes out in Inspect (WCGame.cpp, GWCHidden)
+	if (Is(Id, TEXT("take:doll")))
+	{
+		Feedback(TEXT("Something hard is sewn inside her."));
+		if (!Has(TEXT("heard_upstairs"))) SetObjective(TEXT("Look the doll over (Tab, Inspect)"));
+		return;
+	}
+	if (Is(Id, TEXT("inspect:doll")))
+	{
+		if (!HasItem(TEXT("doll"))) return;
+		Items.Remove(TEXT("doll"));
+		Items.Add(TEXT("doll_empty"));
+		Set(TEXT("doll_opened"));
+		if (!HasItem(TEXT("key_box")) && !Has(TEXT("box_open"))) Items.Add(TEXT("key_box"));
+		Play2D(TEXT("pickup"), 0.6f, EWCSnd::SFX, 1.15f);
+		UE_LOG(LogWCStory, Display, TEXT("WCDOLL t=%.1f the small key comes out of the doll"), PlaySeconds);
+		UpstairsThump();
+		return;
+	}
+	if (Is(Id, TEXT("take:screwdriver")))
+	{
+		if (Has(TEXT("vent_seen")) && !Has(TEXT("vent_open")) && !Has(TEXT("heard_upstairs"))) SetObjective(TEXT("Search the house. The kitchen vent."));
+		return;
+	}
+	if (Is(Id, TEXT("use:jewelbox")))
+	{
+		if (Has(TEXT("box_open"))) return;
+		if (!HasItem(TEXT("key_box"))) { if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 3.0; Feedback(TEXT("Locked.")); PlayAt(TEXT("door_locked"), P->GetActorLocation(), 0.5f, 1.4f, 600.f); } return; }
+		Items.Remove(TEXT("key_box"));
+		Set(TEXT("box_open"));
+		Play2D(TEXT("door_unlock"), 0.6f, EWCSnd::SFX, 1.3f);
+		ApplyWorldState();
 		return;
 	}
 
@@ -457,8 +578,9 @@ void AWCDirector::StoryEvent(FName Id)
 	}
 	if (Is(Id, TEXT("use:phone")) && Has(TEXT("phone_ringing")) && !Has(TEXT("phone_done"))) { ScarePhone(); return; }
 	if (Is(Id, TEXT("take:key_sitting"))) { SetObjective(TEXT("Find what the key opens")); return; }
+	if (Is(Id, TEXT("take:keep_daniel"))) { AtticTagsTaken(); return; }
 	if (Is(Id, TEXT("unlock:sitting"))) { Set(TEXT("sitting_open")); Say(TEXT("d_sitting"), 3.f); Checkpoint(TEXT("sitting")); return; }
-		if (Is(Id, TEXT("take:key_prayer"))) { SetObjective(TEXT("Upstairs: the locked room")); return; }
+		if (Is(Id, TEXT("take:key_prayer"))) { SetObjective(TEXT("Find what the iron key opens")); return; }
 	if (Is(Id, TEXT("unlock:up_ell"))) { Checkpoint(TEXT("ell")); return; }
 	if (Is(Id, TEXT("closed:note_prayer")) && !Has(TEXT("placed"))) { SetObjective(TEXT("Find what was theirs, and something to cut with")); return; }
 
@@ -509,11 +631,29 @@ void AWCDirector::StoryEvent(FName Id)
 		After(T, [this]() { SetObjective(TEXT("Lay their keepsakes at her feet")); });
 		return;
 	}
+	// the last thing: her eye goes back, and that is what lets her go
+	if (Is(Id, TEXT("use:place")) && Has(TEXT("eye_wanted")) && !Has(TEXT("eye_given")))
+	{
+		Set(TEXT("eye_given"));
+		Items.Remove(TEXT("keep_eye"));
+		bBusy = true;
+		P->SetInputLocked(true);
+		if (AWCInteractable* Pl = Thing(TEXT("place"))) Pl->bEnabled = false;
+		Play2D(TEXT("pickup"), 0.5f, EWCSnd::SFX, 0.8f);
+		ApplyWorldState();
+		UE_LOG(LogWCStory, Display, TEXT("WCENDING t=%.1f her eye is given back"), PlaySeconds);
+		After(2.0f, [this]() { FadeTo(1.f, 2.5f); });
+		const float T2 = Say(TEXT("m_end"), 3.2f);
+		After(T2 + 1.5f, [this]() { FinaleDawn(); });
+		return;
+	}
 	if (Is(Id, TEXT("use:place")) && !Has(TEXT("placed")))
 	{
-		if (!(HasItem(TEXT("keep_ruth")) && HasItem(TEXT("keep_walter")) && HasItem(TEXT("keep_daniel"))))
+		if (!(HasItem(TEXT("keep_ruth")) && HasItem(TEXT("keep_walter")) && HasItem(TEXT("keep_daniel")) && HasItem(TEXT("keep_eye"))))
 		{
 			if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 5.0; Feedback(TEXT("Not yet.")); }
+			// he has come down without everything: the door at the top of the stairs lets go, so he can fetch it
+			if (AWCDoor* Cd = Door(TEXT("cellar"))) if (Cd->bLocked) { Cd->SetLocked(false); PlayAt(TEXT("door_unlock"), Cd->GetActorLocation() + FVector(0, 0, 100), 1.f, 0.8f, 3000.f); }
 			return;
 		}
 		Set(TEXT("placed"));
@@ -570,60 +710,23 @@ void AWCDirector::StoryTick(float Dt)
 	AWCEntity* H = Her();
 	if (!P) return;
 
-	// ---- the house is never silent: things in the walls, boards, wind, something moving on another floor
-	if (Has(TEXT("inside")) && !Has(TEXT("dawn")) && !bBusy && Clock > NextCue && (bEventBusy || StalkState != 0))
+	// (the house's own noises are no longer on a timer: each is set off by something he does.  WCEvents.cpp, TickCues)
+	// he calls out to her while he looks round, three times, before he has seen anything
+	if (Has(TEXT("inside")) && !Has(TEXT("heard_upstairs")) && !bBusy && CallStep < 3 && Clock > SpeechFreeAt)
 	{
-		NextCue = Clock + 20.0;                    // something staged is happening: the house keeps out of it
+		static const float CallAt[3] = { 100.f, 235.f, 380.f };
+		static const TCHAR* CallId[3] = { TEXT("d_call1"), TEXT("d_call2"), TEXT("d_call3") };
+		if (PlaySeconds - InsideAt > CallAt[CallStep] * TestPace) { Say(CallId[CallStep]); SpeechFreeAt = Clock + 8.0; ++CallStep; }
 	}
-	if (Has(TEXT("inside")) && !Has(TEXT("dawn")) && !bBusy && !bEventBusy && StalkState == 0 && Clock > NextCue)
+	// a door that opens by itself: twice in the whole game at most, minutes apart, never over anything else
+	if (Has(TEXT("peek_done")) && !Has(TEXT("dawn")) && !Has(TEXT("sprint_started")) && DoorEvents < 2 && !bBusy)
 	{
-		// sound in moderation: one small thing, then a long quiet
-		NextCue = Clock + Rng.FRandRange(35.f, 80.f) * (1.2f - 0.4f * Tension);
-		struct FCue { const TCHAR* Name; float Weight; float Near; float Far; float Vol; int32 Where; };   // Where: 0 around, 1 other floor, 2 in a wall close by
-		static const FCue Cues[] = {
-			{ TEXT("creak"), 3.f, 300.f, 900.f, 0.9f, 0 }, { TEXT("skitter"), 3.f, 150.f, 500.f, 0.9f, 2 }, { TEXT("scratch_wall"), 2.2f, 200.f, 600.f, 0.9f, 2 },
-			{ TEXT("knock_far"), 1.2f, 600.f, 1200.f, 0.9f, 0 }, { TEXT("thump_far"), 1.4f, 500.f, 1200.f, 1.f, 1 }, { TEXT("house_groan"), 2.f, 500.f, 1200.f, 1.f, 0 },
-			{ TEXT("steps_above"), 1.3f, 100.f, 500.f, 1.f, 1 }, { TEXT("wind_gust"), 1.6f, 800.f, 1400.f, 0.8f, 0 }, { TEXT("door_far"), 0.8f, 700.f, 1300.f, 0.9f, 1 },
-			{ TEXT("whisper_far"), 0.7f, 400.f, 900.f, 0.8f, 0 }, { TEXT("breath_near"), 0.35f, 90.f, 160.f, 0.7f, 0 },
-			{ TEXT("VO/m_laugh1"), 0.30f, 350.f, 800.f, 0.55f, 2 }, { TEXT("VO/m_laugh2"), 0.30f, 300.f, 700.f, 0.55f, 1 },
-			{ TEXT("VO/m_cry1"), 0.32f, 400.f, 900.f, 0.6f, 1 }, { TEXT("VO/m_cry2"), 0.30f, 250.f, 600.f, 0.55f, 2 }, { TEXT("VO/m_hum"), 0.30f, 400.f, 900.f, 0.5f, 0 },
-			{ TEXT("VO/m_ear1"), 0.16f, 35.f, 55.f, 0.5f, 3 }, { TEXT("VO/m_ear2"), 0.14f, 35.f, 55.f, 0.5f, 3 }, { TEXT("VO/m_ear3"), 0.14f, 35.f, 55.f, 0.5f, 3 } };
-		float Total = 0.f;
-		auto Scale = [this](const FCue& C) -> float
+		if (NextDoorAt < 0.0) NextDoorAt = Clock + 230.0 * TestPace;
+		if (Clock >= NextDoorAt && Gate())
 		{
-			// her own voice (and breath) is rare while the house is only a house, and grows with the night; none of it before the door locks
-			const bool bHers = FCString::Strncmp(C.Name, TEXT("VO/"), 3) == 0 || FCString::Strcmp(C.Name, TEXT("breath_near")) == 0 || FCString::Strcmp(C.Name, TEXT("whisper_far")) == 0;
-			if (!bHers) return 1.f;
-			return Has(TEXT("locked_in")) ? (0.3f + 2.f * Tension) : 0.f;
-		};
-		for (const FCue& C : Cues) Total += C.Weight * Scale(C);
-		float Pick = Rng.FRandRange(0.f, Total);
-		const FCue* Chosen = &Cues[0];
-		for (const FCue& C : Cues)
-		{
-			const float W = C.Weight * Scale(C);
-			if (Pick <= W) { Chosen = &C; break; }
-			Pick -= W;
+			if (DoorOpensByItself()) { ++DoorEvents; NextDoorAt = Clock + 700.0 * TestPace; Rest(45.f); }
+			else NextDoorAt = Clock + 6.0;
 		}
-		FVector Off = FRotator(0.f, Rng.FRandRange(0.f, 360.f), 0.f).Vector() * Rng.FRandRange(Chosen->Near, Chosen->Far);
-		if (Chosen->Where == 1) Off.Z = (P->GetActorLocation().Z > 500.f ? -1.f : 1.f) * 330.f;
-		else if (Chosen->Where == 2) Off.Z = Rng.FRandRange(-60.f, 120.f);
-		else if (Chosen->Where == 3)
-		{
-			// at his ear: just behind him, to one side.  He turns, and there is nothing there.
-			const FRotator Yaw(0.f, P->GetControlRotation().Yaw, 0.f);
-			Off = -Yaw.Vector() * 28.f + FRotationMatrix(Yaw).GetUnitAxis(EAxis::Y) * (Rng.FRand() < 0.5f ? -24.f : 24.f) + FVector(0, 0, 58.f);
-		}
-		else Off.Z = Rng.FRandRange(-80.f, 200.f);
-		UE_LOG(LogWCStory, Display, TEXT("WCCUE t=%.1f %s"), PlaySeconds, Chosen->Name);
-		if (Has(TEXT("locked_in")) && Rng.FRand() < 0.08f + 0.06f * Tension)
-		{
-			const FVector From = P->GetActorLocation() + FRotator(0.f, Rng.FRandRange(0.f, 360.f), 0.f).Vector() * Rng.FRandRange(700.f, 1300.f) + FVector(0, 0, (Rng.FRand() < 0.5f ? 0.f : (P->GetActorLocation().Z > 300.f ? -330.f : 330.f)) - 80.f);
-			const FVector Step = FRotator(0.f, Rng.FRandRange(0.f, 360.f), 0.f).Vector() * 72.f;
-			const int32 N = Rng.RandRange(3, 6);
-			for (int32 k = 0; k < N; ++k) After(k * 0.62f, [this, From, Step, k]() { PlayAt(TEXT("her_step"), From + Step * k, 0.9f, Rng.FRandRange(0.9f, 1.05f), 3400.f); if (k % 2 == 0) PlayAt(TEXT("creak"), From + Step * k, 0.5f, 0.85f, 2600.f); });
-		}
-		else PlayAt(Chosen->Name, P->GetActorLocation() + Off, 0.8f * Chosen->Vol * Rng.FRandRange(0.75f, 1.f), Rng.FRandRange(0.92f, 1.07f));
 	}
 	if (FLoop* Drone = Loops.Find(TEXT("drone"))) Drone->Target = Has(TEXT("inside")) && !Has(TEXT("dawn")) ? 0.30f + 0.30f * Tension : 0.f;
 	if (FLoop* Low = Loops.Find(TEXT("low"))) Low->Target = Has(TEXT("inside")) && !Has(TEXT("dawn")) ? 0.14f + 0.40f * Tension : 0.f;
@@ -908,7 +1011,13 @@ void AWCDirector::ScarePhone()
 								Rest(170.f);
 								float T2 = Say(TEXT("d_after_kitchen"), 0.3f);
 								T2 = Say(TEXT("d_drawer"), T2 + 2.2f);
-								After(T2, [this]() { SetObjective(TEXT("Search the kitchen")); Checkpoint(TEXT("phone_done")); });
+								After(T2, [this]()
+								{
+									// somewhere above him a drawer is pulled open (its key is no longer in the kitchen)
+									PlayAt(TEXT("drag_floor"), Pos(TEXT("DrawerPoint")), 1.f, 1.5f, 4500.f);
+									SetObjective(TEXT("Something slid open upstairs"));
+									Checkpoint(TEXT("phone_done"));
+								});
 								Tension = 0.55f;
 							});
 							});
@@ -1051,11 +1160,15 @@ void AWCDirector::ScareAttic()
 	UE_LOG(LogWCStory, Display, TEXT("WCSCARE t=%.1f S5_attic"), PlaySeconds);
 	if (AWCInteractable* Trunk = Thing(TEXT("trunk"))) Trunk->bEnabled = false;
 	Play2D(TEXT("trunk_open"), 0.9f);
-	GiveItem(TEXT("keep_daniel"), TEXT("Daniel's dog tags"));
-	float T = Say(TEXT("d_attic"), 0.6f);
-	T = Say(TEXT("d_tags"), T + 0.4f);
-	After(T, [this]() { GiveItem(TEXT("key_cellar"), TEXT("Padlock key")); });
-	After(T + 1.4f, [this]()
+	// the tags and the padlock key are lying on it now, for him to take; taking the tags is what she cannot bear
+	After(0.5f, [this]() { ApplyWorldState(); });
+}
+
+void AWCDirector::AtticTagsTaken()
+{
+	if (Has(TEXT("attic_tags"))) return;
+	Set(TEXT("attic_tags"));
+	After(1.4f, [this]()
 	{
 		const float AtticZ = Pos(TEXT("Her_AtticFar")).Z;
 		WhenQuiet([this]() { AtticCrawl(); },
@@ -1246,8 +1359,28 @@ void AWCDirector::FinaleStep(int32 Knot)
 				SetLoop(TEXT("amb"), TEXT(""), 0.f, 0.3f);
 				SetLoop(TEXT("drone"), TEXT(""), 0.f, 0.3f, EWCSnd::Music);
 				Tension = 0.f;
-				float T2 = Say(TEXT("m_end"), 4.5f);
-				After(T2 + 1.5f, [this]()
+				// she is still here.  The dark lifts on the root cellar, quiet, and there is one thing left to do.
+				After(3.5f, [this]()
+				{
+					FadeTo(0.f, 3.f);
+					bBusy = false;
+					if (AWCCharacter* Q = Player()) { Q->SetInputLocked(false); Q->SetLightScale(1.f); }
+					Set(TEXT("eye_wanted"));
+					if (AWCInteractable* Pl = Thing(TEXT("place"))) { Pl->Prompt = TEXT("Put her eye back"); Pl->bEnabled = true; }
+					SetObjective(TEXT("Give her back her eye"));
+					Checkpoint(TEXT("eye"));
+				});
+			});
+		});
+	}
+}
+
+/** Morning: the doors are open and the house is only a house. */
+void AWCDirector::FinaleDawn()
+{
+	{
+		{
+			{
 				{
 					Set(TEXT("dawn"));
 					if (AWCDoor* C = Door(TEXT("cellar"))) { C->SetLocked(false); C->SetOpen(true, 0.01f, true); C->Snap(); }
@@ -1259,9 +1392,9 @@ void AWCDirector::FinaleStep(int32 Knot)
 					SetLoop(TEXT("music"), TEXT("music_dawn"), 0.6f, 6.f, EWCSnd::Music);
 					Say(TEXT("d_dawn"), 6.f);
 					After(8.f, [this]() { SetObjective(TEXT("Go back to the cruiser")); Checkpoint(TEXT("dawn")); });
-				});
-			});
-		});
+				}
+			}
+		}
 	}
 }
 

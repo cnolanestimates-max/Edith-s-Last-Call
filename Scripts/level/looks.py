@@ -9,6 +9,8 @@ LOOKS = [
     ("grave_daniel", -700, 990, 25, "PVT. DANIEL W. HARROW. 1949 - 1969. No grave in front of it. They never got him back to bury.", (40, 40, 50)),
     ("clothesline", -1060, 505, 120, "A sheet and a nightgown, grey with rain. Hung out to dry a year ago and never brought in.", (130, 20, 50)),
     ("well", -1500, -620, 40, "Boarded over. The boards are newer than the well.", (60, 60, 60)),
+    ("shed_bench", 3896, -740, 62, "Seed packets gone to pulp, twine, a coffee can of nails rusted into one lump. Walter's bench. Nobody has stood at it in years.", (40, 110, 26)),
+    ("shed_tools", 2800 + 760 + 190, -884, 90, "Shovels, a pitchfork, a rake. One nail has nothing hanging on it, and the dust under it is not as thick.", (130, 14, 80)),
     ("bulkhead", 1000, 715, 10, "Cellar doors, chained from outside. So nobody went in that way. Or came out.", (110, 50, 40)),
     # ---- front hall
     ("coat_rack", 60, 150, 140, "A man's coat, a child's coat, an army jacket. All hung up as if they were only out for the afternoon.", (26, 26, 60)),

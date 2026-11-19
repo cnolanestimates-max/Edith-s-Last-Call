@@ -97,6 +97,21 @@ void AWCDirector::AutoBegin()
 			AutoSteps.Add({ A_Tele, TEXT("A_UpEll"), 0.f }); Wait(1.0f); AutoSteps.Add({ A_Look, TEXT("W_company_uprear"), -1.f }); Wait(0.15f); Shot(TEXT("smoke_1_hall_far"));
 			AutoSteps.Add({ A_Do, TEXT("at:2330,10,442,0,4"), 0.f }); Wait(0.25f); Shot(TEXT("smoke_2_hall_near")); Wait(0.5f); Shot(TEXT("smoke_3_hall_near_later"));
 		}
+		else if (FParse::Param(FCommandLine::Get(), TEXT("WCOutsideOnly")))
+		{
+			AutoSteps.Add({ A_Do, TEXT("filter:0"), 0.f });
+			AutoSteps.Add({ A_Do, TEXT("at:2950,-800,52,3,2"), 0.f }); Wait(1.5f); Shot(TEXT("out_1_side_of_house_to_shed"));
+			AutoSteps.Add({ A_Tele, TEXT("A_Shed"), 0.f }); Wait(1.0f); AutoSteps.Add({ A_Look, TEXT("A_ShedIn"), 0.f }); Wait(0.6f); Shot(TEXT("out_2_shed_door"));
+			AutoSteps.Add({ A_Do, TEXT("at:3760,-720,59,-90,-6"), 0.f }); Wait(1.0f); Shot(TEXT("out_3_shed_tools_wall"));
+			AutoSteps.Add({ A_Do, TEXT("at:3700,-740,59,0,-10"), 0.f }); Wait(0.8f); Shot(TEXT("out_4_shed_bench"));
+			AutoSteps.Add({ A_Do, TEXT("at:3740,-770,59,90,2"), 0.f }); Wait(0.8f); Shot(TEXT("out_5_shed_shelf"));
+			AutoSteps.Add({ A_Do, TEXT("at:3470,-745,52,168,7"), 0.f }); Wait(1.0f); Shot(TEXT("out_6_turn_round_house_from_the_back"));
+			AutoSteps.Add({ A_Do, TEXT("at:3180,0,60,180,2"), 0.f }); Wait(1.0f); Shot(TEXT("out_7_back_door"));
+			AutoSteps.Add({ A_Do, TEXT("at:3900,300,52,20,4"), 0.f }); Wait(1.0f); Shot(TEXT("out_8_back_fence_and_trees"));
+			AutoSteps.Add({ A_Do, TEXT("at:1400,-900,52,0,3"), 0.f }); Wait(1.0f); Shot(TEXT("out_9_left_side_yard"));
+			AutoSteps.Add({ A_Do, TEXT("filter:1"), 0.f }); AutoSteps.Add({ A_Do, TEXT("at:3470,-745,52,168,7"), 0.f }); Wait(1.0f); Shot(TEXT("out_10_house_from_the_back_vhs"));
+			Wait(1.f);
+		}
 		else if (FParse::Param(FCommandLine::Get(), TEXT("WCFilterShots")))
 		{
 			Set(TEXT("inside")); Set(TEXT("locked_in")); Set(TEXT("tv_first")); Set(TEXT("tv_test"));
@@ -119,6 +134,25 @@ void AWCDirector::AutoBegin()
 			AutoSteps.Add({ A_Do, TEXT("at:1500,0,92,180,6"), 0.f }); Wait(0.6f); AutoSteps.Add({ A_Her, TEXT("Idle"), 300.f }); Wait(0.8f); Looks(TEXT("c_edith"));
 			AutoSteps.Add({ A_Do, TEXT("at:-1500,60,144,0,8"), 0.f }); Wait(1.5f); Looks(TEXT("d_house"));
 			Wait(1.f);
+		}
+		else if (FParse::Param(FCommandLine::Get(), TEXT("WCSpotOnly")))
+		{
+			Set(TEXT("inside")); Set(TEXT("locked_in")); Set(TEXT("tv_first"));
+			auto At = [this](const TCHAR* S) { AutoSteps.Add({ A_Do, S, 0.f }); };
+			At(TEXT("at:1400,335,92,-90,-4")); Wait(1.2f); Shot(TEXT("spot_1_vent_shut"));
+			At(TEXT("at:1400,300,92,-90,-8")); Wait(0.8f); Shot(TEXT("spot_1b_vent_shut_close"));
+			At(TEXT("flag:vent_open")); Wait(0.8f); Shot(TEXT("spot_2_vent_open_doll"));
+			At(TEXT("at:1400,335,92,-90,-14")); Wait(0.8f); Shot(TEXT("spot_2b_vent_open_from_further"));
+			At(TEXT("at:625,330,442,-20,-28")); Wait(1.2f); Shot(TEXT("spot_3_jewelry_box_and_screwdriver"));
+			At(TEXT("flag:box_open")); Wait(0.8f); Shot(TEXT("spot_4_box_open_letter_eye"));
+			At(TEXT("flag:phone_done")); At(TEXT("at:1380,-372,442,90,-24")); Wait(1.2f); Shot(TEXT("spot_5_drawer_key_upstairs_bath"));
+			At(TEXT("at:1130,-312,92,143,-26")); Wait(1.2f); Shot(TEXT("spot_6_fuse_in_sitting_room"));
+			At(TEXT("flag:desk_open")); At(TEXT("at:2222,-300,92,-31,-24")); Wait(1.2f); Shot(TEXT("spot_7_desk_open_keys_cartridges"));
+			At(TEXT("at:2215,-352,92,0,-22")); Wait(0.8f); Shot(TEXT("spot_7b_desk_from_the_front"));
+			At(TEXT("at:640,-330,92,128,2")); Wait(1.2f); Shot(TEXT("spot_8_bookcase"));
+			At(TEXT("at:592,-296,92,124,0")); Wait(1.0f); Shot(TEXT("spot_8b_at_the_book"));
+			At(TEXT("book")); Wait(0.75f); Shot(TEXT("spot_9_book_coming_out")); Wait(0.3f); Shot(TEXT("spot_9b_her_eye")); Wait(0.5f); Shot(TEXT("spot_9c")); Wait(2.5f); Shot(TEXT("spot_9d_after"));
+			Wait(2.f);
 		}
 		else if (FParse::Param(FCommandLine::Get(), TEXT("WCPeekOnly")))
 		{
@@ -262,19 +296,21 @@ void AWCDirector::AutoBegin()
 	Go(TEXT("A_Living")); Use(TEXT("sw_living")); Wait(2.f); Shot(TEXT("05_living")); Use(TEXT("note_letter1")); Wait(1.f); Shot(TEXT("06_note")); Close();
 	Use(TEXT("look_piano")); Wait(1.6f); Shot(TEXT("06b_look"));
 	Go(TEXT("A_Dining")); Wait(2.f); Shot(TEXT("07_dining")); Use(TEXT("look_dining_table")); Wait(1.5f);
-	Go(TEXT("A_Kitchen")); Use(TEXT("sw_kitchen")); Wait(2.f); Shot(TEXT("08_kitchen")); Use(TEXT("phone")); Wait(3.f);
+	Go(TEXT("A_Kitchen")); Use(TEXT("sw_kitchen")); Wait(2.f); Shot(TEXT("08_kitchen")); Use(TEXT("phone")); Wait(3.f); Use(TEXT("vent")); Flag(TEXT("vent_seen"), 4.f); Shot(TEXT("08a_vent_screwed_shut"));
 	// ---- ground floor, rear wing
 	Go(TEXT("A_Pantry")); Wait(1.5f); Shot(TEXT("08b_pantry")); Use(TEXT("fusebox")); Wait(1.5f);
-	Go(TEXT("A_Den")); Use(TEXT("sw_den")); Wait(2.f); Shot(TEXT("08c_den")); Use(TEXT("pick_fuse")); Use(TEXT("desk")); Wait(1.5f); Use(TEXT("note_doctor")); Wait(1.f); Close();
+	Go(TEXT("A_Den")); Use(TEXT("sw_den")); Wait(2.f); Shot(TEXT("08c_den")); Use(TEXT("desk")); Wait(1.5f); Use(TEXT("note_doctor")); Wait(1.f); Close();
 	Go(TEXT("A_BathG")); Wait(1.5f); Shot(TEXT("08d_bath"));
 	Go(TEXT("A_Sickroom")); Use(TEXT("sw_sickroom")); Wait(2.f); Shot(TEXT("08e_sickroom")); Use(TEXT("note_aide1")); Wait(1.f); Close(); Use(TEXT("look_sick_bed")); Wait(1.5f);
 	// ---- the long quiet, then the thump
-	Flag(TEXT("heard_upstairs"), 55.f * Slow); Wait(14.f);
+	Go(TEXT("A_StairsTop")); Go(TEXT("A_Master")); Use(TEXT("jewelbox")); Wait(1.f); Shot(TEXT("08f_box_locked_screwdriver")); Use(TEXT("pick_screwdriver")); Wait(0.5f);
+	Go(TEXT("A_StairsTop")); Go(TEXT("A_Kitchen")); Use(TEXT("vent")); Flag(TEXT("vent_open"), 6.f); Wait(2.4f); Shot(TEXT("08g_vent_open_doll"));
+	Use(TEXT("pick_doll")); Wait(0.6f); AutoSteps.Add({ A_Do, TEXT("inspectdoll"), 0.f }); Flag(TEXT("heard_upstairs"), 10.f); Wait(14.f);
 	// ---- upstairs: S1
 	Go(TEXT("A_StairsTop")); Go(TEXT("N_up_hallB")); Flag(TEXT("peek_started"), 30.f); LookHer(1.0f); Shot(TEXT("09_S1_peek")); LookHer(2.5f);
 	Go(TEXT("Her_Peek"));                       // she is only found close to: walk to the doorway with the light on it
 	Flag(TEXT("peek_done"), 40.f); Wait(5.f);
-	Go(TEXT("A_Master")); Flag(TEXT("master_seen"), 10.f); Shot(TEXT("10_master")); Flag(TEXT("want_leave"), 60.f);
+	Go(TEXT("A_Master")); Flag(TEXT("master_seen"), 10.f); Shot(TEXT("10_master")); Use(TEXT("jewelbox")); Flag(TEXT("box_open"), 4.f); Wait(0.8f); Shot(TEXT("10b_jewelry_box_open")); Use(TEXT("pick_keep_eye")); Flag(TEXT("want_leave"), 60.f);
 	// ---- S3: the long hall
 	Go(TEXT("A_BackDoor")); Flag(TEXT("lockin_started"), 20.f);
 	WaitHer(15.f); LookHer(3.5f); Shot(TEXT("11_S3_hall")); Fire(3); LookHer(4.f); Shot(TEXT("12_S3_mid")); LookHer(40.f);
@@ -285,11 +321,13 @@ void AWCDirector::AutoBegin()
 	Use(TEXT("back")); Flag(TEXT("phone_ringing"), 30.f * Slow); Wait(3.f);
 	Use(TEXT("phone")); Flag(TEXT("phone_seat"), 40.f); LookHer(1.2f); Shot(TEXT("14_S2_table")); LookHer(6.f);
 	Wait(10.f); Shot(TEXT("15_after_S2"));
-	Use(TEXT("pick_key_sitting")); Use(TEXT("sitting")); Wait(3.f);
+	Go(TEXT("A_StairsTop")); Go(TEXT("A_UpBath")); Wait(1.f); Shot(TEXT("15b_drawer_open_upstairs")); Use(TEXT("pick_key_sitting"));
+	Go(TEXT("A_StairsTop")); Go(TEXT("A_HallSit")); Use(TEXT("sitting")); Wait(3.f);
 	Go(TEXT("A_Sitting")); Wait(3.f); Shot(TEXT("16_sitting")); Use(TEXT("note_diary2")); Wait(1.f); Close();
-	Use(TEXT("pick_key_prayer")); Use(TEXT("note_deskkey")); Wait(1.f); Close();
-	Go(TEXT("A_Den")); Use(TEXT("book_settlers")); Flag(TEXT("book_done"), 6.f); Wait(0.9f); Shot(TEXT("16b_S10_book_eye")); Wait(3.f); Shot(TEXT("16c_S10_after"));
-	Use(TEXT("pick_key_desk")); Use(TEXT("desk")); Flag(TEXT("desk_open"), 6.f); Wait(2.f);
+	Use(TEXT("pick_key_prayer")); Use(TEXT("note_deskkey")); Wait(1.f); Close(); Use(TEXT("pick_fuse"));
+	Go(TEXT("A_Pantry")); Use(TEXT("fusebox")); Flag(TEXT("fuse_done"), 4.f); Wait(2.f); Shot(TEXT("16a_fuse_in"));
+	Go(TEXT("A_Book")); Use(TEXT("book_settlers")); Flag(TEXT("book_done"), 6.f); Wait(0.9f); Shot(TEXT("16b_S10_book_eye")); Wait(3.f); Shot(TEXT("16c_S10_after"));
+	Use(TEXT("pick_key_desk")); Go(TEXT("A_Den")); Use(TEXT("desk")); Flag(TEXT("desk_open"), 6.f); Wait(2.f); Shot(TEXT("16b_desk_open_keys")); Use(TEXT("pick_key_ell")); Use(TEXT("pick_ammo_desk")); Wait(1.f);
 	// ---- S4: the head by the ceiling
 	Go(TEXT("A_StairsTop")); Flag(TEXT("ceiling_started"), 20.f * Slow); LookHer(2.5f); Shot(TEXT("17_S4_ceiling")); LookHer(7.5f); Shot(TEXT("18_S4_sprint")); LookHer(3.f);
 	Flag(TEXT("ceiling_done"), 40.f); Wait(8.f);
@@ -305,7 +343,7 @@ void AWCDirector::AutoBegin()
 	Go(TEXT("A_Bath2")); Wait(2.f); Shot(TEXT("21e_bath2"));
 	Go(TEXT("A_Sewing")); Wait(2.f); Shot(TEXT("21f_sewing")); Use(TEXT("pick_shears")); Flag(TEXT("sewing_done"), 6.f); Wait(3.4f); LookHer(1.4f); Shot(TEXT("21g_S9_rocker")); LookHer(4.5f); Wait(5.f);
 	// ---- attic: S5
-	Use(TEXT("up_attic")); Go(TEXT("A_Attic")); Wait(2.f); Shot(TEXT("22_attic")); Use(TEXT("trunk")); Flag(TEXT("attic_started"), 5.f);
+	Use(TEXT("up_attic")); Go(TEXT("A_Attic")); Wait(2.f); Shot(TEXT("22_attic")); Use(TEXT("trunk")); Flag(TEXT("attic_started"), 5.f); Wait(1.2f); Shot(TEXT("22b_footlocker_tags_key")); Use(TEXT("pick_key_cellar")); Use(TEXT("pick_keep_daniel"));
 	WaitHer(25.f); LookHer(1.2f); Shot(TEXT("23_S5_crawl")); LookHer(2.2f); Shot(TEXT("24_S5_rise")); Flag(TEXT("attic_done"), 30.f); Wait(8.f);
 	// ---- S6: the cellar door
 	Use(TEXT("cellar")); Flag(TEXT("sprint_started"), 10.f); WaitHer(40.f); LookHer(0.7f); Shot(TEXT("25_S6_sprint")); LookHer(4.f);
@@ -315,7 +353,7 @@ void AWCDirector::AutoBegin()
 	Use(TEXT("place")); Flag(TEXT("placed"), 5.f); Wait(9.f); LookHer(1.f); Shot(TEXT("28_S8_far"));
 	Use(TEXT("knot1")); Flag(TEXT("knot1"), 8.f); Wait(3.f); LookHer(1.f); Shot(TEXT("29_S8_mid"));
 	Use(TEXT("knot2")); Flag(TEXT("knot2"), 8.f); Wait(4.5f); LookHer(1.f); Shot(TEXT("30_S8_near"));
-	Use(TEXT("knot3")); Flag(TEXT("finale_done"), 8.f); Wait(2.2f); Shot(TEXT("31_S8_face"));
+	Use(TEXT("knot3")); Flag(TEXT("finale_done"), 8.f); Wait(2.2f); Shot(TEXT("31_S8_face")); Flag(TEXT("eye_wanted"), 12.f); Wait(3.5f); Shot(TEXT("31b_give_her_eye_back")); Use(TEXT("place")); Flag(TEXT("eye_given"), 6.f);
 	Flag(TEXT("dawn"), 40.f); Wait(9.f); Shot(TEXT("32_dawn_cellar"));
 	// ---- ending
 	Go(TEXT("A_Foyer")); Shot(TEXT("33_dawn_foyer")); Go(TEXT("A_Porch")); Shot(TEXT("34_dawn_porch"));
@@ -566,6 +604,9 @@ void AWCDirector::AutoTick(float Dt)
 				}
 			}
 		}
+		else if (S.Arg == TEXT("inspectdoll")) Event(TEXT("inspect:doll"));
+		else if (S.Arg.ToString().StartsWith(TEXT("flag:"))) { Set(FName(*S.Arg.ToString().Mid(5))); ApplyWorldState(); }
+		else if (S.Arg == TEXT("book")) { bBusy = false; ScareBook(); }
 		else if (S.Arg == TEXT("tvon")) { bBusy = false; TVOn(); }
 		else if (S.Arg.ToString().StartsWith(TEXT("filter:"))) { SetFilter(FCString::Atoi(*S.Arg.ToString().Mid(7))); }
 		else if (S.Arg == TEXT("peek")) { bBusy = false; ScarePeek(); }

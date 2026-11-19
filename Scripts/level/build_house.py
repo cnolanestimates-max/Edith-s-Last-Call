@@ -291,11 +291,11 @@ def ITEM(name, fallback=None):
     return asset(p) if eal.does_asset_exist(p) else fallback
 
 
-def pickup(wid, item, display, mesh, x, y, z, yaw=0.0, scale=1.0, grab=(12, 12, 8), tags=(), mats=None):
+def pickup(wid, item, display, mesh, x, y, z, yaw=0.0, scale=1.0, grab=(12, 12, 8), tags=(), mats=None, pitch=0.0, roll=0.0):
     if isinstance(mesh, tuple):          # (item model name, plain fallback mesh, fallback scale, fallback mats)
         real = ITEM(mesh[0])
         mesh, scale, mats = (real, 1.0, None) if real else (mesh[1], mesh[2], mesh[3])
-    a = interact("WCPickup", wid, mesh, x, y, z, yaw, "Take", grab, (0, 0, 4), scale, tags, mats=mats)
+    a = interact("WCPickup", wid, mesh, x, y, z, yaw, "Take", grab, (0, 0, 4), scale, tags, mats=mats, pitch=pitch, roll=roll)
     a.set_editor_property("item_id", unreal.Name(item))
     a.set_editor_property("display_name", display)
     return a
@@ -590,8 +590,8 @@ note("note_mail", "Letters_Scattered", 300, 150, GZ + 99, 20)
 L = D + "Living"
 place("Rug_Persian_Worn", 420, -400, GZ, 0, L, collide=False)
 place("Sofa_Sagging_Broken", 430, -335, GZ, 180, L)          # in the middle of the room, facing the television on the south wall
-place("Armchair_Wingback_Torn", 545, -265, GZ, 205, L)
-place("Armchair_Tipped", 615, -415, GZ, 120, L)
+place("Armchair_Wingback_Torn", 105, -535, GZ, 45, L)            # in the corner by the piano: the bookshelf wall is kept clear
+place("Armchair_Tipped", 715, -390, GZ, 120, L)
 place("Fireplace_Wood_Overmantel", 600, -562, GZ, 0, L)
 place("Mantel_Clock", 600, -548, GZ + 132, 0, L, collide=False)
 place("Piano_Upright", 90, -420, GZ, 90, L)
@@ -635,18 +635,27 @@ place("Chair_Dining_HighBack", 1340, 430, GZ, 80, K, tags=["KitchenChair"])
 place("Cabinet_Steel_Low_Drawers", 900, 560, GZ, 180, K)
 place("Sink_Hospital", 1050, 570, GZ, 180, K)
 place("Cabinet_Medicine_Glass_Open", 1400, 560, GZ, 180, K)
-place("Dresser_Drawers", 1560, 300, GZ, 270, K, tags=["Hide_drawer"])
-place("Dresser_Drawers_Open", 1548, 300, GZ, 270, K, tags=["Show_drawer"])
+place("Dresser_Drawers", 1560, 300, GZ, 270, K)
 place("Radiator_Cast_Iron", 1320, 578, GZ, 180, K)
 place("Plates_Stack_Dusty", 1250, 400, GZ + 89, 0, K, collide=False)
 place("Tin_Cans_Rusty", 920, 560, GZ + 95, 0, K, collide=False)
+# the wall vent on the hall side of the kitchen: screwed shut, and something small is caught behind the slats.
+# The screwdriver is upstairs beside the jewelry box; the small key is on the ledge inside.  Taking the key brings the thump.
+interact("WCUsable", "vent", ITEM("Vent"), 1400, 217.9, GZ + 112, 0, "Wall vent", (22, 9, 15), (0, 0, 13))
+if ITEM("VentOpen"):
+    place(ITEM("VentOpen"), 1400, 217.9, GZ + 112, 0, K, name="VentOpen", tags=["Show_vent"], collide=False)
+if ITEM("VentCoverFlat"):
+    place(ITEM("VentCoverFlat"), 1400 - 22, 262, GZ + 0.4, 24, K, name="VentCoverOff", tags=["Show_vent"], collide=False)
+# what is behind the cover: a rag doll, pushed into the duct, lying along the ledge with her face to the room.
+# The small key is sewn inside her; it is found by turning her over in Inspect.
+pickup("pick_doll", "doll", "Rag doll", ("Doll", CUBE, (0.15, 0.09, 0.025), {0: "BrassOld"}), 1400, 216.7, GZ + 112 + 3.5 + 5.0, 0, grab=(10, 6, 4), tags=["Show_ventkey"], roll=90)
 place("Bottles_Empty_Group", 1500, 560, GZ, 0, K, collide=False)
 place(TABLE, 868, 536, GZ, 0, K)
 interact("WCUsable", "phone", "Telephone_Rotary", 868, 536, GZ + 98, 20, "Pick up the phone", (18, 18, 14))
 point("PhonePoint", 868, 536, GZ + 110)
 note("note_calendar", "Newspaper_Single", 1100, 219, GZ + 150, 0, pitch=0, roll=90, grab=(22, 6, 22))
 note("note_grocery", "Clipboard_Chart", 1480, 150, GZ + 4, 30)
-pickup("pick_key_sitting", "key_sitting", "Small brass key", ("Key", CUBE, (0.07, 0.022, 0.006), {0: "BrassOld"}), 1530, 300, GZ + 97, 20, tags=["Show_drawer"])
+
 # ---- sitting room (back left, locked): her room
 S = D + "Sitting"
 place("Rug_Persian_Worn", 1200, -400, GZ, 90, S, collide=False)
@@ -663,6 +672,9 @@ note("note_diary2", "Book_Open_Pages", 1500, -416, GZ + 101, 100, grab=(14, 14, 
 note("note_ruth", "Letters_Scattered", 1490, -340, GZ + 101, 60, scale=0.7, grab=(12, 12, 6))
 pickup("pick_key_prayer", "key_prayer", "Iron key on a ribbon", ("KeyIron", CUBE, (0.08, 0.024, 0.006), {0: "Iron"}), 1508, -457, GZ + 102, 70, grab=(10, 10, 7))
 note("note_deskkey", "Letters_Scattered", 1492, -377, GZ + 101.5, 20, scale=0.45, grab=(10, 10, 5))
+# the spare fuse is in here (it used to lie in the den, next door to the fuse box): the lights stay dead until he gets in
+place(TABLE, 1040, -252, GZ, 0, S)
+pickup("pick_fuse", "fuse", "Spare fuse", ("Fuse", CYL, (0.03, 0.03, 0.075), {0: "Glass"}), 1066, -264, GZ + 98.6, 0, grab=(10, 10, 10))
 # ---- upstairs hall
 UH = D + "UpperHall"
 place("Rug_Persian_Worn", 1150, 0, UZ, 90, UH, collide=False)
@@ -684,6 +696,14 @@ place("Chest_Trunk", 400, 440, UZ, 90, MB)
 place("Curtains_Torn_Window", 22, 400, UZ + 20, 90, MB, collide=False)
 place("Oil_Lamp_Broken_Unlit", 700, 300, UZ + 98, 0, MB, collide=False)
 note("note_diary1", "Book_Open_Pages", 690, 310, UZ + 99, 30)
+# her jewelry box, locked, on the same table: what he has to come back up the stairs for
+interact("WCUsable", "jewelbox", ITEM("JewelBox") or "Music_Box_Closed", 716, 284, UZ + 98, 205, "Open the jewelry box", (14, 12, 9), (0, 0, 5))
+if ITEM("JewelBoxOpen"):
+    place(ITEM("JewelBoxOpen"), 716, 284, UZ + 98, 205, MB, name="JewelBoxOpen", tags=["Show_jewel"], collide=False)
+note("note_box", "Letters_Scattered", 690, 268, UZ + 98.6, 60, scale=0.32, grab=(9, 9, 5), tags=["Show_jewel"])
+# and in the box, on the faded lining: her glass eye.  It goes back to her at the very end.
+pickup("pick_screwdriver", "screwdriver", "Screwdriver", ("Screwdriver", CUBE, (0.2, 0.02, 0.02), {0: "Iron"}), 724, 311, UZ + 98.4, 100, grab=(13, 13, 7))
+pickup("pick_keep_eye", "keep_eye", "Glass eye", ("GlassEye", CUBE, (0.025, 0.025, 0.025), {0: "Porcelain"}), 716, 284, UZ + 104.5, 0, grab=(9, 9, 7), tags=["Show_jeweleye"])
 note("note_walter", "Newspaper_Single", 420, 548, UZ + 100, 10)
 # ---- children's room (front left)
 KD = D + "Kids"
@@ -711,6 +731,11 @@ place("Mirror_Wall_Oval", 1250, -582, UZ + 150, 0, B, collide=False)
 place("Medicine_Cabinet_Wall_Open", 1100, -580, UZ + 140, 0, B, collide=False)
 place("Laundry_Cart", 1500, -300, UZ, 30, B)
 place("Privacy_Screen_Torn", 880, -330, UZ, 70, B)
+# the drawer that is found open after the telephone (it was in the kitchen, across the hall from the door its key opens)
+place("Dresser_Drawers", 1380, -256, UZ, 0, B, tags=["Hide_drawer"])
+place("Dresser_Drawers_Open", 1380, -268, UZ, 0, B, tags=["Show_drawer"])
+pickup("pick_key_sitting", "key_sitting", "Small brass key", ("Key", CUBE, (0.07, 0.022, 0.006), {0: "BrassOld"}), 1380, -286, UZ + 97, 110, tags=["Show_drawer"])
+point("DrawerPoint", 1380, -268, UZ + 60)
 # ---- prayer room (back right, locked): the keeping
 PR = D + "Prayer"
 place("Ritual_Circle_Floor", 1200, 400, UZ, 0, PR, collide=False)
@@ -739,6 +764,12 @@ pickup("pick_keep_walter", "keep_walter", "Walter's wedding ring", ("Ring", CYL,
 # ---- attic
 AT = D + "Attic"
 interact("WCUsable", "trunk", "Chest_Trunk", 760, -430, AZ, 90, "Open the footlocker", (50, 30, 36), (0, 0, 36))
+# what was in it, laid out on the lid once it has been opened (they used to go straight into the inventory)
+_tb = kit("Chest_Trunk").get_bounds()
+_ttop = AZ + _tb.origin.z + _tb.box_extent.z
+log(f"footlocker lid at z {_ttop:.0f}")
+pickup("pick_keep_daniel", "keep_daniel", "Daniel's dog tags", ("Tags", CUBE, (0.05, 0.03, 0.004), {0: "Iron"}), 752, -444, _ttop + 0.8, 20, grab=(11, 11, 7), tags=["Show_trunktags"])
+pickup("pick_key_cellar", "key_cellar", "Padlock key", ("KeyPadlock", CUBE, (0.08, 0.024, 0.006), {0: "Iron"}), 770, -416, _ttop + 0.8, 110, grab=(11, 11, 7), tags=["Show_trunkkey"])
 place("Crate_Wood_Large", 520, -520, AZ, 20, AT)
 place("Crate_Wood_Small", 620, -540, AZ, 70, AT)
 place("Box_Cardboard_Stack", 1000, -480, AZ, 10, AT)
@@ -784,6 +815,8 @@ place("Candle_Melted_Puddle", 1300, 560, CZ, 0, RC, collide=False)
 place("Barrel_Old", 1250, 560, CZ, 0, RC)
 place("Chain_Pile", 1540, 560, CZ, 0, RC, collide=False)
 interact("WCUsable", "place", None, 1400, 430, CZ + 4, 0, "Lay the keepsakes at her feet", (34, 26, 10), (0, 0, 8))
+if ITEM("GlassEye"):
+    place(ITEM("GlassEye"), 1392, 462, CZ + 1, 0, RC, tags=["Show_eyegiven"], collide=False, name="EyeGiven")
 place("Music_Box_Closed", 1385, 430, CZ, 20, RC, tags=["Show_placed"], collide=False)
 place(CYL, 1420, 425, CZ + 1, 0, RC, tags=["Show_placed"], collide=False, scale=(0.022, 0.022, 0.006), mats={0: "Gold"}, name="RingPlaced")
 place("Chain_Pile", 1410, 450, CZ, 0, RC, tags=["Show_placed"], collide=False, scale=0.16, name="TagsPlaced")
@@ -887,7 +920,7 @@ for n, x, y, z, yaw in (("A_Porch", -150, 0, GZ, 0), ("A_Foyer", 220, 60, GZ, 0)
                         ("A_Kitchen", 1000, 380, GZ, 20), ("A_BackDoor", 2700, 0, GZ, 0), ("A_Den", 2000, -380, GZ, 250), ("A_Sickroom", 2400, 380, GZ, 60), ("A_Pantry", 1800, 400, GZ, 60), ("A_BathG", 2600, -380, GZ, 250),
                         ("A_Daniel", 2000, -380, UZ, 250), ("A_Sewing", 2600, -380, UZ, 250), ("A_Aide", 2000, 380, UZ, 60), ("A_Bath2", 2600, 380, UZ, 60), ("A_UpEll", 1750, 0, UZ, 0), ("A_Sitting", 1250, -350, GZ, 200),
                         ("A_StairsTop", 900, 60, UZ, 160), ("A_Master", 380, 330, UZ, 30), ("A_Kids", 420, -330, UZ, 250),
-                        ("A_Prayer", 1150, 330, UZ, 60), ("A_Attic", 760, -250, AZ, 250), ("A_CellarShelf", 1380, 60, CZ, 90),
+                        ("A_Prayer", 1150, 330, UZ, 60), ("A_UpBath", 1380, -372, UZ, 90), ("A_Book", 610, -292, GZ, 100), ("A_HallSit", 1390, -90, GZ, 250), ("A_Attic", 760, -250, AZ, 250), ("A_CellarShelf", 1380, 60, CZ, 90),
                         ("A_Root", 1400, 330, CZ, 90), ("A_Cruiser", -1450, 260, -40, 180)):
     point(n, x, y, z, yaw, folder="Auto")
 TOUR = [("road", -9000, 300, 60, 0), ("gate", -3300, 320, 60, -5), ("yard", -1900, -200, 52, 8), ("yard_side", -1200, -1500, 52, 50), ("yard_back", 3900, 1300, 52, 200),

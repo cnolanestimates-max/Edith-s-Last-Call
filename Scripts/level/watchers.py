@@ -41,41 +41,45 @@ watcher("fireplace", 600, -571, GZ + 58, 90.0, 12.0, 0, 5.0)        # in the liv
 watcher("ceiling_hole", 1310, -372, UZ - 30, 0.0, -78.0, 0, 5.6)    # looking down through the hole in the sitting-room ceiling
 
 # ---------------------------------------------------------------- hair
-watcher("hair_stairs", 640, -150, UZ + 322, 0, 0, 1, 5.2)           # hanging in the stairwell from the attic flight
-watcher("hair_sitting", 1420, -330, UZ - 24, 0, 0, 1, 4.4)          # through the hole in her sitting-room ceiling
-watcher("hair_attic", 1340, 360, AZ - 22, 0, 0, 1, 4.8)             # through the hole in the attic floor, into the prayer room
-watcher("hair_bath2", 2540, 390, UZ - 22, 0, 0, 1, 4.6)             # through the rotted bathroom floor, over the sickroom bed
-watcher("hair_backhall", 2350, 60, GZ + 326, 0, 0, 1, 3.6)          # from a gap in the rear-hall ceiling
+# (removed 2026-11-19 at Cheyenne's request: the hanks of hair drawn up into the ceiling read as a stiff plank, not hair)
 
 # ---------------------------------------------------------------- the settlers book (S10) in Walter's den
-BKX0, BKX1, BKY, BKZ = 2168.0, 2322.0, -216.0, GZ + 104.0           # a shelf on the hall-side wall of the den
+BKX0, BKX1, BKY, BKZ = 470.0, 624.0, -216.0, GZ + 141.0             # the settlers book's shelf: its hole is at the height of his eyes (it was a low shelf, and in the den)
 M_SHELF = surf("WoodDark", "MI_WoodDark")
-box("BookShelfBoard", BKX0, BKX1, BKY - 21, BKY, BKZ - 3, BKZ, M_SHELF, "Dressing/Den", collide=False)
-for bx in (BKX0 + 8, BKX1 - 8):
-    box(f"BookShelfBracket_{int(bx)}", bx - 1.5, bx + 1.5, BKY - 18, BKY, BKZ - 20, BKZ - 3, M_SHELF, "Dressing/Den", collide=False)
-_bk = random.Random(42)
 _leathers = [surf("LeatherOld", m) for m in ("MI_LeatherRed", "MI_LeatherGreen", "MI_LeatherBlue", "MI_LeatherTan", "MI_Leather")]
-bx = BKX0 + 5.0
+# a tall open bookcase against the wall: two uprights, a top, four shelves of county histories
+for bx in (BKX0 - 3.0, BKX1):
+    box(f"BookCaseSide_{int(bx)}", bx, bx + 3.0, BKY - 22, BKY, GZ, GZ + 182, M_SHELF, "Dressing/Living", collide=False)
+box("BookCaseTop", BKX0 - 3.0, BKX1 + 3.0, BKY - 23, BKY, GZ + 179, GZ + 182, M_SHELF, "Dressing/Living", collide=False)
+box("BookCaseKick", BKX0, BKX1, BKY - 20, BKY, GZ, GZ + 9, M_SHELF, "Dressing/Living", collide=False)
+box("BookCaseBlock", BKX0 - 3.0, BKX1 + 3.0, BKY - 22, BKY, GZ, GZ + 60, M_SHELF, "Dressing/Living", collide=True, hidden=True)      # he cannot walk through it; the books above stay reachable
 SETTLERS_X = None
-k = 0
-while bx < BKX1 - 8:
-    w = _bk.uniform(3.4, 6.2)
-    h = _bk.uniform(19.0, 25.0)
-    d = _bk.uniform(13.0, 16.5)
-    if SETTLERS_X is None and bx > (BKX0 + BKX1) / 2 - 6:
-        SETTLERS_X = bx + 2.6
-        b_ = box("SettlersBook", bx, bx + 5.2, BKY - 17.5, BKY - 2.0, BKZ, BKZ + 24.0, surf("LeatherOld", "MI_Leather"), "Dressing/Den", collide=False, tags=["SettlersBook"])
-        b_.static_mesh_component.set_mobility(unreal.ComponentMobility.MOVABLE)
-        bx += 5.6
-        continue
-    box(f"DenBook_{k}", bx, bx + w, BKY - d - 1.5, BKY - 1.5, BKZ, BKZ + h, _bk.choice(_leathers), "Dressing/Den", collide=False, roll=_bk.choice((0, 0, 0, 4, -3)))
-    bx += w + 0.5
-    k += 1
+for _row, _z in enumerate((GZ + 33.0, GZ + 69.0, GZ + 105.0, BKZ)):
+    box(f"BookShelfBoard_{_row}", BKX0, BKX1, BKY - 21, BKY, _z - 3, _z, M_SHELF, "Dressing/Living", collide=False)
+    _bk = random.Random(42 + _row * 7)
+    bx = BKX0 + 5.0
+    k = 0
+    while bx < BKX1 - 8:
+        w = _bk.uniform(3.4, 6.2)
+        h = _bk.uniform(19.0, 25.0)
+        d = _bk.uniform(13.0, 16.5)
+        if _z == BKZ and SETTLERS_X is None and bx > (BKX0 + BKX1) / 2 - 6:
+            SETTLERS_X = bx + 2.6
+            b_ = box("SettlersBook", bx, bx + 5.2, BKY - 17.5, BKY - 2.0, BKZ, BKZ + 24.0, surf("LeatherOld", "MI_Leather"), "Dressing/Living", collide=False, tags=["SettlersBook"])
+            b_.static_mesh_component.set_mobility(unreal.ComponentMobility.MOVABLE)
+            bx += 5.6
+            continue
+        if _row < 3 and _bk.random() < 0.12:
+            bx += _bk.uniform(6.0, 14.0)                 # a gap where one has gone
+            continue
+        box(f"ShelfBook_{_row}_{k}", bx, bx + w, BKY - d - 1.5, BKY - 1.5, _z, _z + h, _bk.choice(_leathers), "Dressing/Living", collide=False, roll=_bk.choice((0, 0, 0, 4, -3)))
+        bx += w + 0.5
+        k += 1
 interact("WCUsable", "book_settlers", None, SETTLERS_X, BKY - 12, BKZ + 12, 0, "Pull the book out", (7, 12, 14), (0, 0, 0))
 # the hole behind it, and what is in the hole
 for i, (ox, oz, s_) in enumerate(((0, 0, 1.0), (4.2, 3.0, 0.6), (-3.6, -3.2, 0.55))):
     place(SPHERE, SETTLERS_X + ox, BKY - 0.4, BKZ + 13 + oz, -90, WF, name=f"BookHole_{i}", scale=(0.012, 8.6 * s_ / 50.0, 8.0 * s_ / 50.0), mats={0: "WC:M_Black"}, collide=False, shadow=False)
 watcher("book_eye", SETTLERS_X, BKY - 1.2, BKZ + 13, -90.0, 0.0, 0, 5.6, scripted=True)
 # the key that falls out of the hollowed book
-pickup("pick_key_desk", "key_desk", "Small desk key", ("Key", CUBE, (0.05, 0.018, 0.005), {0: "BrassOld"}), SETTLERS_X + 8, BKY - 52, GZ + 2.0, 35, tags=["Show_bookkey"])
-log("watchers: 8 eyes, 5 hanks of hair, the settlers book")
+pickup("pick_key_desk", "key_desk", "Small desk key", ("KeyDesk", CUBE, (0.05, 0.018, 0.005), {0: "BrassOld"}), SETTLERS_X + 8, BKY - 52, GZ + 2.0, 35, tags=["Show_bookkey"])
+log("watchers: 8 eyes, the settlers book")

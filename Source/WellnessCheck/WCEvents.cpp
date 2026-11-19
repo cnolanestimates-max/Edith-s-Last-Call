@@ -19,6 +19,7 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Kismet/KismetRenderingLibrary.h"
 #include "Engine/PostProcessVolume.h"
+#include "EngineUtils.h"
 #include "Misc/CommandLine.h"
 #include "Misc/Parse.h"
 #include "UObject/UObjectIterator.h"
@@ -273,7 +274,8 @@ void AWCDirector::TVOn()
 	TVGlow->SetWorldLocation(At + (Player() ? (Player()->GetActorLocation() - At).GetSafeNormal2D() * 45.f : FVector(0, 45, 0)));
 	PlayAt(TEXT("switch_click"), At, 1.f, 0.8f, 1500.f);
 	if (TVAudio.IsValid()) TVAudio->Stop();
-	TVAudio = PlayAt(FString::Printf(TEXT("tv_tape_%d"), N), At, 1.f, 1.f, 2400.f);
+	TVTapeNow = N;
+	TVLoop = -1;                                    // the sound is started (and restarted each time round) in TickTV
 	Tv->Prompt = TEXT("Switch the television off");
 	TVPhase = 1;
 	TVAt = Clock;
@@ -393,9 +395,17 @@ void AWCDirector::TickTV(float Dt)
 		const float T = (float)(Clock - TVAt);
 		if (TVScreen) TVScreen->SetScalarParameterValue(TEXT("Frame"), (float)(FMath::FloorToInt(T * GTapeFps) % GTapeFrames));
 		if (TVGlow) TVGlow->SetIntensity(1500.f * (0.72f + 0.2f * FMath::Sin(T * 23.f) * FMath::Sin(T * 7.1f) + 0.08f * FMath::Sin(T * 61.f)));
-		const float Runs = TVTape <= 1 ? 420.f : 75.f;
-		if (TVAudio.IsValid() && !TVAudio->IsPlaying() && T < Runs - 2.f) TVAudio->Play();          // the tape comes round again
-		if (T > Runs) TVOff(false);
+		// the tape and its voices come round together, every twenty seconds
+		const int32 LoopNow = FMath::FloorToInt(T / 20.f);
+		if (LoopNow != TVLoop)
+		{
+			TVLoop = LoopNow;
+			if (TVAudio.IsValid()) TVAudio->FadeOut(0.35f, 0.f);          // no hard cut when the tape comes round
+			TVAudio = PlayAt(FString::Printf(TEXT("tv_tape_%d"), TVTapeNow), At, 0.42f, 1.f, 1000.f);       // heard in the room and from the hall, not through the house
+			if (TVAudio.IsValid()) TVAudio->FadeIn(0.35f, 1.f);
+		}
+		// the first showing (it is on when he comes in) plays until he switches it off; later ones for 75 s
+		if (TVTape > 1 && T > 75.f) TVOff(false);
 		return;
 	}
 	// ---- the reflection
@@ -608,4 +618,184 @@ void AWCDirector::SetFilter(int32 Look)
 	FilterVolume->bEnabled = FilterLook > 0;
 	FilterVolume->BlendWeight = FilterLook > 0 ? 1.f : 0.f;
 	UE_LOG(LogWCEvents, Display, TEXT("WCFILTER look %d"), FilterLook);
+}
+
+// ================================================================================================ a door opens by itself
+// Cheyenne: "have one of the doors in the house open ... the creak of the door opening and actually having the door open ...
+// in moderation, once, maybe twice in the whole game."
+bool AWCDirector::DoorOpensByItself()
+{
+	AWCCharacter* P = Player();
+	if (!P) return false;
+	AWCDoor* Best = nullptr;
+	float BestScore = -1.f;
+	const FVector Eye = P->EyeLocation();
+	for (TActorIterator<AWCDoor> It(GetWorld()); It; ++It)
+	{
+		AWCDoor* D = *It;
+		if (D->bLocked || D->IsOpen()) continue;
+		const FVector At = D->GetActorLocation() + FVector(0, 0, 100);
+		const float Dist = FVector::Dist(Eye, At);
+		if (Dist < 260.f || Dist > 950.f || FMath::Abs(At.Z - Eye.Z) > 160.f) continue;
+		FHitResult Hit;
+		FCollisionQueryParams Q(FName(TEXT("WCDoorSelf")), false, P);
+		Q.AddIgnoredActor(D);
+		if (GetWorld()->LineTraceSingleByChannel(Hit, Eye, At, ECC_Visibility, Q)) continue;         // he has to be able to see it go
+		const float Facing = FVector::DotProduct(P->EyeForward(), (At - Eye).GetSafeNormal());
+		const float Score = Facing + 0.3f * (1.f - Dist / 950.f);
+		if (Facing > 0.2f && Score > BestScore) { BestScore = Score; Best = D; }
+	}
+	if (!Best) return false;
+	Best->SetOpen(true, 6.5f, true);                                          // slowly
+	PlayAt(TEXT("door_creak_long"), Best->GetActorLocation() + FVector(0, 0, 110), 1.f, 0.9f, 2200.f);
+	Tension = FMath::Max(Tension, 0.5f);
+	UE_LOG(LogWCEvents, Display, TEXT("WCDOOR t=%.1f %s opened by itself"), PlaySeconds, *Best->GetActorNameOrLabel());
+	return true;
+}
+
+// ================================================================================================ sounds on triggers
+// Cheyenne: "Everything else should be on a timed sequence where when the player passes this part, this sound goes off ...
+// picks this up, this sound triggers ... returning to a room for the fifth time, this sound triggers."
+// One line = one sound, once.  On: the event ("enter:<trigger>" = walking into a room, "take:<item>", "use:<thing>",
+// "door:<door>").  Nth: on which time that happens.  Where: 0 somewhere round him, 1 on the other floor, 2 in a wall close by,
+// 3 behind him.  Need: a story flag that has to be set first (nullptr = none).  Act: 1 the rocking chair rocks, 2 a light he
+// left on goes out, 3 Walter's radio tunes itself, 4 bare feet run across the other floor.
+namespace
+{
+	struct FWCCue { const TCHAR* On; int32 Nth; const TCHAR* Sound; int32 Where; float Near, Far, Vol, Pitch; const TCHAR* Need; int32 Act; };
+	const FWCCue GWCCues[] = {
+		// ---- the house only: before the thump
+		{ TEXT("enter:t_dining"), 1, TEXT("creak"), 0, 300.f, 600.f, 0.8f, 1.f, nullptr, 0 },
+		{ TEXT("enter:t_kitchen"), 1, TEXT("thump_far"), 1, 200.f, 400.f, 0.9f, 0.95f, nullptr, 0 },
+		{ TEXT("use:vent"), 1, TEXT("skitter"), 2, 120.f, 220.f, 0.8f, 1.f, nullptr, 0 },
+		{ TEXT("enter:t_hall_mid"), 2, TEXT("steps_above"), 1, 100.f, 300.f, 0.9f, 1.f, nullptr, 0 },
+		{ TEXT("enter:t_living"), 2, TEXT(""), 0, 0.f, 0.f, 1.f, 1.f, nullptr, 1 },
+		{ TEXT("enter:t_pantry"), 1, TEXT("skitter"), 2, 150.f, 300.f, 0.8f, 1.f, nullptr, 0 },
+		{ TEXT("enter:t_den"), 1, TEXT(""), 0, 0.f, 0.f, 1.f, 1.f, nullptr, 3 },
+		{ TEXT("enter:t_sickroom"), 1, TEXT("VO/m_hum"), 1, 200.f, 500.f, 0.45f, 1.f, TEXT("locked_in"), 0 },
+		{ TEXT("enter:t_up_landing"), 1, TEXT("house_groan"), 0, 500.f, 900.f, 0.9f, 1.f, nullptr, 0 },
+		{ TEXT("take:screwdriver"), 1, TEXT("creak"), 3, 180.f, 260.f, 0.9f, 0.9f, nullptr, 0 },
+		{ TEXT("enter:t_foyer"), 3, TEXT("door_far"), 1, 400.f, 700.f, 0.9f, 1.f, nullptr, 2 },
+		{ TEXT("enter:t_kitchen"), 3, TEXT("scratch_wall"), 2, 150.f, 220.f, 0.9f, 1.f, nullptr, 0 },
+		// ---- after the first sight of her
+		{ TEXT("take:keep_eye"), 1, TEXT("VO/m_moan1"), 1, 500.f, 900.f, 0.75f, 1.f, nullptr, 0 },
+		{ TEXT("enter:t_up_corridor"), 3, TEXT("door_far"), 3, 500.f, 800.f, 0.8f, 1.f, TEXT("peek_done"), 0 },
+		// ---- after the long hall
+		{ TEXT("enter:t_hall_mid"), 5, TEXT("VO/m_cry1"), 1, 300.f, 700.f, 0.6f, 1.f, TEXT("lockin_done"), 0 },
+		{ TEXT("enter:t_dining"), 3, TEXT("knock_far"), 0, 600.f, 1000.f, 0.9f, 1.f, TEXT("lockin_done"), 0 },
+		{ TEXT("enter:t_master"), 3, TEXT("chair_creak"), 3, 200.f, 300.f, 0.8f, 1.f, TEXT("lockin_done"), 0 },
+		{ TEXT("take:key_sitting"), 1, TEXT(""), 0, 0.f, 0.f, 1.f, 1.f, nullptr, 4 },
+		{ TEXT("door:sitting"), 1, TEXT("VO/m_laugh1"), 2, 250.f, 400.f, 0.5f, 1.f, nullptr, 0 },
+		{ TEXT("take:key_prayer"), 1, TEXT("thump_far"), 1, 200.f, 500.f, 0.9f, 1.f, nullptr, 0 },
+		{ TEXT("take:fuse"), 1, TEXT("skitter"), 2, 150.f, 260.f, 0.8f, 1.f, nullptr, 0 },
+		{ TEXT("enter:t_living"), 4, TEXT("scratch_wall"), 2, 200.f, 320.f, 0.9f, 0.85f, TEXT("phone_done"), 0 },
+		{ TEXT("enter:t_kitchen"), 5, TEXT("chair_scrape"), 3, 220.f, 320.f, 0.7f, 1.f, TEXT("phone_done"), 0 },
+		{ TEXT("enter:t_sitting"), 2, TEXT("VO/m_hum"), 2, 300.f, 500.f, 0.45f, 1.f, nullptr, 0 },
+		{ TEXT("enter:t_up_landing"), 4, TEXT("VO/m_cry2"), 0, 500.f, 900.f, 0.55f, 1.f, TEXT("ceiling_done"), 0 },
+		{ TEXT("enter:t_den"), 3, TEXT("knock_far"), 1, 300.f, 600.f, 0.9f, 1.f, nullptr, 0 },
+		{ TEXT("take:key_ell"), 1, TEXT("VO/m_cry2"), 2, 300.f, 500.f, 0.55f, 1.f, nullptr, 0 },
+		// ---- the back rooms upstairs, the attic, the cellar
+		{ TEXT("door:up_ell"), 1, TEXT("house_groan"), 0, 500.f, 900.f, 0.9f, 1.f, nullptr, 0 },
+		{ TEXT("enter:t_aide"), 1, TEXT("VO/m_laugh2"), 1, 300.f, 600.f, 0.5f, 1.f, nullptr, 0 },
+		{ TEXT("enter:t_bath2"), 1, TEXT("skitter"), 2, 150.f, 260.f, 0.8f, 1.f, nullptr, 0 },
+		{ TEXT("enter:t_up_ell"), 3, TEXT(""), 0, 0.f, 0.f, 1.f, 1.f, nullptr, 4 },
+		{ TEXT("enter:t_attic"), 1, TEXT("wind_gust"), 0, 600.f, 1000.f, 0.8f, 1.f, nullptr, 0 },
+		{ TEXT("take:key_cellar"), 1, TEXT("VO/m_moan2"), 1, 400.f, 800.f, 0.75f, 1.f, nullptr, 0 },
+		{ TEXT("enter:t_foyer"), 6, TEXT("door_far"), 1, 500.f, 900.f, 0.9f, 0.9f, TEXT("attic_done"), 0 },
+		{ TEXT("enter:t_backhall"), 3, TEXT(""), 0, 0.f, 0.f, 1.f, 1.f, TEXT("lockin_done"), 4 },
+		{ TEXT("enter:t_pantry"), 2, TEXT("thump_far"), 1, 200.f, 500.f, 0.9f, 1.f, TEXT("lockin_done"), 0 },
+		{ TEXT("enter:t_cellar_shelf"), 1, TEXT("scratch_wall"), 2, 150.f, 240.f, 0.9f, 0.9f, nullptr, 0 },
+	};
+}
+
+void AWCDirector::CueEvent(FName Id)
+{
+	const FString S = Id.ToString();
+	if (!(S.StartsWith(TEXT("enter:")) || S.StartsWith(TEXT("take:")) || S.StartsWith(TEXT("use:")) || S.StartsWith(TEXT("door:")))) return;
+	CueCount.FindOrAdd(Id) += 1;
+	AWCCharacter* P = Player();
+	if (!P || !Has(TEXT("inside")) || Has(TEXT("dawn")) || Has(TEXT("placed"))) return;
+	// nothing over a staged moment, a hunt, or another of these
+	if (bBusy || bEventBusy || StalkState != 0 || Clock < CueFreeAt) return;
+	const int32 Count = CueCount[Id];
+	for (int32 i = 0; i < UE_ARRAY_COUNT(GWCCues); ++i)
+	{
+		const FWCCue& C = GWCCues[i];
+		if (CueFired.Contains(i) || Id != FName(C.On) || Count < C.Nth) continue;
+		if (C.Need && !Has(FName(C.Need))) continue;
+		CueFired.Add(i);
+		CueFreeAt = Clock + 22.0;
+		const FVector L = P->GetActorLocation();
+		const FRotator Yaw(0.f, P->GetControlRotation().Yaw, 0.f);
+		FVector Off = FRotator(0.f, Rng.FRandRange(0.f, 360.f), 0.f).Vector() * Rng.FRandRange(C.Near, C.Far);
+		if (C.Where == 1) Off.Z = (L.Z > 500.f ? -1.f : 1.f) * 330.f;
+		else if (C.Where == 2) Off.Z = Rng.FRandRange(-60.f, 120.f);
+		else if (C.Where == 3) Off = -Yaw.Vector() * Rng.FRandRange(C.Near, C.Far) + FRotationMatrix(Yaw).GetUnitAxis(EAxis::Y) * Rng.FRandRange(-90.f, 90.f) + FVector(0, 0, 20.f);
+		else Off.Z = Rng.FRandRange(-80.f, 200.f);
+		UE_LOG(LogWCEvents, Display, TEXT("WCCUE t=%.1f %s (%s, time %d) act %d"), PlaySeconds, C.Sound, C.On, Count, C.Act);
+		// a moment after he has done the thing, not on top of it
+		const FString Sound = C.Sound;
+		const float Vol = C.Vol, Pitch = C.Pitch;
+		const int32 Act = C.Act;
+		After(Rng.FRandRange(0.9f, 2.2f), [this, Sound, Vol, Pitch, Act, L, Off]()
+		{
+			AWCCharacter* Pl = Player();
+			if (!Pl || bBusy) return;
+			if (!Sound.IsEmpty()) PlayAt(Sound, L + Off, Vol, Pitch * Rng.FRandRange(0.96f, 1.04f));
+			if (Act == 1)
+			{
+				if (AActor* Chair = Find(TEXT("RockingChair")))
+				{
+					RockActor = Chair; RockUntil = Clock + 9.0; RockBase = Chair->GetActorRotation();
+					PlayAt(TEXT("chair_creak"), Chair->GetActorLocation() + FVector(0, 0, 50), 1.f, 1.f, 2200.f);
+					After(3.2f, [this, Chair]() { if (IsValid(Chair)) PlayAt(TEXT("chair_creak"), Chair->GetActorLocation() + FVector(0, 0, 50), 0.9f, 0.94f, 2200.f); });
+				}
+			}
+			else if (Act == 2)
+			{
+				for (TPair<FName, FRoomLights>& Rm : Rooms) if (Rm.Value.bOn) { Rm.Value.KillAt = Clock; NextLightKill = 0.0; break; }
+			}
+			else if (Act == 3)
+			{
+				PlayAt(TEXT("radio_tune"), Pos(TEXT("RadioPoint")), 1.f, 1.f, 3200.f);
+				After(8.f, [this]() { if (bBusy) return; Play2D(TEXT("breath_near"), 0.55f); if (AWCCharacter* Q = Player()) Q->FlickerLight(0.5f, 0.7f); });
+			}
+			else if (Act == 4)
+			{
+				const FVector From = Pl->GetActorLocation() + FRotator(0.f, Rng.FRandRange(0.f, 360.f), 0.f).Vector() * Rng.FRandRange(500.f, 900.f) + FVector(0, 0, (Pl->GetActorLocation().Z > 300.f ? -330.f : 330.f) - 80.f);
+				const FVector Step = FRotator(0.f, Rng.FRandRange(0.f, 360.f), 0.f).Vector() * 72.f;
+				const int32 N = Rng.RandRange(4, 6);
+				for (int32 k = 0; k < N; ++k) After(k * 0.42f, [this, From, Step, k]() { PlayAt(TEXT("her_step"), From + Step * k, 0.9f, Rng.FRandRange(0.9f, 1.05f), 3400.f); });
+			}
+		});
+		return;                              // one at a time
+	}
+}
+
+void AWCDirector::TickCues(float Dt)
+{
+	// the whispers, as they were: seldom, hers, only once the door has locked behind him (Cheyenne: "I like the whisper")
+	AWCCharacter* P = Player();
+	if (!P || !Has(TEXT("locked_in")) || Has(TEXT("dawn")) || Has(TEXT("placed"))) return;
+	if (WhisperAt < 0.0) WhisperAt = Clock + Rng.FRandRange(300.f, 600.f);
+	if (Clock < WhisperAt || bBusy || bEventBusy || StalkState != 0 || Clock < CueFreeAt) return;
+	WhisperAt = Clock + Rng.FRandRange(420.f, 840.f);
+	CueFreeAt = Clock + 22.0;
+	const float Pick = Rng.FRand();
+	if (Pick < 0.6f)
+	{
+		const FVector Off = FRotator(0.f, Rng.FRandRange(0.f, 360.f), 0.f).Vector() * Rng.FRandRange(400.f, 900.f) + FVector(0, 0, Rng.FRandRange(-80.f, 200.f));
+		UE_LOG(LogWCEvents, Display, TEXT("WCCUE t=%.1f whisper_far (the whispers)"), PlaySeconds);
+		PlayAt(TEXT("whisper_far"), P->GetActorLocation() + Off, 0.64f * Rng.FRandRange(0.75f, 1.f), Rng.FRandRange(0.92f, 1.07f));
+	}
+	else
+	{
+		// at his ear: just behind him, to one side.  He turns, and there is nothing there.
+		static const TCHAR* Ear[3] = { TEXT("VO/m_ear1"), TEXT("VO/m_ear2"), TEXT("VO/m_ear3") };
+		const FRotator Yaw(0.f, P->GetControlRotation().Yaw, 0.f);
+		const FVector Off = -Yaw.Vector() * 28.f + FRotationMatrix(Yaw).GetUnitAxis(EAxis::Y) * (Rng.FRand() < 0.5f ? -24.f : 24.f) + FVector(0, 0, 58.f);
+		const int32 Which = Rng.RandRange(0, 2);
+		UE_LOG(LogWCEvents, Display, TEXT("WCCUE t=%.1f %s (the whispers)"), PlaySeconds, Ear[Which]);
+		PlayAt(Ear[Which], P->GetActorLocation() + Off, 0.4f * Rng.FRandRange(0.75f, 1.f), Rng.FRandRange(0.92f, 1.07f));
+	}
 }

@@ -11,7 +11,7 @@
   "who": "dispatch",
   "text": "Copy, Fourteen. Caller asked for a wellness check on an Edith Harrow, eighty-six, lives alone. Family's out of state. Nobody's laid eyes on her in months.",
   "fx": "radio",
-  "style": "A calm, experienced female county sheriff's dispatcher speaking over the police radio at 3 a.m. Clipped, professional, even pace, slightly flat. American Midwest."
+  "style": "A warm, experienced woman in her fifties working the night desk at a small county sheriff's office, talking over the police radio to a deputy she has known for years. A real person, not an announcer: natural rises and falls, small pauses, feeling showing through the professionalism. Conversational, alive, never flat or robotic. American Midwest. Easy and familiar, a little tired, reading off a note; a hint of sympathy on 'lives alone' and 'in months'."
  },
  {
   "id": "d_arrive2",
@@ -25,7 +25,7 @@
   "who": "dispatch",
   "text": "Caller didn't leave a name, Fourteen. Gave the address, said she needs company, and hung up.",
   "fx": "radio",
-  "style": "A calm, experienced female county sheriff's dispatcher speaking over the police radio at 3 a.m. Clipped, professional, even pace, slightly flat. American Midwest. Matter-of-fact, a little puzzled by it."
+  "style": "A warm, experienced woman in her fifties working the night desk at a small county sheriff's office, talking over the police radio to a deputy she has known for years. A real person, not an announcer: natural rises and falls, small pauses, feeling showing through the professionalism. Conversational, alive, never flat or robotic. American Midwest. Matter-of-fact, a little puzzled by it."
  },
  {
   "id": "d_arrive3",
@@ -39,7 +39,7 @@
   "who": "dispatch",
   "text": "Check on her and call it in.",
   "fx": "radio",
-  "style": "A calm, experienced female county sheriff's dispatcher speaking over the police radio at 3 a.m. Clipped, professional, even pace, slightly flat. American Midwest."
+  "style": "A warm, experienced woman in her fifties working the night desk at a small county sheriff's office, talking over the police radio to a deputy she has known for years. A real person, not an announcer: natural rises and falls, small pauses, feeling showing through the professionalism. Conversational, alive, never flat or robotic. American Midwest. Brisk and kind, wrapping up, a touch of 'be careful out there' in the tone."
  },
  {
   "id": "d_arrive4",
@@ -68,6 +68,27 @@
   "text": "...Door's open. Mrs. Harrow, I'm coming in.",
   "fx": "dry",
   "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. Quiet, wary, then calling into the house."
+ },
+ {
+  "id": "d_call1",
+  "who": "deputy",
+  "text": "Mrs. Harrow?",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. Calling out into a silent house, not loud, a question hanging in the air. Careful, a little uneasy."
+ },
+ {
+  "id": "d_call2",
+  "who": "deputy",
+  "text": "Hello? ...Anybody home?",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. Calling out again, a bit louder, then quieter and less sure of himself on the second part."
+ },
+ {
+  "id": "d_call3",
+  "who": "deputy",
+  "text": "Mrs. Harrow, it's the sheriff's office. Can you hear me?",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. Calling through the house, official but strained, listening for any answer."
  },
  {
   "id": "d_foyer",
@@ -151,7 +172,7 @@
   "who": "dispatch",
   "text": "Fourteen, be advised. We ran the number on that wellness call. It came from the Harrow landline. From inside that house.",
   "fx": "radio",
-  "style": "A calm, experienced female county sheriff's dispatcher speaking over the police radio at 3 a.m. Clipped, professional, even pace, slightly flat. American Midwest. Urgent, breaking protocol slightly, uneasy."
+  "style": "A warm, experienced woman in her fifties working the night desk at a small county sheriff's office, talking over the police radio to a deputy she has known for years. A real person, not an announcer: natural rises and falls, small pauses, feeling showing through the professionalism. Conversational, alive, never flat or robotic. American Midwest. Urgent, breaking protocol slightly, uneasy."
  },
  {
   "id": "d_trace",
@@ -532,6 +553,20 @@
   "style": "A very old, frail woman in her late eighties. Thin, dry, trembling voice, slow, breathy, barely above a whisper, lonely and eerily gentle. Rural American. No words: humming a slow lullaby to herself, tunelessly and very quietly, mouth closed."
  },
  {
+  "id": "m_moan1",
+  "who": "mabel",
+  "text": "Ohhhhhhhhh... ohhhhhhh...",
+  "fx": "ghost",
+  "style": "A very old, frail woman in her late eighties. Thin, dry, trembling voice, slow, breathy, barely above a whisper, lonely and eerily gentle. Rural American. No words at all: one long, low, drawn-out moan of grief from deep in the chest of a very old woman, slow, swelling a little and trailing away into a breath. Then a second, weaker one. Mournful and frightening."
+ },
+ {
+  "id": "m_moan2",
+  "who": "mabel",
+  "text": "Mmmmmmmmmhhhh... hhhhhnnnnn...",
+  "fx": "ghost",
+  "style": "A very old, frail woman in her late eighties. Thin, dry, trembling voice, slow, breathy, barely above a whisper, lonely and eerily gentle. Rural American. No words at all: a long, low, closed-mouth moan that turns into a strained groan, slow and drawn out, as if in pain, ending in a shaky exhale."
+ },
+ {
   "id": "m_mem1",
   "who": "mabel",
   "text": "Ruthie. Don't go. Stay for supper. Please. I've set your place.",
@@ -571,7 +606,7 @@
   "who": "dispatch",
   "text": "Fourteen, dispatch! Where have you been? You've been off the air almost five hours.",
   "fx": "radio",
-  "style": "A calm, experienced female county sheriff's dispatcher speaking over the police radio at 3 a.m. Clipped, professional, even pace, slightly flat. American Midwest. Alarmed and relieved, faster than usual."
+  "style": "A warm, experienced woman in her fifties working the night desk at a small county sheriff's office, talking over the police radio to a deputy she has known for years. A real person, not an announcer: natural rises and falls, small pauses, feeling showing through the professionalism. Conversational, alive, never flat or robotic. American Midwest. Alarmed and relieved, faster than usual."
  },
  {
   "id": "d_end2",
@@ -585,14 +620,14 @@
   "who": "dispatch",
   "text": "Copy, Fourteen. ...Stand by. I've got a call coming in on the emergency line.",
   "fx": "radio",
-  "style": "A calm, experienced female county sheriff's dispatcher speaking over the police radio at 3 a.m. Clipped, professional, even pace, slightly flat. American Midwest. Professional, then distracted mid-sentence by something on her console."
+  "style": "A warm, experienced woman in her fifties working the night desk at a small county sheriff's office, talking over the police radio to a deputy she has known for years. A real person, not an announcer: natural rises and falls, small pauses, feeling showing through the professionalism. Conversational, alive, never flat or robotic. American Midwest. Professional, then distracted mid-sentence by something on her console."
  },
  {
   "id": "r_end3",
   "who": "dispatch",
   "text": "Fourteen... it's the Harrow landline again.",
   "fx": "radio",
-  "style": "A calm, experienced female county sheriff's dispatcher speaking over the police radio at 3 a.m. Clipped, professional, even pace, slightly flat. American Midwest. Hushed and frightened, almost whispering."
+  "style": "A warm, experienced woman in her fifties working the night desk at a small county sheriff's office, talking over the police radio to a deputy she has known for years. A real person, not an announcer: natural rises and falls, small pauses, feeling showing through the professionalism. Conversational, alive, never flat or robotic. American Midwest. Hushed and frightened, almost whispering."
  },
  {
   "id": "d_end3",

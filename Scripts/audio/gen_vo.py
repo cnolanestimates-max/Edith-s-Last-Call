@@ -23,7 +23,8 @@ MODEL = "gemini-3.8-flash-tts"
 VOICE = {"deputy": "algenib", "dispatch": "kore", "mabel": "gacrux"}
 STYLE = {
     "deputy": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics.",
-    "dispatch": "A calm, experienced female county sheriff's dispatcher speaking over the police radio at 3 a.m. Clipped, professional, even pace, slightly flat. American Midwest.",
+    # (Cheyenne 2026-11-19: "very bland ... monotone ... a little more emotive".  The old direction said "slightly flat".)
+    "dispatch": "A warm, experienced woman in her fifties working the night desk at a small county sheriff's office, talking over the police radio to a deputy she has known for years. A real person, not an announcer: natural rises and falls, small pauses, feeling showing through the professionalism. Conversational, alive, never flat or robotic. American Midwest.",
     "mabel": "A very old, frail woman in her late eighties. Thin, dry, trembling voice, slow, breathy, barely above a whisper, lonely and eerily gentle. Rural American.",
 }
 # per-line direction (added to the speaker style)
@@ -37,7 +38,19 @@ DIRECT = {
     "m_ear1": "Whispered, extremely close, right into the listener's ear. One breath. Intimate and wrong.",
     "m_ear2": "Whispered, extremely close, right into the listener's ear, almost fond.",
     "m_ear3": "Whispered, extremely close, pleading, right into the listener's ear.",
+    "m_moan1": "No words at all: one long, low, drawn-out moan of grief from deep in the chest of a very old woman, slow, swelling a little and trailing away into a breath. Then a second, weaker one. Mournful and frightening.",
+    "m_moan2": "No words at all: a long, low, closed-mouth moan that turns into a strained groan, slow and drawn out, as if in pain, ending in a shaky exhale.",
     "m_hum": "No words: humming a slow lullaby to herself, tunelessly and very quietly, mouth closed.",
+    "r_arrive1": "Easy and familiar, a little tired, reading off a note; a hint of sympathy on 'lives alone' and 'in months'.",
+    "r_arrive2": "Puzzled, slowing down: this caller bothered her. A small uneasy pause before 'and hung up'.",
+    "r_arrive3": "Brisk and kind, wrapping up, a touch of 'be careful out there' in the tone.",
+    "r_trace": "Lowered voice, unsettled, choosing her words carefully, as if she does not want to say it. Slows right down on 'From inside that house.'",
+    "r_end1": "Bursting out, relieved and frightened at once, almost scolding him: she has been calling him for hours.",
+    "r_end2": "Steadying herself, gentle on 'Copy, Fourteen', then distracted as something comes in: 'Stand by.' trails off.",
+    "r_end3": "Very quiet, shaken, almost a whisper, dreading what she is saying.",
+    "d_call1": "Calling out into a silent house, not loud, a question hanging in the air. Careful, a little uneasy.",
+    "d_call2": "Calling out again, a bit louder, then quieter and less sure of himself on the second part.",
+    "d_call3": "Calling through the house, official but strained, listening for any answer.",
     "d_arrive3": "Dry, uneasy, under his breath.",
     "d_knock": "Calling out loudly at a front door, projecting, official.",
     "d_dooropen": "Quiet, wary, then calling into the house.",

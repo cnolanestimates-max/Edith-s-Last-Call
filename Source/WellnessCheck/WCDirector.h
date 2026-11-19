@@ -255,7 +255,7 @@ private:
 	bool EventsEvent(FName Id);
 	void LeftScare();
 	// the television
-	int32 TVPhase = 0, TVTape = 0;              // 0 off, 1 playing, 2 the reflection
+	int32 TVPhase = 0, TVTape = 0, TVLoop = -1, TVTapeNow = 1;              // 0 off, 1 playing, 2 the reflection
 	double TVAt = 0.0, TVNextAt = -1.0, TVHerAt = -1.0, TVRunAt = -1.0;
 	TWeakObjectPtr<UAudioComponent> TVAudio;
 	UPROPERTY(Transient) TObjectPtr<class UMaterialInstanceDynamic> TVScreen;
@@ -264,6 +264,20 @@ private:
 	UPROPERTY(Transient) TObjectPtr<class USceneCaptureComponent2D> TVCapture;
 	UPROPERTY(Transient) TObjectPtr<class UTextureRenderTarget2D> TVTarget;
 	void TickTV(float Dt);
+	void AtticTagsTaken();
+	void OutsideProgress();
+	bool DoorOpensByItself();
+	void UpstairsThump();
+	void CueEvent(FName Id);
+	void TickCues(float Dt);
+	TMap<FName, int32> CueCount;
+	TSet<int32> CueFired;
+	TSet<FName> TrigInside;
+	double CueFreeAt = 0.0, WhisperAt = -1.0;
+	void FinaleDawn();
+	int32 DoorEvents = 0, CallStep = 0;
+	double NextDoorAt = -1.0;
+	bool bDev = false;
 	// the eye in the dark (S14)
 	void TickEye(float Dt);
 	/** Whole-game picture filter: 0 off, 1 VHS camcorder, 2 old film, 3 cold and drained, 4 fisheye bodycam, 5 black-and-white night vision. */

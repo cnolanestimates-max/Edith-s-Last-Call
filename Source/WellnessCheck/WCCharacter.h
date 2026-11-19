@@ -83,6 +83,7 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = "WC") TObjectPtr<UCameraComponent> Cam;
 	UPROPERTY(VisibleAnywhere, Category = "WC") TObjectPtr<USpotLightComponent> Flash;
 	UPROPERTY(VisibleAnywhere, Category = "WC") TObjectPtr<USpotLightComponent> Spill;
+	UPROPERTY(VisibleAnywhere, Category = "WC") TObjectPtr<USpotLightComponent> Throw;
 	UPROPERTY(VisibleAnywhere, Category = "WC") TObjectPtr<UPointLightComponent> Muzzle;
 	UPROPERTY(VisibleAnywhere, Category = "WC") TObjectPtr<UPointLightComponent> Fill;
 	UPROPERTY(VisibleAnywhere, Category = "WC") TObjectPtr<UPointLightComponent> FaceLight;

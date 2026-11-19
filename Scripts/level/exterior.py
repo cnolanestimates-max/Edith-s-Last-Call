@@ -416,9 +416,10 @@ for _i, (_a, _b, _c, _d) in enumerate(cut([(-2600, XB + 1600, -2400, 2400)], (-5
     box(f"Yard_{_i}", _a, _b, _c, _d, -60, -40, M_GROUND, EX, tags=["Floor_Gravel"])
 box("Path", -1700, -420, -90, 90, -40, -38.5, M_GRAVEL, EX, collide=False)
 box("Drive", -2600, -1150, 110, 500, -40, -38.5, M_GRAVEL, EX, collide=False)
-# invisible limits: the front yard only (the story keeps him at the house)
-for name, (x0, x1, y0, y1) in {"LimFront": (-2460, -2440, -1100, 1100), "LimLeft": (-2460, 60, -1100, -1080), "LimRight": (-2460, 60, 1080, 1100),
-                                "LimHouseL": (-60, -40, -1100, -640), "LimHouseR": (840, 860, 900, 1100), "LimHouseR2": (-60, 860, 1080, 1100)}.items():
+# invisible limits: the whole yard, front and back (he looks round the outside before he goes in)
+YARD_BACK = XB + 1460.0
+for name, (x0, x1, y0, y1) in {"LimFront": (-2460, -2440, -1100, 1100), "LimLeft": (-2460, YARD_BACK + 20, -1100, -1080), "LimRight": (-2460, YARD_BACK + 20, 1080, 1100),
+                                "LimBack": (YARD_BACK, YARD_BACK + 20, -1100, 1100)}.items():
     box(name, x0, x1, y0, y1, -40, 400, "WC:M_Collision", EX, hidden=True)
 for i in range(11):
     y = -1000 + i * 200
@@ -431,9 +432,13 @@ for y in (100, 500):
 box("MailboxPost", -2520, -2510, 560, 570, -40, 78, M_ROT, EX + "/Yard")
 box("Mailbox", -2540, -2492, 554, 576, 78, 102, "Rust", EX + "/Yard", collide=False)
 box("MailboxFlag", -2500, -2496, 576, 578, 96, 118, "Rust", EX + "/Yard", collide=False)
-for i in range(12):
-    place("Fence_Wood_Old", -2340 + i * 200, -1080, -40, 0, EX + "/Yard")
+for i in range(34):
+    if -2340 + i * 200 > YARD_BACK:
+        break
+    place("Fence_Wood_Broken_01" if i % 5 == 3 else "Fence_Wood_Old", -2340 + i * 200, -1080, -40, 0, EX + "/Yard")
     place("Fence_Wood_Broken_01" if i % 4 == 2 else "Fence_Wood_Old", -2340 + i * 200, 1080, -40, 0, EX + "/Yard")
+for i in range(11):
+    place("Fence_Wood_Broken_01" if i in (3, 7) else "Fence_Wood_Old", YARD_BACK, -1000 + i * 200, -40, 90, EX + "/Yard")
 YARD_TREES = [("Tree_Graveyard_Gnarled_Willow", -620, 820, 40, 1.9), ("Tree_Twisted_03", -1900, -760, 140, 1.7), ("Tree_Dead_Tall_Snag", -2200, 880, 60, 1.5),
               ("Tree_Twisted_05", -700, -900, 80, 1.6), ("Tree_Hanging_Moss", -1300, 900, 300, 1.7), ("Tree_Twisted_01", 700, -1500, 110, 2.0),
               ("Tree_Twisted_06", 1500, 1500, 30, 2.0), ("Tree_Graveyard_Dead", 2400, -1400, 0, 1.9), ("Tree_Leaning_Swamp", 3300, 900, 200, 1.8)]
@@ -467,4 +472,89 @@ place("Tombstone_Flat_Slab_Upright", -700, 990, -40, 95, EX + "/Plot", name="Gra
 place("Grave_Sunken_Kerb", -520, 960, -40, 100, EX + "/Plot", collide=False)
 place("Vase_Grave_Dead_Flowers", -560, 925, -40, 0, EX + "/Plot", collide=False)
 place("Cross_Wood_Leaning_Rotten", -820, 1010, -40, 80, EX + "/Plot", collide=False)
+# ================================================================== THE BACK YARD: a tree line, and the tool shed
+import random as _rnd
+_tr = _rnd.Random(41)
+_KT = ["Tree_Twisted_03", "Tree_Dead_Tall_Snag", "Tree_Twisted_05", "Tree_Hanging_Moss", "Tree_Twisted_01", "Tree_Twisted_06", "Tree_Graveyard_Dead", "Tree_Leaning_Swamp",
+       "Tree_Graveyard_Gnarled_Willow"]
+_n = 0
+# two ragged ranks outside the fence down both sides (from the front corner back), three deep along the back
+for _x in range(-200, int(YARD_BACK) + 700, 230):
+    for _side in (-1, 1):
+        for _rank, _off in ((0, 1190), (1, 1480), (2, 1800)):
+            if _rank == 2 and _tr.random() < 0.4:
+                continue
+            _ta = place(_tr.choice(_KT), _x + _tr.uniform(-90, 90), _side * (_off + _tr.uniform(-70, 110)), -46, _tr.uniform(0, 360), EX + "/TreeLine",
+                        scale=_tr.uniform(1.7, 2.6), collide=False)
+            _ta.static_mesh_component.set_editor_property("cast_shadow", False)       # the moon has to reach the yard
+            _n += 1
+for _y in range(-1900, 1901, 220):
+    for _rank, _off in ((0, 150), (1, 430), (2, 760)):
+        _ta = place(_tr.choice(_KT), YARD_BACK + _off + _tr.uniform(-80, 110), _y + _tr.uniform(-90, 90), -46, _tr.uniform(0, 360), EX + "/TreeLine",
+                    scale=_tr.uniform(1.8, 2.8), collide=False)
+        _ta.static_mesh_component.set_editor_property("cast_shadow", False)
+        _n += 1
+log(f"tree line: {_n} trees")
+for _i in range(26):                                                     # brambles and rocks along the fences and in the long grass
+    _x, _y = _tr.uniform(200, YARD_BACK - 80), _tr.choice((-1, 1)) * _tr.uniform(760, 1040)
+    place(("Bramble_Bush_Dead", "Bush_Thorny_Dead", "Rock_Fog_Small")[_i % 3], _x, _y, -41, _tr.uniform(0, 360), EX + "/BackYard", scale=_tr.uniform(0.9, 1.5), collide=False)
+for _i in range(10):
+    place(("Bramble_Bush_Dead", "Rock_Cluster_Mossy")[_i % 2], _tr.uniform(XB + 500, YARD_BACK - 100), _tr.uniform(-900, 900), -41, _tr.uniform(0, 360), EX + "/BackYard",
+          scale=_tr.uniform(0.9, 1.4), collide=False)
+place("Wheelbarrow_Old", XB + 610, -330, -40, 70, EX + "/BackYard")
+place("Stump_Axe", XB + 520, 520, -40, 30, EX + "/BackYard")
+place("Woodpile_Rotten", XB + 380, 760, -40, 0, EX + "/BackYard")
+place("Barrel_Tipped_Spilled", XB + 300, -520, -40, 20, EX + "/BackYard")
+place("Tree_Graveyard_Dead", XB + 900, 420, -45, 200, EX + "/BackYard", scale=1.8, collide=False)
+
+# ---- the shed: back left corner, door toward the house.  Boards, a rusted roof, forty years of tools.
+SH = EX + "/Shed"
+SX0, SX1, SY0, SY1 = XB + 760.0, XB + 1140.0, -900.0, -580.0
+box("ShedFloor", SX0, SX1, SY0, SY1, -40, -33, M_PFLOOR, SH, tags=["Floor_Wood"])
+box("ShedWallS", SX0, SX1, SY0, SY0 + 8, -40, 200, M_ROT, SH)
+box("ShedWallN", SX0, SX1, SY1 - 8, SY1, -40, 200, M_ROT, SH)
+box("ShedWallE", SX1 - 8, SX1, SY0, SY1, -40, 200, M_ROT, SH)
+_DY0, _DY1 = -790.0, -700.0                                              # the doorway, in the wall that faces the house
+box("ShedWallW_a", SX0, SX0 + 8, SY0, _DY0, -40, 200, M_ROT, SH)
+box("ShedWallW_b", SX0, SX0 + 8, _DY1, SY1, -40, 200, M_ROT, SH)
+box("ShedLintel", SX0, SX0 + 8, _DY0, _DY1, 158, 200, M_ROT, SH)
+box("ShedDoor", SX0 - 84, SX0, _DY1 - 2, _DY1 + 5, -34, 156, M_SHUT, SH, yaw=-14)        # hanging open on one hinge
+for _k, _y in enumerate((-880, -850, -660, -612)):                       # boards gone: black gaps you can see the yard through
+    box(f"ShedGap_{_k}", SX0 - 1, SX0 + 9, _y, _y + 9, 20 + 30 * (_k % 2), 190, "WC:M_Void" if False else M_SHUT, SH, collide=False, shadow=False)
+_ridge = (SY0 + SY1) / 2
+beam("ShedRoofS", ((SX0 + SX1) / 2, _ridge, 292), ((SX0 + SX1) / 2, SY0 - 30, 192), SX1 - SX0 + 50, 6, M_ROOF, wdir=(1, 0, 0))
+beam("ShedRoofN", ((SX0 + SX1) / 2, _ridge, 292), ((SX0 + SX1) / 2, SY1 + 30, 192), SX1 - SX0 + 50, 6, M_ROOF, wdir=(1, 0, 0))
+gable_tri("ShedGableW", "y", SX0 + 4, SY0, SY1, 200, 92, M_ROT, thick=8.0, step=32.0)
+gable_tri("ShedGableE", "y", SX1 - 4, SY0, SY1, 200, 92, M_ROT, thick=8.0, step=32.0)
+# inside: a bench under the back wall, barrels and crates, what is left on the shelves
+box("ShedBenchTop", SX1 - 78, SX1 - 10, SY0 + 40, SY1 - 40, 44, 50, M_ROT, SH)
+for _k, (_x, _y) in enumerate(((SX1 - 74, SY0 + 44), (SX1 - 16, SY0 + 44), (SX1 - 74, SY1 - 44), (SX1 - 16, SY1 - 44))):
+    box(f"ShedBenchLeg_{_k}", _x - 4, _x + 4, _y - 4, _y + 4, -33, 44, M_ROT, SH, collide=False)
+box("ShedShelf", SX0 + 60, SX1 - 110, SY1 - 30, SY1 - 8, 118, 122, M_ROT, SH, collide=False)
+place("Tin_Cans_Rusty", SX0 + 150, SY1 - 20, 122, 30, SH, collide=False)
+place("Paint_Can_Spilled", SX0 + 230, SY1 - 20, 122, 200, SH, collide=False)
+place("Flashlight_Camping_Lantern", SX1 - 44, SY0 + 90, 50, 40, SH, collide=False)
+place("Tin_Cans_Rusty", SX1 - 40, SY1 - 90, 50, 110, SH, collide=False)
+place("Bucket_Rusty", SX1 - 46, _ridge + 10, 50, 0, SH, collide=False)
+place("Barrel_Old", SX0 + 60, SY1 - 60, -33, 0, SH)
+place("Crate_Wood_Small", SX0 + 150, SY1 - 62, -33, 20, SH)
+place("Crate_Wood_Open", SX0 + 250, SY1 - 70, -33, 80, SH)
+place("Planks_Pile", SX1 - 150, SY0 + 46, -33, 0, SH, collide=False)
+place("Box_Cardboard_Stack", SX1 - 60, SY1 - 30, -33, 10, SH, collide=False)
+place("Cobweb_Corner", SX1 - 12, SY1 - 12, 150, 180, SH, collide=False)
+place("Cobweb_Corner", SX0 + 14, SY0 + 14, 150, 0, SH, collide=False)
+# the tools on the south wall: two shovels, a pitchfork, a pickaxe, and a rake hung on nails
+for _k, (_m, _x, _pitch) in enumerate((("Shovel", SX0 + 90, 0), ("Shovel", SX0 + 130, 0), ("Pitchfork_Rusty", SX0 + 180, 0), ("Pickaxe", SX0 + 235, 0))):
+    place(_m, _x, SY0 + 18, -33, 90 + 12 * (_k % 2), SH, collide=False, roll=6)
+beam("RakeHandle", (SX0 + 300, SY0 + 12, 8), (SX0 + 296, SY0 + 12, 178), 3.2, 3.2, M_ROT, wdir=(1, 0, 0), collide=False)
+box("RakeHead", SX0 + 276, SX0 + 316, SY0 + 10, SY0 + 13, 176, 180, "Rust", SH, collide=False)
+for _k in range(9):
+    box(f"RakeTine_{_k}", SX0 + 277.5 + _k * 4.5, SX0 + 278.7 + _k * 4.5, SY0 + 10, SY0 + 12, 168, 177, "Rust", SH, collide=False)
+for _k in range(3):
+    box(f"WallNail_{_k}", SX0 + 110 + _k * 60, SX0 + 111 + _k * 60, SY0 + 8, SY0 + 13, 150, 151, "Rust", SH, collide=False, shadow=False)
+point("A_Shed", SX0 - 140, (_DY0 + _DY1) / 2, GZ, 0, folder="Auto")
+point("A_ShedIn", SX0 + 110, (_DY0 + _DY1) / 2, -33, 0, folder="Auto")
+point("A_BackStoop", XB + 190, 0, 0, 180, folder="Auto")
+point("A_BackYard", XB + 620, 60, GZ, 180, folder="Auto")
+trigger("t_shed", SX0 + 30, SX1 - 10, SY0 + 10, SY1 - 10, -40, 190)
 log("exterior done")

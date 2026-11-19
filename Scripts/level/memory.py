@@ -30,7 +30,7 @@ drawing(4, 2420, 583.5, GZ + 160, "y-", yaw=5)
 drawing(2, 2200, -183.5, UZ + 140, "y+", yaw=-3)                   # upstairs rear hall
 drawing(1, 470, -330, UZ + 0.6, None, yaw=25)                      # on Ruth's floor
 drawing(6, 1080, 470, UZ + 0.6, None, yaw=-40)                     # on the prayer-room floor
-drawing(1, 1305, 520, GZ + 96, None, w=22, h=28, yaw=15)           # on the kitchen table
+drawing(1, 1262, 452, GZ + 96, None, w=22, h=28, yaw=15)           # on the kitchen table (it was at 1305, 520: in the air beside the sink)
 
 
 # ---------------------------------------------------------------- the Company: a black shape, seen a few times after the first sight of her

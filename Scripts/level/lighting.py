@@ -14,7 +14,7 @@ moon = actors.spawn_actor_from_class(unreal.DirectionalLight, V(0, 0, 2000), R(2
 moon.set_actor_label("Moon")
 mc = moon.light_component
 mc.set_mobility(unreal.ComponentMobility.MOVABLE)
-mc.set_intensity(float(os.environ.get("WC_MOON", "2.4")))
+mc.set_intensity(float(os.environ.get("WC_MOON", "26.0")))
 mc.set_light_color(unreal.LinearColor(0.52, 0.64, 1.0, 1.0))
 mc.set_editor_property("atmosphere_sun_light", True)
 mc.set_editor_property("volumetric_scattering_intensity", 1.6)

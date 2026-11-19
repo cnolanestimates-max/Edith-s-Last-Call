@@ -15,7 +15,8 @@ PREVIEW = "--preview" in argv
 os.makedirs(OUT, exist_ok=True)
 COL = {"Brass": (0.55, 0.38, 0.12, 1), "Iron": (0.09, 0.08, 0.075, 1), "Gold": (0.83, 0.62, 0.2, 1), "Steel": (0.5, 0.5, 0.5, 1),
        "Glass": (0.6, 0.72, 0.7, 1), "Ceramic": (0.78, 0.74, 0.66, 1), "Ribbon": (0.3, 0.03, 0.04, 1),
-       "Polymer": (0.02, 0.02, 0.022, 1), "Gunmetal": (0.07, 0.07, 0.075, 1), "Wood": (0.2, 0.11, 0.06, 1), "Screen": (0.03, 0.04, 0.04, 1)}
+       "Polymer": (0.02, 0.02, 0.022, 1), "Gunmetal": (0.07, 0.07, 0.075, 1), "Wood": (0.2, 0.11, 0.06, 1), "Screen": (0.03, 0.04, 0.04, 1),
+       "Card": (0.30, 0.22, 0.13, 1), "Label": (0.30, 0.05, 0.04, 1)}
 
 
 def mat(name):
@@ -26,7 +27,7 @@ def mat(name):
         b = m.node_tree.nodes.get("Principled BSDF")
         if b:
             b.inputs["Base Color"].default_value = COL[name]
-            b.inputs["Metallic"].default_value = 0.0 if name in ("Glass", "Ceramic", "Ribbon", "Polymer", "Wood", "Screen") else 1.0
+            b.inputs["Metallic"].default_value = 0.0 if name in ("Glass", "Ceramic", "Ribbon", "Polymer", "Wood", "Screen", "Card", "Label") else 1.0
             b.inputs["Roughness"].default_value = 0.35
     return m
 
@@ -297,6 +298,115 @@ def tv():
     return P
 
 
+def ammobox():
+    # a box of pistol cartridges with the flap torn off: card tray, a printed band round it, the brass heads of the rounds showing
+    P = [box(0.110, 0.070, 0.044, (0, 0, 0.022), m="Card", bevel=0.0012)]
+    P.append(box(0.1106, 0.0706, 0.020, (0, 0, 0.018), m="Label"))
+    P.append(box(0.100, 0.060, 0.002, (0, 0, 0.0435), m="Polymer"))                       # the dark of the tray between the rounds
+    for i in range(7):
+        for j in range(4):
+            if (i, j) in ((6, 3), (5, 3), (6, 2)):
+                continue                                                               # a few already used
+            x, y = -0.0405 + i * 0.0135, -0.0205 + j * 0.0137
+            P.append(cyl(0.0052, 0.006, (x, y, 0.0455), m="Brass", v=14))
+            P.append(cyl(0.0019, 0.0064, (x, y, 0.0457), m="Steel", v=8))
+    P.append(box(0.108, 0.030, 0.0009, (0.004, 0.052, 0.0005), (0, 0, 0.12), "Card"))    # the torn flap lying beside it
+    return P
+
+
+def jewelbox(opened=False):
+    # an old jewelry box: dark wood, brass corners and a little lock plate; the lid lifts on the back edge
+    P = [box(0.170, 0.115, 0.060, (0, 0, 0.030), m="Wood", bevel=0.004)]
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            P.append(box(0.016, 0.016, 0.062, (sx * 0.0785, sy * 0.051, 0.031), m="Brass", bevel=0.002))
+    P.append(box(0.022, 0.003, 0.026, (0, -0.0585, 0.040), m="Brass", bevel=0.002))                 # the lock plate
+    P.append(cyl(0.0022, 0.004, (0, -0.0600, 0.042), (math.pi / 2, 0, 0), "Iron", 10))              # the keyhole
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            P.append(sphere(0.006, (sx * 0.074, sy * 0.047, 0.004), "Brass"))
+    if not opened:
+        P.append(box(0.174, 0.119, 0.024, (0, 0, 0.072), m="Wood", bevel=0.005))
+        P.append(box(0.176, 0.004, 0.004, (0, -0.058, 0.062), m="Brass"))
+        P.append(box(0.060, 0.030, 0.002, (0, 0, 0.0845), m="Brass", bevel=0.001))
+    else:
+        a = math.radians(-100)
+        P.append(box(0.174, 0.119, 0.024, (0, 0.0575 + 0.060 * math.cos(a + math.pi / 2) * -1 + 0.012, 0.060 + 0.060), (a, 0, 0), "Wood", 0.005))
+        P.append(box(0.156, 0.101, 0.002, (0, 0, 0.0585), m="Ribbon"))                               # faded red lining
+    return P
+
+
+def glasseye():
+    # a hand-made glass eye of the 1940s: a white shell, a pale blue painted iris, a black pupil, lying iris-up
+    P = [sphere16(0.0125, (0, 0, 0.0125), "Ceramic")]
+    P.append(cyl(0.0062, 0.0016, (0, 0, 0.0246), m="Glass", v=24))
+    P.append(cyl(0.0026, 0.0018, (0, 0, 0.0248), m="Polymer", v=16))
+    return P
+
+
+def sphere16(r, loc, m):
+    bpy.ops.mesh.primitive_uv_sphere_add(radius=r, segments=28, ring_count=14, location=loc)
+    bpy.ops.object.shade_smooth()
+    return done(m)
+
+
+def screwdriver():
+    # an old flat-head lying along X: turned wooden handle, brass ferrule, steel shaft
+    P = [cyl(0.0125, 0.085, (-0.0425, 0, 0.0125), (0, math.pi / 2, 0), "Wood", 16)]
+    P.append(cyl(0.0105, 0.010, (-0.088, 0, 0.0125), (0, math.pi / 2, 0), "Wood", 16))
+    P.append(cyl(0.0135, 0.012, (0.004, 0, 0.0125), (0, math.pi / 2, 0), "Brass", 16))
+    P.append(cyl(0.0032, 0.120, (0.068, 0, 0.0125), (0, math.pi / 2, 0), "Steel", 10))
+    P.append(box(0.016, 0.0075, 0.0016, (0.134, 0, 0.0125), m="Steel"))
+    return P
+
+
+def vent_parts(frame=True, cover=True):
+    # a cast-iron wall register, 36 x 26 cm.  Its back is on y = 0 and it faces -Y.
+    W, H = 0.36, 0.26
+    P = []
+    if frame:
+        P.append(box(W - 0.02, 0.004, H - 0.02, (0, -0.002, H / 2), m="Polymer"))                 # the dark of the duct
+        P.append(box(W, 0.028, 0.03, (0, -0.014, 0.015), m="Iron", bevel=0.002))
+        P.append(box(W, 0.028, 0.03, (0, -0.014, H - 0.015), m="Iron", bevel=0.002))
+        P.append(box(0.03, 0.028, H, (-W / 2 + 0.015, -0.014, H / 2), m="Iron", bevel=0.002))
+        P.append(box(0.03, 0.028, H, (W / 2 - 0.015, -0.014, H / 2), m="Iron", bevel=0.002))
+        P.append(box(W - 0.06, 0.036, 0.004, (0, -0.018, 0.032), m="Iron"))                       # the ledge the key lies on
+    if cover:
+        y = -0.0315
+        P.append(box(W - 0.012, 0.005, 0.024, (0, y, 0.018), m="Iron", bevel=0.001))
+        P.append(box(W - 0.012, 0.005, 0.024, (0, y, H - 0.018), m="Iron", bevel=0.001))
+        P.append(box(0.024, 0.005, H - 0.012, (-W / 2 + 0.018, y, H / 2), m="Iron", bevel=0.001))
+        P.append(box(0.024, 0.005, H - 0.012, (W / 2 - 0.018, y, H / 2), m="Iron", bevel=0.001))
+        for i in range(8):
+            P.append(box(W - 0.05, 0.016, 0.003, (0, y + 0.004, 0.046 + i * 0.024), (math.radians(40), 0, 0), "Iron"))
+        for sx in (-1, 1):
+            for z in (0.018, H - 0.018):
+                P.append(cyl(0.0055, 0.004, (sx * (W / 2 - 0.018), y - 0.004, z), (math.pi / 2, 0, 0), "Steel", 10))
+    if frame and cover:
+        P.append(box(0.034, 0.006, 0.004, (0.03, -0.016, 0.037), m="Brass"))                      # what glints behind the slats
+    return P
+
+
+def vent_cover_flat():
+    # the cover taken off and laid on the floor, face up
+    P = vent_parts(frame=False, cover=True)
+    for p in P:
+        p.rotation_euler = (-math.pi / 2, 0, 0)
+        bpy.ops.object.select_all(action="DESELECT")
+        p.select_set(True)
+        bpy.context.view_layer.objects.active = p
+        bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+    return P
+
+
+build("Screwdriver", screwdriver)
+build("Vent", vent_parts)
+build("VentOpen", lambda: vent_parts(True, False))
+build("VentCoverFlat", vent_cover_flat)
+build("GlassEye", glasseye)
+build("JewelBox", jewelbox)
+build("JewelBoxOpen", lambda: jewelbox(True))
+build("AmmoBox", ammobox)
 build("TV", tv)
 build("Pistol", pistol)
 build("Radio", radio)
