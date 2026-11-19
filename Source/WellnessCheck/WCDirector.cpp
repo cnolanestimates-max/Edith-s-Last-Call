@@ -44,6 +44,7 @@ void FWCSettings::Load()
 	GConfig->GetBool(Sec, TEXT("Subtitles"), bSubtitles, Ini);
 	GConfig->GetBool(Sec, TEXT("HeadBob"), bHeadBob, Ini);
 	GConfig->GetBool(Sec, TEXT("CameraShake"), bCameraShake, Ini);
+	GConfig->GetInt(Sec, TEXT("Picture"), Filter, Ini);
 	GConfig->GetInt(Sec, TEXT("Quality"), Quality, Ini);
 	GConfig->GetBool(Sec, TEXT("Fullscreen"), bFullscreen, Ini);
 	GConfig->GetBool(Sec, TEXT("VSync"), bVSync, Ini);
@@ -68,6 +69,7 @@ void FWCSettings::Save() const
 	GConfig->SetBool(Sec, TEXT("Subtitles"), bSubtitles, Ini);
 	GConfig->SetBool(Sec, TEXT("HeadBob"), bHeadBob, Ini);
 	GConfig->SetBool(Sec, TEXT("CameraShake"), bCameraShake, Ini);
+	GConfig->SetInt(Sec, TEXT("Picture"), Filter, Ini);
 	GConfig->SetInt(Sec, TEXT("Quality"), Quality, Ini);
 	GConfig->SetBool(Sec, TEXT("Fullscreen"), bFullscreen, Ini);
 	GConfig->SetBool(Sec, TEXT("VSync"), bVSync, Ini);
@@ -92,6 +94,8 @@ void FWCSettings::Apply(UObject* WorldContext) const
 	{
 		D->ApplyVolumes();
 		if (AWCCharacter* P = D->Player()) P->ApplySettings();
+		int32 Forced = 0;
+		if (!FParse::Value(FCommandLine::Get(), TEXT("WCFilter="), Forced)) D->SetFilter(Filter);
 	}
 }
 

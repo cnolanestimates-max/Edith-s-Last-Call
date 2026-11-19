@@ -131,13 +131,21 @@ float AWCDirector::LineSeconds(FName LineId)
 // Lines that are no longer spoken (Cheyenne: he talks to dispatch and reacts to her, not to every locked door).
 static bool IsMuted(FName Id)
 {
+	// 2026-11-19: only what he says to dispatch and to Edith is left.  Remarks to himself, about what he finds or what it
+	// means, are all gone (voice and subtitle).
 	static const TSet<FName> Muted = { TEXT("d_locked"), TEXT("d_cellar_locked"), TEXT("d_window"), TEXT("d_backdoor"), TEXT("d_table"), TEXT("d_photos"),
 		TEXT("d_foyer"), TEXT("d_wayout"), TEXT("d_drawer"), TEXT("d_sitting"), TEXT("d_kidsdoor"), TEXT("d_musicbox"), TEXT("d_prayer"), TEXT("d_ring"),
-		TEXT("d_attic"), TEXT("d_after_attic"), TEXT("d_cellar"), TEXT("d_shelf"), TEXT("d_dawn"), TEXT("d_need"), TEXT("d_leave_early"), TEXT("d_phone_ring") };
+		TEXT("d_attic"), TEXT("d_after_attic"), TEXT("d_cellar"), TEXT("d_shelf"), TEXT("d_dawn"), TEXT("d_need"), TEXT("d_leave_early"), TEXT("d_phone_ring"),
+		TEXT("d_phonecord"), TEXT("d_masterempty"), TEXT("d_doorstuck"), TEXT("d_getup1b"), TEXT("d_getup2"), TEXT("d_tags") };
 	return Muted.Contains(Id);
 }
 
 void AWCDirector::Think(const FString& Text, float Seconds)
+{
+	// not shown any more: the player works it out without him pointing at it
+}
+
+void AWCDirector::Feedback(const FString& Text, float Seconds)
 {
 	FWCSubtitle Sub;
 	Sub.Text = Text;
@@ -278,7 +286,7 @@ void AWCDirector::StoryEvent(FName Id)
 	// ================================================================= act 1: arrival
 	if (Is(Id, TEXT("trig:t_yard_edge")))
 	{
-		if (!Has(TEXT("dawn")) && Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 12.0; Think(TEXT("Not until I've laid eyes on her.")); }
+		if (!Has(TEXT("dawn")) && Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 12.0; Feedback(TEXT("Not yet.")); }
 		return;
 	}
 	if (Is(Id, TEXT("locked:front")))
@@ -308,7 +316,7 @@ void AWCDirector::StoryEvent(FName Id)
 		else if (Clock > SpeechFreeAt)
 		{
 			SpeechFreeAt = Clock + 4.0;
-			Think(TEXT("It will not open."));
+			Feedback(TEXT("It will not open."));
 		}
 		return;
 	}
@@ -332,30 +340,30 @@ void AWCDirector::StoryEvent(FName Id)
 		if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 8.0; Say(TEXT("d_phonecord")); Set(TEXT("seen_phone")); }
 		return;
 	}
-	if (Is(Id, TEXT("locked:cellar"))) { if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 4.0; Think(TEXT("Padlocked from this side. The cellar.")); } return; }
+	if (Is(Id, TEXT("locked:cellar"))) { if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 4.0; Feedback(TEXT("Padlocked.")); } return; }
 	if (Is(Id, TEXT("locked:up_ell")))
 	{
-		if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 5.0; Think(TEXT("Locked. A newer lock than the others. The man of the house would have kept the key.")); }
+		if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 5.0; Feedback(TEXT("Locked.")); }
 		return;
 	}
 	if (Is(Id, TEXT("locked:up_attic")))
 	{
-		if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 5.0; Think(TEXT("The attic. Locked. Danny's things are up there.")); }
+		if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 5.0; Feedback(TEXT("Locked.")); }
 		return;
 	}
 	if (Is(Id, TEXT("locked:sitting")) || Is(Id, TEXT("locked:up_prayer")))
 	{
-		if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 5.0; Think(TEXT("Locked. Scratches round the keyhole, from the inside.")); }
+		if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 5.0; Feedback(TEXT("Locked.")); }
 		return;
 	}
 	if (Id.ToString().StartsWith(TEXT("locked:")) && !Is(Id, TEXT("locked:back")))
 	{
-		if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 3.0; Think(TEXT("Locked.")); }
+		if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 3.0; Feedback(TEXT("Locked.")); }
 		return;
 	}
 	if (Id.ToString().StartsWith(TEXT("use:window")))
 	{
-		if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 4.0; Think(TEXT("Nailed shut. From the inside.")); }
+		if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 4.0; Feedback(TEXT("Nailed shut.")); }
 		return;
 	}
 	if (Is(Id, TEXT("trig:t_kitchen"))) Set(TEXT("seen_kitchen"));
@@ -442,7 +450,7 @@ void AWCDirector::StoryEvent(FName Id)
 	}
 		if (Is(Id, TEXT("locked:back")))
 	{
-		if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 4.0; Think(TEXT("Nailed shut from the inside. Every board.")); }
+		if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 4.0; Feedback(TEXT("Nailed shut.")); }
 		if (Has(TEXT("want_leave")) && !Has(TEXT("lockin_started")) && Gate()) { After(1.5f, [this]() { ScareLockIn(); }); return; }
 		if (Has(TEXT("lockin_done"))) Set(TEXT("backdoor_tried"));      // the phone rings later, when things have gone quiet (StoryTick)
 		return;
@@ -505,7 +513,7 @@ void AWCDirector::StoryEvent(FName Id)
 	{
 		if (!(HasItem(TEXT("keep_ruth")) && HasItem(TEXT("keep_walter")) && HasItem(TEXT("keep_daniel"))))
 		{
-			if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 5.0; Think(TEXT("Not yet. She needs what was theirs. All three.")); }
+			if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 5.0; Feedback(TEXT("Not yet.")); }
 			return;
 		}
 		Set(TEXT("placed"));
@@ -527,7 +535,7 @@ void AWCDirector::StoryEvent(FName Id)
 			{
 				if (!HasItem(TEXT("shears")))
 				{
-					if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 5.0; Think(TEXT("Nothing to cut it with. She said scissors. The sewing room.")); }
+					if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 5.0; Feedback(TEXT("Nothing to cut it with.")); }
 					return;
 				}
 				// cutting takes a moment; she keeps coming
@@ -563,9 +571,14 @@ void AWCDirector::StoryTick(float Dt)
 	if (!P) return;
 
 	// ---- the house is never silent: things in the walls, boards, wind, something moving on another floor
-	if (Has(TEXT("inside")) && !Has(TEXT("dawn")) && !bBusy && Clock > NextCue)
+	if (Has(TEXT("inside")) && !Has(TEXT("dawn")) && !bBusy && Clock > NextCue && (bEventBusy || StalkState != 0))
 	{
-		NextCue = Clock + Rng.FRandRange(5.f, 13.f) * (1.25f - 0.6f * Tension);
+		NextCue = Clock + 20.0;                    // something staged is happening: the house keeps out of it
+	}
+	if (Has(TEXT("inside")) && !Has(TEXT("dawn")) && !bBusy && !bEventBusy && StalkState == 0 && Clock > NextCue)
+	{
+		// sound in moderation: one small thing, then a long quiet
+		NextCue = Clock + Rng.FRandRange(35.f, 80.f) * (1.2f - 0.4f * Tension);
 		struct FCue { const TCHAR* Name; float Weight; float Near; float Far; float Vol; int32 Where; };   // Where: 0 around, 1 other floor, 2 in a wall close by
 		static const FCue Cues[] = {
 			{ TEXT("creak"), 3.f, 300.f, 900.f, 0.9f, 0 }, { TEXT("skitter"), 3.f, 150.f, 500.f, 0.9f, 2 }, { TEXT("scratch_wall"), 2.2f, 200.f, 600.f, 0.9f, 2 },
@@ -602,17 +615,18 @@ void AWCDirector::StoryTick(float Dt)
 			Off = -Yaw.Vector() * 28.f + FRotationMatrix(Yaw).GetUnitAxis(EAxis::Y) * (Rng.FRand() < 0.5f ? -24.f : 24.f) + FVector(0, 0, 58.f);
 		}
 		else Off.Z = Rng.FRandRange(-80.f, 200.f);
-		if (Has(TEXT("locked_in")) && Rng.FRand() < 0.13f + 0.1f * Tension)
+		UE_LOG(LogWCStory, Display, TEXT("WCCUE t=%.1f %s"), PlaySeconds, Chosen->Name);
+		if (Has(TEXT("locked_in")) && Rng.FRand() < 0.08f + 0.06f * Tension)
 		{
 			const FVector From = P->GetActorLocation() + FRotator(0.f, Rng.FRandRange(0.f, 360.f), 0.f).Vector() * Rng.FRandRange(700.f, 1300.f) + FVector(0, 0, (Rng.FRand() < 0.5f ? 0.f : (P->GetActorLocation().Z > 300.f ? -330.f : 330.f)) - 80.f);
 			const FVector Step = FRotator(0.f, Rng.FRandRange(0.f, 360.f), 0.f).Vector() * 72.f;
 			const int32 N = Rng.RandRange(3, 6);
 			for (int32 k = 0; k < N; ++k) After(k * 0.62f, [this, From, Step, k]() { PlayAt(TEXT("her_step"), From + Step * k, 0.9f, Rng.FRandRange(0.9f, 1.05f), 3400.f); if (k % 2 == 0) PlayAt(TEXT("creak"), From + Step * k, 0.5f, 0.85f, 2600.f); });
 		}
-		else PlayAt(Chosen->Name, P->GetActorLocation() + Off, Chosen->Vol * Rng.FRandRange(0.75f, 1.f), Rng.FRandRange(0.92f, 1.07f));
+		else PlayAt(Chosen->Name, P->GetActorLocation() + Off, 0.8f * Chosen->Vol * Rng.FRandRange(0.75f, 1.f), Rng.FRandRange(0.92f, 1.07f));
 	}
-	if (FLoop* Drone = Loops.Find(TEXT("drone"))) Drone->Target = Has(TEXT("inside")) && !Has(TEXT("dawn")) ? 0.5f + 0.4f * Tension : 0.f;
-	if (FLoop* Low = Loops.Find(TEXT("low"))) Low->Target = Has(TEXT("inside")) && !Has(TEXT("dawn")) ? 0.25f + 0.55f * Tension : 0.f;
+	if (FLoop* Drone = Loops.Find(TEXT("drone"))) Drone->Target = Has(TEXT("inside")) && !Has(TEXT("dawn")) ? 0.30f + 0.30f * Tension : 0.f;
+	if (FLoop* Low = Loops.Find(TEXT("low"))) Low->Target = Has(TEXT("inside")) && !Has(TEXT("dawn")) ? 0.14f + 0.40f * Tension : 0.f;
 	// tension eases back toward a floor that rises as the night goes on
 	{
 		const float Floor = Has(TEXT("sprint_done")) ? 0.6f : (Has(TEXT("lockin_done")) ? 0.45f : (Has(TEXT("peek_done")) ? 0.3f : (Has(TEXT("heard_upstairs")) ? 0.2f : 0.08f)));

@@ -189,7 +189,7 @@ void AWCLook::Interact(AWCCharacter* By)
 {
 	if (AWCDirector* D = AWCDirector::Get(this))
 	{
-		D->Think(Text);
+		D->Feedback(Text);
 		D->Event(FName(*FString::Printf(TEXT("look:%s"), *WCId.ToString())));
 	}
 }

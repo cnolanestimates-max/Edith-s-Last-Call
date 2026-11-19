@@ -97,10 +97,35 @@ void AWCDirector::AutoBegin()
 			AutoSteps.Add({ A_Tele, TEXT("A_UpEll"), 0.f }); Wait(1.0f); AutoSteps.Add({ A_Look, TEXT("W_company_uprear"), -1.f }); Wait(0.15f); Shot(TEXT("smoke_1_hall_far"));
 			AutoSteps.Add({ A_Do, TEXT("at:2330,10,442,0,4"), 0.f }); Wait(0.25f); Shot(TEXT("smoke_2_hall_near")); Wait(0.5f); Shot(TEXT("smoke_3_hall_near_later"));
 		}
+		else if (FParse::Param(FCommandLine::Get(), TEXT("WCFilterShots")))
+		{
+			Set(TEXT("inside")); Set(TEXT("locked_in")); Set(TEXT("tv_first")); Set(TEXT("tv_test"));
+			static const TCHAR* Names[6] = { TEXT("0_off"), TEXT("1_vhs"), TEXT("2_oldfilm"), TEXT("3_cold"), TEXT("4_bodycam"), TEXT("5_nightvision") };
+			static FString Keep[40];
+			int32 KeepN = 0;
+			auto Looks = [&](const TCHAR* Spot)
+			{
+				for (int32 L = 0; L < 6; ++L)
+				{
+					AutoSteps.Add({ A_Do, FName(*FString::Printf(TEXT("filter:%d"), L)), 0.f }); Wait(0.45f);
+					Keep[KeepN] = FString::Printf(TEXT("%s_%s"), Spot, Names[L]);
+					AutoSteps.Add({ A_Shot, FName(*Keep[KeepN]), 0.f }); ++KeepN;
+				}
+				AutoSteps.Add({ A_Do, TEXT("filter:0"), 0.f });
+			};
+			// 1 the front hall with its lamp on   2 the television playing   3 Edith in the hall   4 the house from the yard
+			AutoSteps.Add({ A_Do, TEXT("at:230,40,92,0,-2"), 0.f }); Wait(1.2f); Looks(TEXT("a_hall"));
+			AutoSteps.Add({ A_Do, TEXT("at:366,-400,92,-90,-14"), 0.f }); Wait(0.4f); AutoSteps.Add({ A_Do, TEXT("tvon"), 0.f }); Wait(6.5f); Looks(TEXT("b_television"));
+			AutoSteps.Add({ A_Do, TEXT("at:1500,0,92,180,6"), 0.f }); Wait(0.6f); AutoSteps.Add({ A_Her, TEXT("Idle"), 300.f }); Wait(0.8f); Looks(TEXT("c_edith"));
+			AutoSteps.Add({ A_Do, TEXT("at:-1500,60,144,0,8"), 0.f }); Wait(1.5f); Looks(TEXT("d_house"));
+			Wait(1.f);
+		}
 		else if (FParse::Param(FCommandLine::Get(), TEXT("WCPeekOnly")))
 		{
 			// the first sight of her, from the stairs (nothing), from half way (nothing or next to nothing), and close (gone)
 			Set(TEXT("inside")); Set(TEXT("locked_in")); Set(TEXT("heard_upstairs")); Set(TEXT("tv_first"));
+			// the look test marks the peek as already over so the story leaves it alone: this test is the peek, so put it back
+			Flags.Remove(TEXT("peek_started")); Flags.Remove(TEXT("peek_done")); bBusy = false;
 			AutoSteps.Add({ A_Tele, TEXT("A_StairsTop"), 0.f }); Wait(1.0f);
 			AutoSteps.Add({ A_Do, TEXT("peek"), 0.f }); Wait(1.2f);
 			AutoSteps.Add({ A_Do, TEXT("at:900,60,442,174,2"), 0.f }); Wait(1.0f); Shot(TEXT("peek_1_from_the_stairs"));
@@ -247,6 +272,7 @@ void AWCDirector::AutoBegin()
 	Flag(TEXT("heard_upstairs"), 55.f * Slow); Wait(14.f);
 	// ---- upstairs: S1
 	Go(TEXT("A_StairsTop")); Go(TEXT("N_up_hallB")); Flag(TEXT("peek_started"), 30.f); LookHer(1.0f); Shot(TEXT("09_S1_peek")); LookHer(2.5f);
+	Go(TEXT("Her_Peek"));                       // she is only found close to: walk to the doorway with the light on it
 	Flag(TEXT("peek_done"), 40.f); Wait(5.f);
 	Go(TEXT("A_Master")); Flag(TEXT("master_seen"), 10.f); Shot(TEXT("10_master")); Flag(TEXT("want_leave"), 60.f);
 	// ---- S3: the long hall
@@ -541,6 +567,7 @@ void AWCDirector::AutoTick(float Dt)
 			}
 		}
 		else if (S.Arg == TEXT("tvon")) { bBusy = false; TVOn(); }
+		else if (S.Arg.ToString().StartsWith(TEXT("filter:"))) { SetFilter(FCString::Atoi(*S.Arg.ToString().Mid(7))); }
 		else if (S.Arg == TEXT("peek")) { bBusy = false; ScarePeek(); }
 		else if (S.Arg == TEXT("eye")) { bBusy = false; EyeTry(true); }
 		else if (S.Arg.ToString().StartsWith(TEXT("tvgain:"))) { if (TVScreen) TVScreen->SetScalarParameterValue(TEXT("Gain"), FCString::Atof(*S.Arg.ToString().Mid(7))); }
@@ -642,7 +669,7 @@ void AWCDirector::AutoTick(float Dt)
 			FVector BO, BE; T->GetActorBounds(true, BO, BE);
 			BoxGap = FVector2D(FMath::Max(FMath::Abs(Loc.X - BO.X) - BE.X, 0.f), FMath::Max(FMath::Abs(Loc.Y - BO.Y) - BE.Y, 0.f)).Size();
 		}
-		if (bToUse && BoxGap < P->InteractReach - 30.f && FVector::Dist(P->EyeLocation(), Goal) < P->InteractRange + 60.f)
+		if (bToUse && BoxGap < P->InteractReach - 62.f && FVector::Dist(P->EyeLocation(), Goal) < P->InteractRange + 60.f)
 		{
 			FHitResult Hit;
 			FCollisionQueryParams Q(SCENE_QUERY_STAT(WCAutoSee), false, P);

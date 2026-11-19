@@ -119,8 +119,8 @@ void AWCDirector::TickHouseLights(float Dt)
 		}
 		if (bMayKill && Clock > R.KillAt && Clock > NextLightKill)
 		{
-			// she turns it off
-			NextLightKill = Clock + 12.0;
+			// she turns it off: a staged thing, minutes apart, not a tic
+			NextLightKill = Clock + Rng.FRandRange(120.f, 210.f) * FMath::Max(TestPace, 0.25f);
 			SwitchRoom(P.Key, false, true);
 			PlayAt(TEXT("bulb_buzz"), R.SwitchLoc + FVector(0, 0, 120), 0.6f, 1.f, 900.f);
 			R.DeadUntil = Clock + Rng.FRandRange(5.f, 12.f);
@@ -148,19 +148,19 @@ bool AWCDirector::HouseEvent(FName Id)
 		if (!R || R->Lights.Num() == 0)
 		{
 			PlayAt(TEXT("switch_click"), At, 0.9f, 1.f, 900.f);
-			Think(Room == TEXT("dining") ? TEXT("Nothing. The chandelier is on the floor.") : (Room == TEXT("prayer") ? TEXT("Nothing. Somebody took the bulb out.") : TEXT("Nothing.")));
+			Feedback(TEXT("Nothing."));
 			return true;
 		}
 		if (bPowerOut)
 		{
 			PlayAt(TEXT("switch_click"), At, 0.9f, 1.f, 900.f);
-			Think(Has(TEXT("seen_fusebox")) ? TEXT("Dead. It needs that fuse.") : TEXT("Dead. The whole house is dead. There'll be a fuse box somewhere off the kitchen."));
+			Feedback(TEXT("Dead."));
 			return true;
 		}
 		if (Clock < R->DeadUntil && !R->bOn)
 		{
 			PlayAt(TEXT("switch_click"), At, 0.9f, 1.f, 900.f);
-			if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 5.0; Think(TEXT("It won't come on.")); }
+			if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 5.0; Feedback(TEXT("Dead.")); }
 			return true;
 		}
 		SwitchRoom(Room, !R->bOn);
@@ -216,8 +216,8 @@ bool AWCDirector::HouseEvent(FName Id)
 	if (Id == TEXT("use:fusebox"))
 	{
 		Set(TEXT("seen_fusebox"));
-		if (Has(TEXT("fuse_done")) || !bPowerOut) { Think(TEXT("Glass fuses. One is newer than the rest.")); return true; }
-		if (!HasItem(TEXT("fuse"))) { Think(TEXT("One fuse is blown black. I need a spare.")); return true; }
+		if (Has(TEXT("fuse_done")) || !bPowerOut) { Feedback(TEXT("Glass fuses. One is newer than the rest.")); return true; }
+		if (!HasItem(TEXT("fuse"))) { Feedback(TEXT("A fuse is blown.")); return true; }
 		Set(TEXT("fuse_done"));
 		bPowerOut = false;
 		Items.Remove(TEXT("fuse"));
@@ -232,7 +232,7 @@ bool AWCDirector::HouseEvent(FName Id)
 		if (!HasItem(TEXT("key_desk")))
 		{
 			PlayAt(TEXT("door_locked"), P->GetActorLocation() + P->GetActorForwardVector() * 80.f, 0.6f);
-			if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 4.0; Think(TEXT("The roll-top is locked. A small brass lock.")); }
+			if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 4.0; Feedback(TEXT("Locked.")); }
 			return true;
 		}
 		Set(TEXT("desk_open"));
@@ -254,7 +254,7 @@ bool AWCDirector::HouseEvent(FName Id)
 		if (Has(TEXT("book_done"))) return true;
 		if (!NotesRead.Contains(TEXT("note_deskkey")))
 		{
-			if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 5.0; Think(TEXT("County histories. One spine is cleaner than the rest: 'Customs of the First Settlers'.")); }
+			if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 5.0; Feedback(TEXT("County histories. One spine is cleaner than the rest: 'Customs of the First Settlers'.")); }
 			return true;
 		}
 		ScareBook();
@@ -765,6 +765,7 @@ void AWCDirector::HouseTick(float Dt)
 	TickRecord(Dt);
 	TickTV(Dt);
 	TickEye(Dt);
+	if (!bFilterInit) { bFilterInit = true; int32 L = Settings.Filter; FParse::Value(FCommandLine::Get(), TEXT("WCFilter="), L); SetFilter(L); }
 }
 
 // ================================================================================================ S9: the sewing room

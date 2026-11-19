@@ -37,6 +37,7 @@ struct FWCSettings
 	bool bSubtitles = true;
 	bool bHeadBob = true;
 	bool bCameraShake = true;
+	int32 Filter = 1;           // picture: 0 clean, 1 VHS camcorder (Cheyenne's pick), 2 old film, 3 cold, 4 fisheye bodycam, 5 night vision
 	int32 Quality = 2;          // 0 low .. 3 epic
 	bool bFullscreen = true;
 	bool bVSync = true;
@@ -142,7 +143,8 @@ public:
 	float Say(FName LineId, float Delay = 0.f);
 	float LineSeconds(FName LineId);
 	/** A line of on-screen text with no voice: what he notices. */
-	void Think(const FString& Text, float Seconds = -1.f);
+	void Think(const FString& Text, float Seconds = -1.f);      // his thoughts: no longer shown (kept in the code as a record of what each moment is)
+	void Feedback(const FString& Text, float Seconds = -1.f);   // bare feedback on something he tried, and what he sees when the player chooses to look
 		bool Gate() const { return Clock >= NextScareAt && StalkState == 0 && !bDriving && !bEventBusy; }
 	void Rest(float Seconds) { NextScareAt = FMath::Max(NextScareAt, Clock + Seconds * 1.6f * TestPace); }       // 1.6: she asked for them further apart
 	/** Run Go at the next quiet stretch (now, if it is quiet). If Valid turns false first, run Skip instead. */
@@ -264,6 +266,14 @@ private:
 	void TickTV(float Dt);
 	// the eye in the dark (S14)
 	void TickEye(float Dt);
+	/** Whole-game picture filter: 0 off, 1 VHS camcorder, 2 old film, 3 cold and drained, 4 fisheye bodycam, 5 black-and-white night vision. */
+	public:
+	void SetFilter(int32 Look);
+private:
+	int32 FilterLook = 0;
+	bool bFilterInit = false;
+	UPROPERTY(Transient) TObjectPtr<class APostProcessVolume> FilterVolume;
+	UPROPERTY(Transient) TObjectPtr<class UMaterialInstanceDynamic> FilterMID;
 	bool EyeTry(bool bForce);
 	void EyeEnd(bool bSeenTwice);
 	int32 EyePhase = 0;                         // 0 waiting, 1 black, 2 the eye, 3 light back and nothing there, 4 the eye again, 5 going out

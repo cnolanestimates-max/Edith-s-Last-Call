@@ -466,6 +466,8 @@ void AWCHUD::BuildItems(AWCDirector* D, TArray<FItem>& Out) const
 		Add(TEXT("Subtitles"), OnOff(S.bSubtitles), TEXT("subs"));
 		Add(TEXT("Head bob"), OnOff(S.bHeadBob), TEXT("bob"));
 		Add(TEXT("Camera shake"), OnOff(S.bCameraShake), TEXT("shake"));
+		static const TCHAR* Pic[6] = { TEXT("Clean"), TEXT("VHS camcorder"), TEXT("Old film"), TEXT("Cold"), TEXT("Fisheye bodycam"), TEXT("Night vision") };
+		Add(TEXT("Picture"), Pic[FMath::Clamp(S.Filter, 0, 5)], TEXT("picture"));
 		Add(TEXT("Graphics quality"), Q[FMath::Clamp(S.Quality, 0, 3)], TEXT("quality"));
 		Add(TEXT("Fullscreen"), OnOff(S.bFullscreen), TEXT("full"));
 		Add(TEXT("VSync"), OnOff(S.bVSync), TEXT("vsync"));
@@ -505,6 +507,7 @@ void AWCHUD::Activate(AWCDirector* D, const FItem& It, int32 Dir)
 	else if (Id == TEXT("subs")) S.bSubtitles = !S.bSubtitles;
 	else if (Id == TEXT("bob")) S.bHeadBob = !S.bHeadBob;
 	else if (Id == TEXT("shake")) S.bCameraShake = !S.bCameraShake;
+	else if (Id == TEXT("picture")) S.Filter = (S.Filter + (Dir < 0 ? 5 : 1)) % 6;
 	else if (Id == TEXT("quality")) S.Quality = (S.Quality + (Dir < 0 ? 3 : 1)) % 4;
 	else if (Id == TEXT("full")) S.bFullscreen = !S.bFullscreen;
 	else if (Id == TEXT("vsync")) S.bVSync = !S.bVSync;

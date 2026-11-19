@@ -80,6 +80,10 @@
 			"TargetAllowList": [
 				"Editor"
 			]
+		},
+		{
+			"Name": "Fab",
+			"Enabled": false
 		}
 	]
 }

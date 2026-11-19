@@ -589,7 +589,7 @@ note("note_mail", "Letters_Scattered", 300, 150, GZ + 99, 20)
 # ---- living room (front left)
 L = D + "Living"
 place("Rug_Persian_Worn", 420, -400, GZ, 0, L, collide=False)
-place("Sofa_Sagging_Broken", 370, -300, GZ, 180, L)          # in the middle of the room, facing the television on the south wall
+place("Sofa_Sagging_Broken", 430, -335, GZ, 180, L)          # in the middle of the room, facing the television on the south wall
 place("Armchair_Wingback_Torn", 545, -265, GZ, 205, L)
 place("Armchair_Tipped", 615, -415, GZ, 120, L)
 place("Fireplace_Wood_Overmantel", 600, -562, GZ, 0, L)
@@ -883,7 +883,7 @@ trigger("t_attic", 420, 1560, -560, 560, AZ, AZ + 250)
 trigger("t_hall_mid", 900, 1500, -180, 180, GZ, GZ + 250)
 
 # ================================================================== AUTO-PLAY / TOUR POINTS
-for n, x, y, z, yaw in (("A_Porch", -150, 0, GZ, 0), ("A_Foyer", 220, 60, GZ, 0), ("A_Living", 372, -425, GZ, 270), ("A_Dining", 300, 300, GZ, 30),
+for n, x, y, z, yaw in (("A_Porch", -150, 0, GZ, 0), ("A_Foyer", 220, 60, GZ, 0), ("A_Living", 250, -430, GZ, 300), ("A_Dining", 300, 300, GZ, 30),
                         ("A_Kitchen", 1000, 380, GZ, 20), ("A_BackDoor", 2700, 0, GZ, 0), ("A_Den", 2000, -380, GZ, 250), ("A_Sickroom", 2400, 380, GZ, 60), ("A_Pantry", 1800, 400, GZ, 60), ("A_BathG", 2600, -380, GZ, 250),
                         ("A_Daniel", 2000, -380, UZ, 250), ("A_Sewing", 2600, -380, UZ, 250), ("A_Aide", 2000, 380, UZ, 60), ("A_Bath2", 2600, 380, UZ, 60), ("A_UpEll", 1750, 0, UZ, 0), ("A_Sitting", 1250, -350, GZ, 200),
                         ("A_StairsTop", 900, 60, UZ, 160), ("A_Master", 380, 330, UZ, 30), ("A_Kids", 420, -330, UZ, 250),

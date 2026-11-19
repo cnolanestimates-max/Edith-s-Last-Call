@@ -18,6 +18,7 @@
 #include "Engine/TextureRenderTarget2D.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Kismet/KismetRenderingLibrary.h"
+#include "Engine/PostProcessVolume.h"
 #include "Misc/CommandLine.h"
 #include "Misc/Parse.h"
 #include "UObject/UObjectIterator.h"
@@ -204,11 +205,10 @@ bool AWCDirector::EventsEvent(FName Id)
 			if (Pl && Pl->bIsCrouched && bClose) TVOff(true);
 			else
 			{
-				Think(TEXT("The switch is low on the front. I have to get right down to it."));
 				ShowHint(TEXT("C: crouch, close to the set, then E to switch it off"), 6.f);
 			}
 		}
-		else if (TVPhase == 0) Think(TEXT("An old console set. The screen is grey with dust, except where a hand has wiped it."));
+		else if (TVPhase == 0) Feedback(TEXT("An old console set. The screen is grey with dust, except where a hand has wiped it."));
 		return true;
 	}
 	if (Id == TEXT("use:phonograph"))
@@ -220,7 +220,7 @@ bool AWCDirector::EventsEvent(FName Id)
 			RecordAt = Clock;
 			UE_LOG(LogWCEvents, Display, TEXT("WCRECORD t=%.1f he lifted the needle, phase %d"), PlaySeconds, RecordPhase);
 		}
-		else Think(TEXT("The record is worn white in one groove. One song. I can almost hear which."));
+		else Feedback(TEXT("The record is worn white in one groove. One song. I can almost hear which."));
 		return true;
 	}
 	if (Id == TEXT("trig:t_daniel") && Has(TEXT("peek_done")) && !Has(TEXT("left_done")) && !Has(TEXT("left_pending")))
@@ -586,4 +586,26 @@ void AWCDirector::TickEye(float Dt)
 		break;
 	default: break;
 	}
+}
+
+// ================================================================================================ the picture filter
+// One layer over the finished picture, switched by a number.  It changes nothing in the game itself.
+void AWCDirector::SetFilter(int32 Look)
+{
+	FilterLook = FMath::Clamp(Look, 0, 5);
+	if (!FilterVolume)
+	{
+		UMaterialInterface* M = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/WC/Materials/M_Filter.M_Filter"));
+		if (!M) { UE_LOG(LogWCEvents, Warning, TEXT("WCFILTER no M_Filter (import step items)")); return; }
+		FilterVolume = GetWorld()->SpawnActor<APostProcessVolume>();
+		if (!FilterVolume) return;
+		FilterVolume->bUnbound = true;
+		FilterVolume->Priority = 100.f;
+		FilterMID = UMaterialInstanceDynamic::Create(M, this);
+		FilterVolume->Settings.AddBlendable(FilterMID, 1.f);
+	}
+	FilterMID->SetScalarParameterValue(TEXT("Look"), (float)FilterLook);
+	FilterVolume->bEnabled = FilterLook > 0;
+	FilterVolume->BlendWeight = FilterLook > 0 ? 1.f : 0.f;
+	UE_LOG(LogWCEvents, Display, TEXT("WCFILTER look %d"), FilterLook);
 }
