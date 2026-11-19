@@ -18,9 +18,18 @@ Done this evening (all in the build; details further down and in `Scripts/tools/
 - Twenty face keys on Edith, nine faces; drone opening shot; book scare on the stair wall.
 
 **Unverified by ear (nobody has listened): tell Cheyenne, do not claim.**
-- Engine (`Scripts/audio/make_engine.py`, third version): a synthesized V8 tone with its body between 150 Hz and 1.5 kHz,
-  because her laptop speakers play nothing below about 200 Hz. The Mustang recording before it came through as "snap,
-  crackle, pop" with no engine. In game: full over the drone shot, down to 0.30 in the cab (`TickDrive`), off on arrival.
+- **ENGINE: FIRST THING TO FIX (Cheyenne, 22:03 UTC: the synthesized tone was "awful ... that's not it").** What is in
+  the build now is the real car-interior recording that was there before today (InMotionAudio "Car Interior Driving
+  Ambience", `SourceArt/Audio_unused/amb_car_old.wav`), lifted from -25 to about -18 LUFS with a mid-range push. It is a
+  stopgap: a modern car's hum, not a 1990s V8. `Scripts/audio/make_engine.py` is the rejected synthesis; do not run it.
+  **Wanted:** a real recorded sedan or V8 idle and cruise, smooth, with body between 150 Hz and 1.5 kHz (her laptop
+  speakers play nothing below about 200 Hz), no exhaust pops. Searched so far, all in her library
+  (`OneDrive/Documents/ChatGPT/forklight-tts`): Sonniss bundle 3 has the InMotionAudio car interiors
+  (`VEHCar_TownDrivingAmbience06` and `13`); bundle 5 has SoundBits "Cars - Mad Mustang Mercury"
+  (`VEHCar_Various Driving at Slow Speed 15 06`: rejected, all exhaust crackle on small speakers) and motorcycles; bundle 1
+  has only car foley; the other zips have nothing but a siren. The Fab inventory lists no vehicle audio: look on Fab for a
+  free car or truck engine pack (she asked), or ask her to pick one. In game the engine is full over the drone shot and
+  0.30 in the cab (`TickDrive`), off on arrival.
 - Fly buzz: now loops, with its own attenuation (silent beyond about nine metres). Before that, sixteen swarms at the
   shared attenuation's floor were audible as crackle over the opening.
 - Deputy lines re-levelled to -16 LUFS with a presence lift (`gen_vo.py`, the plain branch) and played at 1.0: his first
