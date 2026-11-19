@@ -184,7 +184,18 @@ void AWCDirector::AutoBegin()
 			At(TEXT("at:2215,-352,92,0,-22")); Wait(0.8f); Shot(TEXT("spot_7b_desk_from_the_front"));
 			At(TEXT("at:640,-330,92,128,2")); Wait(1.2f); Shot(TEXT("spot_8_bookcase"));
 			At(TEXT("at:592,-296,92,124,0")); Wait(1.0f); Shot(TEXT("spot_8b_at_the_book"));
-			At(TEXT("book")); Wait(0.75f); Shot(TEXT("spot_9_book_coming_out")); Wait(0.3f); Shot(TEXT("spot_9b_her_eye")); Wait(0.5f); Shot(TEXT("spot_9c")); Wait(2.5f); Shot(TEXT("spot_9d_after"));
+			At(TEXT("at:3790,-745,59,-22,-28")); Wait(1.2f); Shot(TEXT("spot_10_shed_tape_on_bench"));
+			At(TEXT("at:3580,-745,59,149,-4")); Wait(1.0f); Shot(TEXT("spot_11_trash_can_standing"));
+			At(TEXT("flag:tape1_taken")); Wait(0.8f); Shot(TEXT("spot_11b_trash_can_over"));
+			At(TEXT("at:3140,-470,59,140,-18")); Wait(1.0f); Shot(TEXT("spot_11c_trash_close"));
+			At(TEXT("at:366,-520,92,-90,-24")); Wait(1.2f); Shot(TEXT("spot_12_television_with_tape_slot"));
+			At(TEXT("at:1500,0,92,180,4")); Wait(0.6f); AutoSteps.Add({ A_Her, TEXT("Idle"), 300.f }); Wait(0.9f); Shot(TEXT("spot_15_edith_skin_3m"));
+			AutoSteps.Add({ A_Her, TEXT("Idle"), 170.f }); Wait(0.9f); Shot(TEXT("spot_15b_edith_skin_close"));
+			At(TEXT("at:820,60,92,151,-4")); Wait(1.0f); Shot(TEXT("spot_13_frame_on_the_wall"));
+			At(TEXT("flag:frame_fell")); Wait(0.8f); Shot(TEXT("spot_13b_frame_fallen"));
+			At(TEXT("at:1320,470,92,-70,-6")); Wait(1.0f); Shot(TEXT("spot_14_kitchen_sink_side"));
+			At(TEXT("at:572,-292,92,112,-9")); Wait(1.0f);            // a little off to one side and looking down: the game has to bring his eyes to the gap
+			At(TEXT("book")); Wait(0.55f); Shot(TEXT("spot_9_book_coming_out")); Wait(0.75f); Shot(TEXT("spot_9b_her_eye")); Wait(0.8f); Shot(TEXT("spot_9c_her_eye_still")); Wait(2.6f); Shot(TEXT("spot_9d_after"));
 			Wait(2.f);
 		}
 		else if (FParse::Param(FCommandLine::Get(), TEXT("WCPeekOnly")))

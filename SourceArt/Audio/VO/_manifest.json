@@ -91,6 +91,13 @@
   "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. Calling through the house, official but strained, listening for any answer."
  },
  {
+  "id": "d_shedcall",
+  "who": "deputy",
+  "text": "Mrs. Harrow? ...Is that you?",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. Badly startled by a crash behind him outdoors at night: the name sharp and loud as he spins round, then after a held breath, quieter and unsure, 'Is that you?'"
+ },
+ {
   "id": "d_foyer",
   "who": "deputy",
   "text": "God, that smell. ...Mrs. Harrow? Deputy Brandt, sheriff's office.",

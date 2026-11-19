@@ -45,6 +45,20 @@ watcher("ceiling_hole", 1310, -372, UZ - 30, 0.0, -78.0, 0, 5.6)    # looking do
 
 # ---------------------------------------------------------------- the settlers book (S10) in Walter's den
 BKX0, BKX1, BKY, BKZ = 470.0, 624.0, -216.0, GZ + 141.0             # the settlers book's shelf: its hole is at the height of his eyes (it was a low shelf, and in the den)
+# The wall here is not the same piece as the den's: find its real face, or the hole and her eye end up inside it
+# (photo check spot4: the book came out and there was only wall behind it).
+try:
+    _bw = unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem).get_editor_world()
+    _bh = unreal.SystemLibrary.line_trace_single(_bw, V((BKX0 + BKX1) / 2, BKY - 90.0, BKZ + 13.0), V((BKX0 + BKX1) / 2, BKY + 60.0, BKZ + 13.0),
+                                                 unreal.TraceTypeQuery.TRACE_TYPE_QUERY1, True, [], unreal.DrawDebugTrace.NONE, True)
+    _bt = _bh.to_tuple() if _bh else None
+    if _bt and _bt[0]:
+        log(f"bookcase: wall face found at y {_bt[5].y:.1f} (was assumed {BKY:.1f}), hit {_bt[9].get_actor_label() if _bt[9] else '?'}")
+        BKY = float(_bt[5].y)
+    else:
+        log("bookcase: no wall found by the trace; keeping y " + str(BKY))
+except Exception as _exc:
+    log(f"bookcase wall trace failed: {str(_exc)[:120]}")
 M_SHELF = surf("WoodDark", "MI_WoodDark")
 _leathers = [surf("LeatherOld", m) for m in ("MI_LeatherRed", "MI_LeatherGreen", "MI_LeatherBlue", "MI_LeatherTan", "MI_Leather")]
 # a tall open bookcase against the wall: two uprights, a top, four shelves of county histories
@@ -64,10 +78,11 @@ for _row, _z in enumerate((GZ + 33.0, GZ + 69.0, GZ + 105.0, BKZ)):
         h = _bk.uniform(19.0, 25.0)
         d = _bk.uniform(13.0, 16.5)
         if _z == BKZ and SETTLERS_X is None and bx > (BKX0 + BKX1) / 2 - 6:
-            SETTLERS_X = bx + 2.6
-            b_ = box("SettlersBook", bx, bx + 5.2, BKY - 17.5, BKY - 2.0, BKZ, BKZ + 24.0, surf("LeatherOld", "MI_Leather"), "Dressing/Living", collide=False, tags=["SettlersBook"])
+            # a fat volume, 12 cm thick: through the 5 cm gap a thin book left, only a sliver of her eye could be seen
+            SETTLERS_X = bx + 6.0
+            b_ = box("SettlersBook", bx, bx + 12.0, BKY - 17.5, BKY - 2.0, BKZ, BKZ + 24.0, surf("LeatherOld", "MI_Leather"), "Dressing/Living", collide=False, tags=["SettlersBook"])
             b_.static_mesh_component.set_mobility(unreal.ComponentMobility.MOVABLE)
-            bx += 5.6
+            bx += 12.5
             continue
         if _row < 3 and _bk.random() < 0.12:
             bx += _bk.uniform(6.0, 14.0)                 # a gap where one has gone
@@ -75,11 +90,22 @@ for _row, _z in enumerate((GZ + 33.0, GZ + 69.0, GZ + 105.0, BKZ)):
         box(f"ShelfBook_{_row}_{k}", bx, bx + w, BKY - d - 1.5, BKY - 1.5, _z, _z + h, _bk.choice(_leathers), "Dressing/Living", collide=False, roll=_bk.choice((0, 0, 0, 4, -3)))
         bx += w + 0.5
         k += 1
-interact("WCUsable", "book_settlers", None, SETTLERS_X, BKY - 12, BKZ + 12, 0, "Pull the book out", (7, 12, 14), (0, 0, 0))
+interact("WCUsable", "book_settlers", None, SETTLERS_X, BKY - 12, BKZ + 12, 0, "Pull the book out", (10, 12, 14), (0, 0, 0))
 # the hole behind it, and what is in the hole
 for i, (ox, oz, s_) in enumerate(((0, 0, 1.0), (4.2, 3.0, 0.6), (-3.6, -3.2, 0.55))):
     place(SPHERE, SETTLERS_X + ox, BKY - 0.4, BKZ + 13 + oz, -90, WF, name=f"BookHole_{i}", scale=(0.012, 8.6 * s_ / 50.0, 8.0 * s_ / 50.0), mats={0: "WC:M_Black"}, collide=False, shadow=False)
-watcher("book_eye", SETTLERS_X, BKY - 1.2, BKZ + 13, -90.0, 0.0, 0, 5.6, scripted=True)
+watcher("book_eye", SETTLERS_X, BKY + 1.0, BKZ + 13, -90.0, 0.0, 0, 5.6, scripted=True)
+# The wall behind this bookcase is the stair tower's: she is crouched on the main flight with her eye to the hole.
+# When she goes, she goes up it: from the tread behind the hole to the head of the flight, then along the landing.
+# (the tower's numbers are written out: build_house.py reuses the names SX0..SY1 further down)
+_TX0, _TX1, _TYC = 400.0, 800.0, -88.0
+_tread = GZ + (SETTLERS_X - _TX0) / (_TX1 - _TX0) * 350.0
+point("StairRunA", SETTLERS_X, _TYC, _tread + 10.0)
+point("StairRunB", _TX1 - 10.0, _TYC, UZ + 10.0)
+point("StairRunC", 1040.0, 40.0, UZ + 10.0)
+log(f"bookcase: settlers book at x {SETTLERS_X:.1f}; the stair tread behind the hole is at z {_tread:.0f}, the hole at z {BKZ + 13:.0f}")
+
+
 # the key that falls out of the hollowed book
 pickup("pick_key_desk", "key_desk", "Small desk key", ("KeyDesk", CUBE, (0.05, 0.018, 0.005), {0: "BrassOld"}), SETTLERS_X + 8, BKY - 52, GZ + 2.0, 35, tags=["Show_bookkey"])
 log("watchers: 8 eyes, the settlers book")

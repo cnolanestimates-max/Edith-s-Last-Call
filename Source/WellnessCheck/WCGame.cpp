@@ -713,6 +713,9 @@ namespace
 		{ TEXT("radio"), TEXT("Radio"), TEXT("Clear as a bell in the car. Inside this house it gives nothing but static."), TEXT("/Game/WC/Props/SM_Item_Radio.SM_Item_Radio") },
 		{ TEXT("keep_eye"), TEXT("Glass eye"), TEXT("Pale blue, painted by hand, older than I am. It was wrapped in a handkerchief. Hers."), TEXT("/Game/WC/Props/SM_Item_GlassEye.SM_Item_GlassEye") },
 		{ TEXT("screwdriver"), TEXT("Screwdriver"), TEXT("A flat-head with a turned wooden handle. The tip is bright: somebody has used it not long ago."), TEXT("/Game/WC/Props/SM_Item_Screwdriver.SM_Item_Screwdriver") },
+		{ TEXT("tape1"), TEXT("VHS tape"), TEXT("A home video cassette. The label says 'Ruthie - bedtime, Oct. 1991' in ballpoint."), TEXT("/Game/WC/Props/SM_Item_Tape1.SM_Item_Tape1") },
+		{ TEXT("tape2"), TEXT("VHS tape"), TEXT("Another cassette. 'Living room, Thanksgiving 1991.'"), TEXT("/Game/WC/Props/SM_Item_Tape2.SM_Item_Tape2") },
+		{ TEXT("tape3"), TEXT("VHS tape"), TEXT("'Mother - porch, Nov. 1991.' The handwriting is not Edith's."), TEXT("/Game/WC/Props/SM_Item_Tape3.SM_Item_Tape3") },
 		{ TEXT("doll"), TEXT("Rag doll"), TEXT("A child's rag doll, pushed deep into the duct. One button eye is gone. There is something hard inside her."), TEXT("/Game/WC/Props/SM_Item_Doll.SM_Item_Doll") },
 		{ TEXT("doll_empty"), TEXT("Rag doll"), TEXT("Ruth's, I would guess. The seam down her back has been cut and sewn up again more than once."), TEXT("/Game/WC/Props/SM_Item_DollEmpty.SM_Item_DollEmpty") },
 		{ TEXT("key_box"), TEXT("Small key"), TEXT("Small and fancy, with a heart worked into the bow. Too small for any door in this house."), TEXT("/Game/WC/Props/SM_Item_KeyHeart.SM_Item_KeyHeart") },
@@ -861,6 +864,7 @@ void AWCHUD::InvUse(AWCDirector* D, FName Id)
 		InvSay(Door ? TEXT("It does not fit this lock.") : TEXT("Nothing here it fits. I have to be standing at the lock."));
 		return;
 	}
+	if (S.StartsWith(TEXT("tape"))) { if (F && F->WCId == TEXT("tv")) OnWhatHeFaces(); else InvSay(TEXT("It goes in the television.")); return; }
 	if (Id == TEXT("doll")) { InvSay(TEXT("There is something hard inside her. Inspect her.")); return; }
 	if (Id == TEXT("screwdriver")) { if (F && F->WCId == TEXT("vent")) OnWhatHeFaces(); else InvSay(TEXT("Nothing here to unscrew.")); return; }
 	if (Id == TEXT("fuse")) { if (F && F->WCId == TEXT("fusebox")) OnWhatHeFaces(); else InvSay(TEXT("It goes in the fuse box.")); return; }

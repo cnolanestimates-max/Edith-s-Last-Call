@@ -209,7 +209,24 @@ bool AWCDirector::EventsEvent(FName Id)
 				ShowHint(TEXT("C: crouch, close to the set, then E to switch it off"), 6.f);
 			}
 		}
-		else if (TVPhase == 0) Feedback(TEXT("An old console set. The screen is grey with dust, except where a hand has wiped it."));
+		else if (TVPhase == 0)
+		{
+			static const TCHAR* TapeId[3] = { TEXT("tape1"), TEXT("tape2"), TEXT("tape3") };
+			int32 Have = 0;
+			for (int32 i = 0; i < 3 && Have == 0; ++i) if (HasItem(TapeId[i])) Have = i + 1;
+			if (Have == 0)
+			{
+				Feedback(Has(TEXT("tape_played")) ? TEXT("The slot is empty. There were more tapes than this.") : TEXT("An old console set with a tape slot under the screen. Nothing in it."));
+				return true;
+			}
+			Items.Remove(TapeId[Have - 1]);
+			Set(TEXT("tape_played"));
+			Set(FName(*FString::Printf(TEXT("tape%d_played"), Have)));
+			UE_LOG(LogWCEvents, Display, TEXT("WCTAPE t=%.1f tape %d goes into the set"), PlaySeconds, Have);
+			if (AWCInteractable* Tv0 = Thing(TEXT("tv"))) PlayAt(TEXT("door_unlock"), Tv0->GetActorLocation() + FVector(0, 0, 90), 0.8f, 0.6f, 1200.f);       // the tape going home
+			TVWant = Have;
+			After(1.5f, [this]() { if (TVPhase == 0) TVOn(); });
+		}
 		return true;
 	}
 	if (Id == TEXT("use:phonograph"))
@@ -264,7 +281,8 @@ void AWCDirector::TVOn()
 	int32 Tapes = 0;
 	for (int32 i = 1; i <= 8; ++i) if (LoadObject<UTexture2D>(nullptr, *FString::Printf(TEXT("/Game/WC/TV/T_Tape_%d.T_Tape_%d"), i, i), nullptr, LOAD_NoWarn | LOAD_Quiet)) Tapes = i; else break;
 	if (Tapes == 0 || !TVScreen) { UE_LOG(LogWCEvents, Warning, TEXT("WCTV no tapes imported")); TVNextAt = Clock + 600.0; return; }
-	const int32 N = 1 + (TVTape % Tapes);
+	const int32 N = TVWant > 0 ? FMath::Clamp(TVWant, 1, Tapes) : 1 + (TVTape % Tapes);
+	TVWant = 0;
 	++TVTape;
 	TVScreen->SetTextureParameterValue(TEXT("Atlas"), LoadObject<UTexture2D>(nullptr, *FString::Printf(TEXT("/Game/WC/TV/T_Tape_%d.T_Tape_%d"), N, N)));
 	TVScreen->SetScalarParameterValue(TEXT("Mode"), 1.f);
@@ -381,13 +399,9 @@ void AWCDirector::TickTV(float Dt)
 	if (TVPhase == 0)
 	{
 		if (Has(TEXT("dawn")) || Has(TEXT("sprint_started"))) return;
-		// already on when he first comes in ("he turns it off, but that's the first time and nothing happens")
-		if (Has(TEXT("inside")) && !Has(TEXT("tv_first"))) { Set(TEXT("tv_first")); TVOn(); After(6.f, [this]() { Think(TEXT("Somebody left the television on.")); }); return; }
-		// the second time is about the middle of the game: not before the head by the ceiling
-		if (!Has(TEXT("ceiling_done")) && !Has(TEXT("tv_test"))) { TVNextAt = -1.0; return; }
-		if (TVNextAt < 0.0) TVNextAt = Clock + 100.0 * FMath::Max(TestPace, 0.25f);
-		// he is near enough to see it come on, and nothing else is happening
-		if (Clock >= TVNextAt && Gate() && !bBusy && !P->IsDown() && FVector::Dist(P->GetActorLocation(), At) < 760.f && FMath::Abs(P->GetActorLocation().Z - 88.f - Tv->GetActorLocation().Z) < 120.f) TVOn();
+		// The set is off until he puts a tape in (it used to be playing when he came in, and came on by itself later).
+		// (the set has its own tape slot under the screen: SM_Item_TV)
+		Tv->Prompt = (HasItem(TEXT("tape1")) || HasItem(TEXT("tape2")) || HasItem(TEXT("tape3"))) ? TEXT("Put the tape in") : TEXT("Look at the television");
 		return;
 	}
 	if (TVPhase == 1)
@@ -404,8 +418,7 @@ void AWCDirector::TickTV(float Dt)
 			TVAudio = PlayAt(FString::Printf(TEXT("tv_tape_%d"), TVTapeNow), At, 0.42f, 1.f, 1000.f);       // heard in the room and from the hall, not through the house
 			if (TVAudio.IsValid()) TVAudio->FadeIn(0.35f, 1.f);
 		}
-		// the first showing (it is on when he comes in) plays until he switches it off; later ones for 75 s
-		if (TVTape > 1 && T > 75.f) TVOff(false);
+		// (every tape plays until he switches the set off)
 		return;
 	}
 	// ---- the reflection
@@ -659,16 +672,19 @@ bool AWCDirector::DoorOpensByItself()
 // One line = one sound, once.  On: the event ("enter:<trigger>" = walking into a room, "take:<item>", "use:<thing>",
 // "door:<door>").  Nth: on which time that happens.  Where: 0 somewhere round him, 1 on the other floor, 2 in a wall close by,
 // 3 behind him.  Need: a story flag that has to be set first (nullptr = none).  Act: 1 the rocking chair rocks, 2 a light he
-// left on goes out, 3 Walter's radio tunes itself, 4 bare feet run across the other floor.
+// left on goes out, 3 Walter's radio tunes itself, 4 bare feet run across the other floor, 5 something moves behind the kitchen
+// vent, 6 a picture frame comes off the hall wall.
 namespace
 {
 	struct FWCCue { const TCHAR* On; int32 Nth; const TCHAR* Sound; int32 Where; float Near, Far, Vol, Pitch; const TCHAR* Need; int32 Act; };
 	const FWCCue GWCCues[] = {
 		// ---- the house only: before the thump
 		{ TEXT("enter:t_dining"), 1, TEXT("creak"), 0, 300.f, 600.f, 0.8f, 1.f, nullptr, 0 },
-		{ TEXT("enter:t_kitchen"), 1, TEXT("thump_far"), 1, 200.f, 400.f, 0.9f, 0.95f, nullptr, 0 },
+		{ TEXT("enter:t_kitchen"), 1, TEXT(""), 0, 0.f, 0.f, 1.f, 1.f, nullptr, 5 },                    // something moves behind the wall vent
 		{ TEXT("use:vent"), 1, TEXT("skitter"), 2, 120.f, 220.f, 0.8f, 1.f, nullptr, 0 },
-		{ TEXT("enter:t_hall_mid"), 2, TEXT("steps_above"), 1, 100.f, 300.f, 0.9f, 1.f, nullptr, 0 },
+		{ TEXT("enter:t_hall_mid"), 2, TEXT(""), 0, 0.f, 0.f, 1.f, 1.f, TEXT("locked_in"), 6 },          // a picture comes off the wall behind him
+		{ TEXT("enter:t_hall_mid"), 3, TEXT("steps_above"), 1, 100.f, 300.f, 0.9f, 1.f, nullptr, 0 },
+		{ TEXT("enter:t_dining"), 2, TEXT("thump_far"), 1, 200.f, 400.f, 0.9f, 0.95f, nullptr, 0 },
 		{ TEXT("enter:t_living"), 2, TEXT(""), 0, 0.f, 0.f, 1.f, 1.f, nullptr, 1 },
 		{ TEXT("enter:t_pantry"), 1, TEXT("skitter"), 2, 150.f, 300.f, 0.8f, 1.f, nullptr, 0 },
 		{ TEXT("enter:t_den"), 1, TEXT(""), 0, 0.f, 0.f, 1.f, 1.f, nullptr, 3 },
@@ -759,6 +775,24 @@ void AWCDirector::CueEvent(FName Id)
 			{
 				PlayAt(TEXT("radio_tune"), Pos(TEXT("RadioPoint")), 1.f, 1.f, 3200.f);
 				After(8.f, [this]() { if (bBusy) return; Play2D(TEXT("breath_near"), 0.55f); if (AWCCharacter* Q = Player()) Q->FlickerLight(0.5f, 0.7f); });
+			}
+			else if (Act == 5)
+			{
+				const FVector Vp = Pos(TEXT("VentPoint"));
+				PlayAt(TEXT("skitter"), Vp, 1.f, 0.9f, 1600.f);
+				After(1.5f, [this, Vp]() { PlayAt(TEXT("scratch_wall"), Vp, 0.8f, 1.1f, 1600.f); });
+				After(2.3f, [this]() { if (!Has(TEXT("vent_seen")) && !bBusy) Feedback(TEXT("Something moved behind the wall vent.")); });
+			}
+			else if (Act == 6)
+			{
+				Set(TEXT("frame_fell"));
+				ApplyWorldState();
+				PlayAt(TEXT("frame_fall"), Pos(TEXT("FramePoint")), 1.f, 1.f, 5000.f);
+				Play2D(TEXT("sting_hit"), 0.75f, EWCSnd::Music);
+				Pl->AddShake(0.4f);
+				Tension = FMath::Max(Tension, 0.6f);
+				Rest(60.f);
+				UE_LOG(LogWCEvents, Display, TEXT("WCSCARE t=%.1f frame off the wall"), PlaySeconds);
 			}
 			else if (Act == 4)
 			{

@@ -579,7 +579,12 @@ place("Umbrella_Stand_Umbrellas", 55, -150, GZ, 0, D + "Hall")
 place(TABLE, 300, 150, GZ, 0, D + "Hall")
 place("Clock_Grandfather", 1100, -168, GZ, 0, D + "Hall")
 place("Portrait_Large", 1400, 181, GZ + 130, 180, D + "Hall", collide=False)        # was at x 1000: the middle of the kitchen doorway
-place("Portrait_Oval", 600, 181, GZ + 150, 180, D + "Hall", collide=False)
+place("Portrait_Oval", 600, 181, GZ + 150, 180, D + "Hall", collide=False, name="FrameUp", tags=["Hide_framefall"])
+# ...which comes off the wall behind him (WCEvents.cpp, cue 6): the same frame on the floor, glass out, and a spot to pick it up
+place("Picture_Frame_Fallen", 600, 148, GZ, 70, D + "Hall", collide=False, name="FrameDown", tags=["Show_framefall"])
+interact("WCUsable", "frame", None, 600, 148, GZ + 6, 0, "Pick up the frame", (30, 30, 12), (0, 0, 4), enabled=False)
+point("FramePoint", 600, 165, GZ + 60)
+point("VentPoint", 1400, 224, GZ + 125)
 place("Portrait_Slashed", 1250, -181, GZ + 140, 0, D + "Hall", collide=False)
 place("Mirror_Covered_Sheet", 2730, 120, GZ, 250, D + "Hall")
 place("Bust_Pedestal", 1540, -150, GZ, 110, D + "Hall")
@@ -764,6 +769,8 @@ pickup("pick_keep_walter", "keep_walter", "Walter's wedding ring", ("Ring", CYL,
 # ---- attic
 AT = D + "Attic"
 interact("WCUsable", "trunk", "Chest_Trunk", 760, -430, AZ, 90, "Open the footlocker", (50, 30, 36), (0, 0, 36))
+# the third tape: on the attic floor beside the footlocker
+pickup("pick_tape3", "tape3", "VHS tape", ("Tape3", CUBE, (0.187, 0.103, 0.025), {0: "BrassOld"}), 850, -395, AZ + 1.0, 140, grab=(13, 10, 6))
 # what was in it, laid out on the lid once it has been opened (they used to go straight into the inventory)
 _tb = kit("Chest_Trunk").get_bounds()
 _ttop = AZ + _tb.origin.z + _tb.box_extent.z
@@ -965,3 +972,5 @@ enlarge_living_room()
 if not level_editor.save_current_level():
     raise RuntimeError("could not save " + MAP)
 log(f"DONE {count} -> {MAP}")
+# last of all (after everything has been placed and moved): nothing is left hanging in the air
+exec(open(os.path.join(HERE, "float_sweep.py"), encoding="utf-8").read())

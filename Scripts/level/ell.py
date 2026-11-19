@@ -272,6 +272,8 @@ place("Curtains_Torn_Window", 1800, 578, UZ + 20, 180, AD, collide=False)
 place("Rug_Persian_Worn", 2000, 400, UZ, 0, AD, collide=False, scale=0.8)
 fab("Urban_Shanty_Town_Dress_Fabric_Worn", 2100, 330, UZ + 2, 70, "Aide", collide=False, roll=90)
 put_note("note_aide2", "Book_Open_Pages", 2035, 525, UZ + 98, 20)
+# the second tape: on the aide's stripped bed (behind Walter's keys, so about the middle of the night)
+put_pickup("pick_tape2", "tape2", "VHS tape", ("Tape2", CUBE, (0.187, 0.103, 0.025), {0: "BrassOld"}), 2185, 430, UZ + 55, 70, grab=(13, 10, 6))
 put_note("note_aide3", "Letters_Scattered", 1650, 380, UZ + 119, 60, scale=0.6)
 
 # ================================================================== UPSTAIRS: second bath (the floor has gone through into the sickroom)

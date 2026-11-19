@@ -51,6 +51,7 @@ DIRECT = {
     "d_call1": "Calling out into a silent house, not loud, a question hanging in the air. Careful, a little uneasy.",
     "d_call2": "Calling out again, a bit louder, then quieter and less sure of himself on the second part.",
     "d_call3": "Calling through the house, official but strained, listening for any answer.",
+    "d_shedcall": "Badly startled by a crash behind him outdoors at night: the name sharp and loud as he spins round, then after a held breath, quieter and unsure, 'Is that you?'",
     "d_arrive3": "Dry, uneasy, under his breath.",
     "d_knock": "Calling out loudly at a front door, projecting, official.",
     "d_dooropen": "Quiet, wary, then calling into the house.",

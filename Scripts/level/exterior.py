@@ -552,6 +552,18 @@ for _k in range(9):
     box(f"RakeTine_{_k}", SX0 + 277.5 + _k * 4.5, SX0 + 278.7 + _k * 4.5, SY0 + 10, SY0 + 12, 168, 177, "Rust", SH, collide=False)
 for _k in range(3):
     box(f"WallNail_{_k}", SX0 + 110 + _k * 60, SX0 + 111 + _k * 60, SY0 + 8, SY0 + 13, 150, 151, "Rust", SH, collide=False, shadow=False)
+# the first tape: on the bench, among the junk.  Taking it is what lets him into the house.
+pickup("pick_tape1", "tape1", "VHS tape", ("Tape1", CUBE, (0.187, 0.103, 0.025), {0: "BrassOld"}), SX1 - 46, _ridge - 52, 50.4, 25, grab=(13, 10, 6))
+# the trash can by the back of the house: standing until he takes the tape, then on its side with everything out of it
+_TX, _TY = XB + 105.0, -340.0
+if ITEM("TrashCan"):
+    place(ITEM("TrashCan"), _TX, _TY, -40, 0, EX + "/BackYard", name="TrashCanUp", tags=["Hide_trash"])
+if ITEM("TrashCanDown"):
+    place(ITEM("TrashCanDown"), _TX + 70, _TY - 30, -40, 250, EX + "/BackYard", name="TrashCanDown", tags=["Show_trash"], collide=False)
+for _k, (_m, _dx, _dy, _yw) in enumerate((("Tin_Cans_Rusty", 150, -70, 30), ("Bottles_Empty_Group", 205, -20, 110), ("Newspaper_Pile", 120, 25, 60), ("Paint_Can_Spilled", 250, -95, 200),
+                                          ("Tin_Cans_Rusty", 285, 10, 250), ("Newspaper_Pile", 215, -130, 10))):
+    place(_m, _TX + _dx, _TY + _dy, -40, _yw, EX + "/BackYard", name=f"Trash_{_k}", tags=["Show_trash"], collide=False)
+point("TrashPoint", _TX + 70, _TY - 30, 0)
 point("A_Shed", SX0 - 140, (_DY0 + _DY1) / 2, GZ, 0, folder="Auto")
 point("A_ShedIn", SX0 + 110, (_DY0 + _DY1) / 2, -33, 0, folder="Auto")
 point("A_BackStoop", XB + 190, 0, 0, 180, folder="Auto")

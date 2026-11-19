@@ -292,6 +292,13 @@ def tv():
         P.append(box(0.006, 0.012, 0.03, (0.335, -0.268, z), m="Polymer"))
     for k in range(7):
         P.append(box(0.16, 0.004, 0.007, (0.335, -0.2395, 0.345 + 0.018 * k), m="Polymer"))
+    # the built-in video recorder: a slot under the screen with its flap, four keys, a little counter window
+    P.append(box(0.60, 0.010, 0.056, (-0.11, -0.2335, 0.246), m="Gunmetal"))
+    P.append(box(0.200, 0.010, 0.024, (-0.215, -0.2380, 0.248), m="Polymer"))
+    P.append(box(0.196, 0.004, 0.020, (-0.215, -0.2435, 0.2485), (0.14, 0, 0), "Polymer"))
+    for k in range(4):
+        P.append(box(0.022, 0.010, 0.012, (-0.060 + k * 0.030, -0.2400, 0.243), m="Brass"))
+    P.append(box(0.050, 0.008, 0.014, (0.115, -0.2390, 0.247), m="Polymer"))
     P.append(cyl(0.045, 0.02, (0.05, 0.02, 0.83), m="Polymer", v=20))
     for sgn in (-1, 1):
         P.append(cyl(0.0035, 0.52, (0.05 + sgn * 0.13, 0.02, 1.06), (0, sgn * 0.5, 0), "Gunmetal", 8))

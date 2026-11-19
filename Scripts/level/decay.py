@@ -197,7 +197,7 @@ fridge = asset(G + "/Props/SM_Fridge", must=False)
 if fridge:
     place(fridge, 1545, 520, GZ, float(os.environ.get("WC_FRIDGE_YAW", "180")), KX, name="Fridge")
     point("Flies_fridge", 1500, 500, GZ + 110, tags=["Flies"])
-for n, x, y, zz in (("Pumpkin_Rotten", 1220, 440, 89), ("Plates_Stack_Dusty", 1000, 560, 92), ("Plate_Broken", 1120, 300, 0), ("Bottles_Empty_Group", 1080, 560, 92),
+for n, x, y, zz in (("Pumpkin_Rotten", 1220, 440, 89), ("Plates_Stack_Dusty", 1042, 562, 82), ("Plate_Broken", 1120, 300, 0), ("Bottles_Empty_Group", 1082, 560, 82),
                     ("Tin_Cans_Rusty", 1340, 350, 0), ("Rat_Group", 1420, 520, 0), ("Bones_Pile", 1260, 450, 86), ("Teapot_Old", 1290, 400, 89)):
     place(n, x, y, GZ + zz, rng.uniform(0, 360), KX, collide=False, scale=0.6 if n in ("Pumpkin_Rotten", "Bones_Pile") else 1.0)
 for (x, y) in ((1250, 420), (1050, 540), (900, 540)):

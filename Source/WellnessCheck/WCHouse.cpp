@@ -10,6 +10,7 @@
 #include "Camera/CameraComponent.h"
 #include "Components/AudioComponent.h"
 #include "Components/LightComponent.h"
+#include "Components/PointLightComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Animation/SkeletalMeshActor.h"
 #include "Engine/SkeletalMesh.h"
@@ -273,11 +274,19 @@ bool AWCDirector::HouseEvent(FName Id)
 	if (Id == TEXT("use:book_settlers"))
 	{
 		if (Has(TEXT("book_done"))) return true;
-		if (!NotesRead.Contains(TEXT("note_deskkey")))
+		// he has to be standing square in front of it, and close, for what is behind it to be seen at all
+		if (AWCInteractable* Bk = Thing(TEXT("book_settlers")))
 		{
-			if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 5.0; Feedback(TEXT("County histories. One spine is cleaner than the rest: 'Customs of the First Settlers'.")); }
-			return true;
+			const FVector Rel = P->GetActorLocation() - Bk->GetActorLocation();
+			const float Back = -Rel.Y, Aside = FMath::Abs(Rel.X);                 // the bookcase is on the hall-side wall: the room is toward -Y
+			if (Aside > 30.f || Back < 35.f || Back > 115.f)
+			{
+				if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 2.5; Feedback(TEXT("Stand right in front of it.")); }
+				return true;
+			}
 		}
+		// (it used to wait until he had read her scrap about the hollow book.  Cheyenne: "I don't think it's necessary
+		// for that to wait ... that scare is such a small scare that it could just add to the scares in general.")
 		ScareBook();
 		return true;
 	}
@@ -845,9 +854,41 @@ void AWCDirector::ScareBook()
 	// he draws the book out...
 	for (int32 i = 1; i <= 14; ++i) After(i * 0.035f, [Book, From, Out, i]() { if (IsValid(Book)) Book->SetActorLocation(From + Out * (26.f * i / 14.f)); });
 	if (EyeW) EyeW->Reveal();
-	// ...and she is looking at him through the wall
-	After(0.95f, [this, EyeW, Book, From, Out]()
+	// while his hands are on the book his eyes settle on the gap it is leaving
 	{
+		const FVector Gap = EyeW ? EyeW->GetActorLocation() : From;
+		const FVector Side = EyeW ? EyeW->GetActorRightVector() : FVector::ZeroVector;
+		for (int32 i = 1; i <= 16; ++i) After(i * 0.035f, [this, Gap, Side]()
+		{
+			AWCCharacter* Q = Player();
+			if (!Q || !Q->GetController()) return;
+			// a half step to the side, no more: he ends up square to the hole
+			const float Off = FVector::DotProduct(Q->GetActorLocation() - Gap, Side);
+			Q->SetActorLocation(Q->GetActorLocation() - Side * (Off - FMath::FInterpTo(Off, 0.f, 0.035f, 9.f)), true);
+
+			const FRotator Want = (Gap - Q->EyeLocation()).Rotation();
+			Q->GetController()->SetControlRotation(FMath::RInterpTo(Q->GetController()->GetControlRotation(), Want, 0.035f, 9.f));
+		});
+	}
+	// a cold glimmer on her eye, so it reads in the dark of the gap whatever his own light is doing
+	TWeakObjectPtr<UPointLightComponent> Glim;
+	if (EyeW)
+	{
+		UPointLightComponent* G = NewObject<UPointLightComponent>(EyeW);
+		G->SetupAttachment(EyeW->GetRootComponent());
+		G->RegisterComponent();
+		G->SetWorldLocation(EyeW->GetActorLocation() + Out * 10.f);
+		G->SetIntensityUnits(ELightUnits::Lumens);
+		G->SetIntensity(0.f);
+		G->SetAttenuationRadius(48.f);
+		G->SetLightColor(FLinearColor(0.75f, 0.85f, 1.f));
+		G->SetCastShadows(false);
+		Glim = G;
+	}
+	// ...and she is looking at him through the wall
+	After(0.62f, [this, EyeW, Book, From, Out, Glim]()
+	{
+		if (Glim.IsValid()) Glim->SetIntensity(70.f);
 		AWCCharacter* Pl = Player();
 		Play2D(TEXT("sting_hit"), 0.9f, EWCSnd::Music);
 		Play2D(TEXT("breath_near"), 0.9f);
@@ -862,7 +903,7 @@ void AWCDirector::ScareBook()
 			{
 				if (!IsValid(Book)) return;
 				const float U = i / 16.f;
-				Book->SetActorLocation(FVector(Start.X + Out.X * 22.f * U, Start.Y + Out.Y * 22.f * U, FMath::Lerp(Start.Z, FloorZ, U * U)));
+				Book->SetActorLocation(FVector(Start.X + (Out.X * 6.f - Out.Y * 34.f) * U, Start.Y + (Out.Y * 6.f + Out.X * 34.f) * U, FMath::Lerp(Start.Z, FloorZ, U * U)));      // knocked aside, out of his line of sight
 				Book->SetActorRotation(FRotator(70.f * U, Book->GetActorRotation().Yaw + 9.f, 80.f * U));
 			});
 		}
@@ -871,25 +912,27 @@ void AWCDirector::ScareBook()
 			PlayAt(TEXT("thump_far"), FVector(Start.X, Start.Y, FloorZ), 1.f, 1.5f, 900.f);
 			ShowTagged(TEXT("Show_bookkey"), true);
 		});
-		// she is away along the inside of the wall
-		After(0.55f, [this, EyeW]()
+		// she holds his eye for two seconds; then she is gone from the hole and running up the stairs behind the wall
+		After(2.1f, [this, EyeW, Glim]()
 		{
-			if (EyeW)
-			{
-				const FVector At = EyeW->GetActorLocation();
-				const FVector Along = EyeW->GetActorRightVector();
-				EyeW->Withdraw(true);
-				for (int32 k = 0; k < 6; ++k) After(k * 0.28f, [this, At, Along, k]() { PlayAt(k % 2 ? TEXT("skitter") : TEXT("scratch_wall"), At + Along * (120.f * k) + FVector(0, 0, 30.f * k), 1.f, 1.1f, 1600.f); });
-			}
+			if (Glim.IsValid()) Glim->SetIntensity(0.f);
+			if (EyeW) EyeW->Withdraw(true);
+			const FVector A = Pos(TEXT("StairRunA")), B = Pos(TEXT("StairRunB")), C = Pos(TEXT("StairRunC"));
+			if (A.IsNearlyZero() || B.IsNearlyZero()) return;
+			UE_LOG(LogWCHouse, Display, TEXT("WCSCARE t=%.1f S10_book she runs up the stairs"), PlaySeconds);
+			// seven treads at a run, then away along the landing overhead
+			for (int32 k = 0; k < 7; ++k) After(0.12f + k * 0.19f, [this, A, B, k]() { PlayAt(TEXT("step_stairs"), FMath::Lerp(A, B, k / 6.f), 1.f, Rng.FRandRange(0.82f, 0.92f), 2600.f); });
+			for (int32 k = 0; k < 4; ++k) After(0.12f + 7 * 0.19f + k * 0.24f, [this, B, C, k]() { PlayAt(TEXT("her_step"), FMath::Lerp(B, C, (k + 1) / 4.f), 0.9f - 0.12f * k, Rng.FRandRange(0.9f, 1.f), 3000.f); });
 		});
+
 	});
-	After(2.9f, [this]()
+	After(4.1f, [this]()
 	{
 		if (AWCCharacter* Pl = Player()) Pl->SetInputLocked(false);
 		bBusy = false;
 		Rest(120.f);
 		Tension = 0.6f;
-		Think(TEXT("She's in the walls."));
+		Think(TEXT("She was on the stairs."));
 		Checkpoint(TEXT("book"));
 	});
 }

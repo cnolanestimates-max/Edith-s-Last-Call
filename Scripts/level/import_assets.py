@@ -154,7 +154,10 @@ def step_her_skin():
     # maps. Keep the texture object paths stable for the mesh and corpse instance.
     folder = G + "/Her"
     maps = ("BaseColor", "Normal", "Roughness")
-    paths = [f"{SRC}/Her/look_c/T_Her_{name}.png" for name in maps]
+    # look_d = skin D, crusted scabs (Cheyenne's pick, 2026-11-19), baked by Scripts/her/her_tex.py over Codex's look C:
+    # the portrait stays on the upper face.  Remove the look_d folder to go back to look C alone.
+    look = "look_d" if all(os.path.isfile(f"{SRC}/Her/look_d/T_Her_{name}.png") for name in maps) else "look_c"
+    paths = [f"{SRC}/Her/{look}/T_Her_{name}.png" for name in maps]
     for path in paths:
         if not os.path.isfile(path):
             raise FileNotFoundError(path)
@@ -165,7 +168,7 @@ def step_her_skin():
     for texture in textures:
         if texture.blueprint_get_size_x() != 4096 or texture.blueprint_get_size_y() != 4096:
             raise RuntimeError(f"Unexpected texture dimensions for {texture.get_name()}")
-    log(f"Edith C skin imported: {imported}")
+    log(f"Edith skin imported from {look}: {imported}")
     return textures
 
 

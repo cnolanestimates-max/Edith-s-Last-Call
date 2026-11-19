@@ -34,6 +34,7 @@ static const FWCLine GLines[] = {
 	{ TEXT("d_call1"), TEXT("Deputy Brandt"), TEXT("Mrs. Harrow?"), 0 },
 	{ TEXT("d_call2"), TEXT("Deputy Brandt"), TEXT("Hello? ...Anybody home?"), 0 },
 	{ TEXT("d_call3"), TEXT("Deputy Brandt"), TEXT("Mrs. Harrow, it's the sheriff's office. Can you hear me?"), 0 },
+	{ TEXT("d_shedcall"), TEXT("Deputy Brandt"), TEXT("Mrs. Harrow? ...Is that you?"), 0 },
 	{ TEXT("d_foyer"), TEXT("Deputy Brandt"), TEXT("God, that smell. ...Mrs. Harrow? Deputy Brandt, sheriff's office."), 0 },
 	{ TEXT("d_table"), TEXT("Deputy Brandt"), TEXT("Table's set for four. This food's been sitting here for months."), 0 },
 	{ TEXT("d_phonecord"), TEXT("Deputy Brandt"), TEXT("Cord's cut clean through. Nobody called anybody on this."), 0 },
@@ -138,8 +139,8 @@ static bool IsMuted(FName Id)
 {
 	// 2026-11-19: only what he says to dispatch and to Edith is left.  Remarks to himself, about what he finds or what it
 	// means, are all gone (voice and subtitle).
-	static const TSet<FName> Muted = { TEXT("d_locked"), TEXT("d_cellar_locked"), TEXT("d_window"), TEXT("d_backdoor"), TEXT("d_table"), TEXT("d_photos"),
-		TEXT("d_foyer"), TEXT("d_wayout"), TEXT("d_drawer"), TEXT("d_sitting"), TEXT("d_kidsdoor"), TEXT("d_musicbox"), TEXT("d_prayer"), TEXT("d_ring"),
+	static const TSet<FName> Muted = { TEXT("d_locked"), TEXT("d_cellar_locked"), TEXT("d_window"), TEXT("d_backdoor"), TEXT("d_table"),
+		TEXT("d_wayout"), TEXT("d_drawer"), TEXT("d_sitting"), TEXT("d_kidsdoor"), TEXT("d_musicbox"), TEXT("d_prayer"), TEXT("d_ring"),
 		TEXT("d_attic"), TEXT("d_after_attic"), TEXT("d_cellar"), TEXT("d_shelf"), TEXT("d_dawn"), TEXT("d_need"), TEXT("d_leave_early"), TEXT("d_phone_ring"),
 		TEXT("d_phonecord"), TEXT("d_masterempty"), TEXT("d_doorstuck"), TEXT("d_getup1b"), TEXT("d_getup2"), TEXT("d_tags") };
 	return Muted.Contains(Id);
@@ -196,6 +197,11 @@ void AWCDirector::ApplyWorldState()
 	ShowTagged(TEXT("Show_desk"), Has(TEXT("desk_open")) && !HasItem(TEXT("key_ell")));
 	ShowTagged(TEXT("Show_jewel"), Has(TEXT("box_open")));
 	ShowTagged(TEXT("Show_vent"), Has(TEXT("vent_open")));
+	ShowTagged(TEXT("Show_trash"), Has(TEXT("tape1_taken")));
+	ShowTagged(TEXT("Hide_trash"), !Has(TEXT("tape1_taken")));
+	ShowTagged(TEXT("Show_framefall"), Has(TEXT("frame_fell")));
+	ShowTagged(TEXT("Hide_framefall"), !Has(TEXT("frame_fell")));
+	if (AWCInteractable* Fr = Thing(TEXT("frame"))) Fr->bEnabled = Has(TEXT("frame_fell")) && !Has(TEXT("frame_seen"));
 	ShowTagged(TEXT("Show_ventkey"), Has(TEXT("vent_open")) && !HasItem(TEXT("doll")) && !HasItem(TEXT("doll_empty")) && !Has(TEXT("doll_opened")));
 	if (AWCInteractable* Vt = Thing(TEXT("vent"))) { Vt->SetActorHiddenInGame(Has(TEXT("vent_open"))); Vt->SetActorEnableCollision(!Has(TEXT("vent_open"))); Vt->bEnabled = !Has(TEXT("vent_open")); }
 	ShowTagged(TEXT("Show_jeweleye"), Has(TEXT("box_open")) && !HasItem(TEXT("keep_eye")) && !Has(TEXT("eye_given")));
@@ -290,7 +296,7 @@ void AWCDirector::DriveDone()
 	After(bAuto ? 0.5f : T, [this]()
 	{
 		// the test bot goes straight in; a person looks round the outside first
-		if (bAuto && !FParse::Param(FCommandLine::Get(), TEXT("WCOutside"))) { Set(TEXT("shed_seen")); Set(TEXT("back_tried")); Set(TEXT("knocked_first")); SetObjective(TEXT("Check on Edith Harrow")); }
+		if (bAuto && !FParse::Param(FCommandLine::Get(), TEXT("WCOutside"))) { Set(TEXT("shed_seen")); Set(TEXT("back_tried")); Set(TEXT("knocked_first")); Set(TEXT("tape1_taken")); SetObjective(TEXT("Check on Edith Harrow")); }
 		else SetObjective(TEXT("Check on Edith Harrow. Take a look round the outside first."));
 		Set(TEXT("briefed"));
 	});
@@ -322,10 +328,9 @@ void AWCDirector::OutsideProgress()
 {
 	if (Has(TEXT("inside"))) return;
 	const bool bShed = Has(TEXT("shed_seen")), bBack = Has(TEXT("back_tried"));
-	if (bShed && bBack) SetObjective(TEXT("Go back round to the front door"));
-	else if (Has(TEXT("knocked_first")) && !bShed && !bBack) SetObjective(TEXT("No answer. Look round the back of the house."));
-	else if (bShed) SetObjective(TEXT("Try the back door"));
-	else if (bBack) SetObjective(TEXT("Look in the shed"));
+	if (Has(TEXT("tape1_taken"))) SetObjective(TEXT("Go back round to the front door"));
+	else if (bShed) SetObjective(TEXT("Search the shed"));
+	else if (Has(TEXT("knocked_first"))) SetObjective(bBack ? TEXT("Look in the shed") : TEXT("No answer. Look round the back of the house."));
 	UE_LOG(LogWCStory, Display, TEXT("WCOUTSIDE t=%.1f shed %d back door %d"), PlaySeconds, bShed ? 1 : 0, bBack ? 1 : 0);
 }
 
@@ -339,6 +344,34 @@ void AWCDirector::StoryEvent(FName Id)
 	if (Is(Id, TEXT("trig:t_yard_edge")))
 	{
 		if (!Has(TEXT("dawn")) && Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 12.0; Feedback(TEXT("Not yet.")); }
+		return;
+	}
+	// the tape on the shed bench: taking it is what brings the trash can over behind him, and what opens the house
+	if (Is(Id, TEXT("take:tape1")) && !Has(TEXT("tape1_taken")))
+	{
+		Set(TEXT("tape1_taken"));
+		Set(TEXT("shed_seen"));
+		UE_LOG(LogWCStory, Display, TEXT("WCTAPE t=%.1f the shed tape is taken"), PlaySeconds);
+		After(1.2f, [this]()
+		{
+			ApplyWorldState();                                   // the can is on its side now, its trash across the ground
+			PlayAt(TEXT("trash_crash"), Pos(TEXT("TrashPoint")), 1.f, 1.f, 8000.f);
+			if (AWCCharacter* Pl = Player()) Pl->AddShake(0.35f);
+			Tension = FMath::Max(Tension, 0.5f);
+			const float T = Say(TEXT("d_shedcall"), 2.6f);
+			After(T + 1.2f, [this]() { OutsideProgress(); });
+		});
+		return;
+	}
+	if (Is(Id, TEXT("use:frame")))
+	{
+		if (!Has(TEXT("frame_seen")))
+		{
+			Set(TEXT("frame_seen"));
+			Play2D(TEXT("pickup"), 0.5f, EWCSnd::SFX, 0.8f);
+			Say(TEXT("d_photos"), 0.7f);
+			ApplyWorldState();
+		}
 		return;
 	}
 	if (Is(Id, TEXT("trig:t_shed")) && !Has(TEXT("shed_seen")))
@@ -359,7 +392,7 @@ void AWCDirector::StoryEvent(FName Id)
 		}
 		return;
 	}
-	if (Is(Id, TEXT("locked:front")) && !Has(TEXT("inside")) && !(Has(TEXT("shed_seen")) && Has(TEXT("back_tried"))))
+	if (Is(Id, TEXT("locked:front")) && !Has(TEXT("inside")) && !Has(TEXT("tape1_taken")))
 	{
 		// the first knock: nobody comes.  The one lit window goes dark.
 		if (!Has(TEXT("knocked_first")))
@@ -418,7 +451,7 @@ void AWCDirector::StoryEvent(FName Id)
 					return;
 	}
 	if (Is(Id, TEXT("trig:t_dining")) && !Has(TEXT("seen_dining"))) { Set(TEXT("seen_dining")); Say(TEXT("d_table"), 1.5f); return; }
-	if (Is(Id, TEXT("trig:t_living")) && !Has(TEXT("seen_living"))) { Set(TEXT("seen_living")); Say(TEXT("d_photos"), 2.5f); return; }
+	if (Is(Id, TEXT("trig:t_living")) && !Has(TEXT("seen_living"))) { Set(TEXT("seen_living")); return; }       // (his line about the photographs is said over the fallen frame now)
 	if (Is(Id, TEXT("use:phone")) && !Has(TEXT("phone_ringing")) && !Has(TEXT("phone_done")))
 	{
 		if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 8.0; Say(TEXT("d_phonecord")); Set(TEXT("seen_phone")); }

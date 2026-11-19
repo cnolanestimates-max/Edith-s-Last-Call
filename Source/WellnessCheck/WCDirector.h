@@ -283,6 +283,8 @@ private:
 	double CueFreeAt = 0.0, WhisperAt = -1.0;
 	void FinaleDawn();
 	int32 DoorEvents = 0, CallStep = 0;
+	int32 TVWant = 0;                                          // the tape he has just put in (0 = none)
+	// (the recorder is part of the television's own model)
 	double NextDoorAt = -1.0;
 	bool bDev = false;
 	// the eye in the dark (S14)
