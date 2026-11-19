@@ -8,7 +8,11 @@
 #include "WCWorld.h"
 
 #include "EngineUtils.h"
+#include "AudioMixerBlueprintLibrary.h"
+#include "Components/AudioComponent.h"
+#include "Components/InstancedStaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
+#include "Engine/StaticMeshActor.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -40,6 +44,27 @@ void AWCDirector::AutoBegin()
 	auto WaitHer = [this](float Timeout) { AutoSteps.Add({ A_WaitHer, NAME_None, Timeout }); };
 	auto Fire = [this](int32 N) { AutoSteps.Add({ A_Fire, NAME_None, (float)N }); };
 
+	if (FParse::Param(FCommandLine::Get(), TEXT("WCArrivalCheck")))
+	{
+		Steps.Reset();
+		if (AWCCharacter* Pl = Player()) Pl->SetInputLocked(false);
+		Fade = FadeTarget = 0.f;
+		AutoShotDir = FPaths::ConvertRelativePathToFull(AutoShotDir);
+		IFileManager::Get().MakeDirectory(*AutoShotDir, true);
+		auto Do = [this](const TCHAR* Cmd) { AutoSteps.Add({A_Do, Cmd, 0.f}); };
+		Do(TEXT("check_yard_paths")); Do(TEXT("record_mix")); Do(TEXT("at:-535,-653,52,-38,-19")); Wait(2.f); Shot(TEXT("left_approach"));
+		Do(TEXT("at:-280,992,52,0,-18")); Wait(1.f); Shot(TEXT("right_approach"));
+		Do(TEXT("at:3750,-747,59,164,-8")); Wait(1.f); Do(TEXT("take_tape")); Wait(5.f);
+		Do(TEXT("at:3066,-413,51,122,-35")); Wait(.7f); Shot(TEXT("flies_a")); Wait(.15f); Shot(TEXT("flies_b"));
+		Do(TEXT("at:-90,0,94,0,0")); Wait(.6f); Do(TEXT("mix_check"));
+		Do(TEXT("at:100,0,94,0,0")); Wait(.8f); Do(TEXT("mix_check"));
+		Do(TEXT("at:-90,0,94,0,0")); Wait(.3f); Do(TEXT("mix_check"));
+		Do(TEXT("at:330,30,94,0,0")); Wait(1.f); Do(TEXT("mix_check"));
+		Do(TEXT("at:716,390,442,-90,-44")); AutoSteps.Add({A_Look,TEXT("pick_screwdriver"),-1.f}); Wait(.35f);
+		Shot(TEXT("screwdriver_focus")); Do(TEXT("use_screwdriver_pickup")); Wait(1.f);
+		Do(TEXT("finish_mix")); Wait(2.f);
+		AutoIndex=0; AutoStepStart=Clock; return;
+	}
 	if (FParse::Param(FCommandLine::Get(), TEXT("WCTour")))
 	{
 		// screenshot tour: stand at every point tagged "Tour" with the flashlight on
@@ -656,6 +681,38 @@ void AWCDirector::AutoTick(float Dt)
 			Settings.BeamChoice = FMath::RoundToInt(S.F);
 			P->ApplyBeamWidth();
 		}
+		else if (S.Arg == TEXT("check_yard_paths"))
+		{
+			FCollisionQueryParams Query(SCENE_QUERY_STAT(WCYardAccess), false, P);
+			for (TActorIterator<AStaticMeshActor> It(GetWorld()); It; ++It)
+			{
+				if (!It->ActorHasTag(TEXT("YardTrail"))) continue;
+				const FVector Mid = It->GetActorLocation() + FVector(0, 0, 93);
+				const FVector Along = It->GetActorForwardVector() * FMath::Max(1., It->GetActorScale3D().X * 50. - 26.);
+				FHitResult Hit;
+				const bool Blocked = GetWorld()->SweepSingleByChannel(Hit, Mid-Along, Mid+Along, FQuat::Identity, ECC_Pawn,
+					FCollisionShape::MakeCapsule(30.f, 88.f), Query);
+				UE_LOG(LogWCAuto, Display, TEXT("WCWALK %s hit=%s"), *It->Tags.Last().ToString(), Blocked && Hit.GetActor() ? *Hit.GetActor()->GetActorNameOrLabel() : TEXT("clear"));
+			}
+		}
+		else if (S.Arg == TEXT("record_mix")) UAudioMixerBlueprintLibrary::StartRecordingOutput(this, 30.f);
+		else if (S.Arg == TEXT("finish_mix")) UAudioMixerBlueprintLibrary::StopRecordingOutputToAnyPath(this, EAudioRecordingExportType::WavFile, TEXT("arrival_mix"), AutoShotDir);
+		else if (S.Arg == TEXT("take_tape")) Event(TEXT("take:tape1"));
+		else if (S.Arg == TEXT("mix_check"))
+		{
+			int32 Active = 0;
+			for (TObjectIterator<UAudioComponent> It; It; ++It)
+				if (It->GetWorld() == GetWorld() && It->IsPlaying() && It->ComponentHasTag(TEXT("HouseAudio"))) ++Active;
+			const FLoop* Bed = Loops.Find(TEXT("amb"));
+			UE_LOG(LogWCAuto, Display, TEXT("WCARRIVAL x=%.0f bed=%s houseSources=%d smellPending=%d"), P->GetActorLocation().X,
+				Bed ? *Bed->Name : TEXT("none"), Active, Has(TEXT("smell_pending")));
+		}
+		else if (S.Arg == TEXT("use_screwdriver_pickup"))
+		{
+			const AWCInteractable* Target = P->GetFocus();
+			if (Target && Target->WCId == TEXT("pick_screwdriver")) P->DoInteract();
+			UE_LOG(LogWCAuto, Display, TEXT("WCARRIVAL standing pickup focus=%s inventory=%d"), Target ? *Target->WCId.ToString() : TEXT("none"), HasItem(TEXT("screwdriver")));
+		}
 		else if (S.Arg == TEXT("check_book_focus"))
 		{
 			const AWCInteractable* Focused = P->GetFocus();
@@ -735,6 +792,26 @@ void AWCDirector::AutoTick(float Dt)
 		Next(); return;
 	case A_Light: if (!P->IsFlashlightOn()) P->ToggleFlashlight(); Next(); return;
 	case A_Shot:
+		if (S.Arg == TEXT("flies_a") || S.Arg == TEXT("flies_b"))
+		{
+			TArray<UInstancedStaticMeshComponent*> Clouds;
+			P->GetComponents(Clouds);
+			Clouds.Add(Flies);
+			for (UInstancedStaticMeshComponent* Cloud : Clouds)
+			{
+				if (!Cloud || !Cloud->GetStaticMesh() || !Cloud->GetInstanceCount()) continue;
+				int32 NearbyInView = 0;
+				FTransform T, First;
+				Cloud->GetInstanceTransform(0, First, true);
+				for (int32 i = 0; i < Cloud->GetInstanceCount(); ++i)
+				{
+					Cloud->GetInstanceTransform(i, T, true);
+					const FVector Delta = T.GetLocation() - P->EyeLocation();
+					if (Delta.SizeSquared() < FMath::Square(250.f) && FVector::DotProduct(Delta.GetSafeNormal(), P->EyeForward()) > .85f) ++NearbyInView;
+				}
+				UE_LOG(LogWCAuto, Display, TEXT("WCPARTICLES %s mesh=%s instances=%d nearbyInView=%d first=%s"), *S.Arg.ToString(), *Cloud->GetStaticMesh()->GetName(), Cloud->GetInstanceCount(), NearbyInView, *First.GetLocation().ToCompactString());
+			}
+		}
 		if (!AutoShotDir.IsEmpty())
 		{
 			FScreenshotRequest::RequestScreenshot(AutoShotDir / (S.Arg.ToString() + TEXT(".png")), false, false);

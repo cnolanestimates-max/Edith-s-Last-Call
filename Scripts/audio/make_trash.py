@@ -1,42 +1,38 @@
-"""The bin going over (Cheyenne, 2026-11-19 21:31 UTC: "the loud sound, banging sound, clanging sound of a big trash
-can ... a loud knocking over with it skittering").  ffmpeg only, from the Open Game SFX library (Kenney packs, CC0).
+"""Master the rear bin from two isolated takes in 344 Audio's metal impact recording."""
+from pathlib import Path
+import subprocess
+import tempfile
+import zipfile
 
-  trash_crash   one heavy hollow hit as the bin lands (wood and punch pitched far down), the lid slapping the ground, a
-                clang of everything metal in it, bottles, then four seconds of cans and lids skittering away over the
-                dirt and settling.  Mastered hot (-9 LUFS): it is the first thing in the game meant to make him jump.
-The heavy feet running off afterwards are the game's own her_step, played along the back of the house (WCStory.cpp)."""
-import os, subprocess
-
-A = "C:/GameDev/Unreal/WellnessCheck/SourceArt/Audio"
-K = "C:/Users/cheye/OneDrive/Documents/ChatGPT/forklight-tts/Open Game SFX - WAV Library/WAV Files"
-I = K + "/Impacts and Footsteps/"
-R = K + "/RPG Audio/"
+AUDIO = Path(__file__).resolve().parents[2] / "SourceArt/Audio"
+MEMBER = "344 Audio - Haunting Ambiences Vol. 3/METLImpt_Metal Bangs, Metal Hits, Banging On Doors_344 Audio_Haunting Ambiences Vol 3.wav"
 
 
-def ff(args):
-    subprocess.run(["ffmpeg", "-nostdin", "-v", "error", "-y"] + args, check=True, stdin=subprocess.DEVNULL)
+def build():
+    with tempfile.TemporaryDirectory() as tmp:
+        source = next((AUDIO / "raw_lib").glob("METLImpt_Metal_Bangs*"), None)
+        if not source:
+            library = Path.home() / "OneDrive/Documents/ChatGPT/forklight-tts"
+            with zipfile.ZipFile(library / "Sonniss.com-GDC2026-GameAudioBundle1of5.zip") as archive:
+                source = Path(tmp) / "metal.wav"
+                source.write_bytes(archive.read(MEMBER))
+        filters = ("[0:a]aformat=sample_rates=48000:channel_layouts=mono,asetrate=43200,aresample=48000,"
+                   "highpass=f=42,lowpass=f=5100,equalizer=f=160:t=q:w=1:g=3,afade=t=out:st=0.62:d=0.22[body];"
+                   "[1:a]aformat=sample_rates=48000:channel_layouts=mono,highpass=f=400,lowpass=f=4200,"
+                   "volume=.40,afade=t=out:st=0.28:d=0.17,adelay=245[lid];"
+                   "[body][lid]amix=inputs=2:normalize=0,alimiter=limit=.78:level=0:latency=1")
+        # Set gain against the measured PCM peak, keeping the impact's original dynamics.
+        intermediate = Path(tmp) / "bin.wav"
+        subprocess.run(["ffmpeg","-nostdin","-v","error","-y","-ss","16.878","-t","0.79","-i",str(source),
+                        "-ss","28.171","-t","0.48","-i",str(source),"-filter_complex",filters,
+                        "-ar","48000","-ac","1",str(intermediate)],check=True)
+        import array, wave
+        with wave.open(str(intermediate)) as f:
+            samples = array.array("h", f.readframes(f.getnframes()))
+        gain = .73 * 32768 / max(map(abs, samples))
+        subprocess.run(["ffmpeg","-nostdin","-v","error","-y","-i",str(intermediate),"-af",f"volume={gain}",
+                        "-c:a","pcm_s16le",str(AUDIO/"trash_crash.wav")],check=True)
 
 
-parts = [  # (file, delay ms, gain, pitch)
-    (I + "impactWood heavy 002.wav", 0, 1.6, 0.34), (I + "impactPunch heavy 001.wav", 0, 1.4, 0.40), (I + "impactSoft heavy 003.wav", 20, 1.2, 0.45),      # the body of it landing
-    (I + "impactMetal heavy 002.wav", 30, 1.3, 0.50), (I + "impactMetal heavy 004.wav", 110, 1.1, 0.62), (I + "impactBell heavy 001.wav", 60, 0.35, 0.55),   # the clang
-    (I + "impactPlate heavy 000.wav", 260, 1.0, 0.55), (I + "impactWood heavy 000.wav", 300, 0.9, 0.5),                                                   # the lid, flat on the ground
-    (R + "metalPot1.wav", 180, 0.9, 0.55), (R + "metalPot2.wav", 420, 0.8, 0.62), (I + "impactTin medium 001.wav", 520, 0.9, 0.8),
-    (I + "impactGlass heavy 001.wav", 380, 0.7, 0.85), (I + "impactGlass medium 002.wav", 640, 0.5, 0.95), (I + "impactGlass light 003.wav", 900, 0.4, 1.05),
-]
-# the skitter: tins and lids rolling off and coming to rest, quicker at first, then spaced out
-t = 700
-for k in range(18):
-    f = I + ("impactTin medium %03d.wav" % (k % 5) if k % 3 else "impactMetal light %03d.wav" % (k % 5))
-    parts.append((f, t, max(0.16, 0.75 - 0.035 * k), 0.85 + 0.03 * (k % 6)))
-    t += 110 + 22 * k
-args, chains, names = [], [], []
-for i, (f, d, g, p) in enumerate(parts):
-    args += ["-i", f]
-    chains.append(f"[{i}:a]aformat=sample_rates=48000:channel_layouts=mono,asetrate=48000*{p},aresample=48000,volume={g},adelay={d}:all=1[a{i}]")
-    names.append(f"[a{i}]")
-chains.append("".join(names) + f"amix=inputs={len(parts)}:normalize=0,aecho=0.8:0.55:60|140|260:0.3|0.2|0.12,bass=g=4:f=70,apad=pad_dur=0.8,"
-              "acompressor=threshold=-18dB:ratio=4:attack=2:release=200:makeup=6,loudnorm=I=-9:TP=-0.8:LRA=14")
-ff(args + ["-filter_complex", ";".join(chains), "-ac", "1", "-ar", "48000", "-c:a", "pcm_s16le", f"{A}/trash_crash.wav"])
-r = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", f"{A}/trash_crash.wav"], capture_output=True, text=True)
-print("trash_crash", r.stdout.strip(), "s")
+if __name__ == "__main__":
+    build()

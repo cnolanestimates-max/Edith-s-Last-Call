@@ -30,15 +30,10 @@ Done this evening (all in the build; details further down and in `Scripts/tools/
   has only car foley; the other zips have nothing but a siren. The Fab inventory lists no vehicle audio: look on Fab for a
   free car or truck engine pack (she asked), or ask her to pick one. In game the engine is full over the drone shot and
   0.30 in the cab (`TickDrive`), off on arrival.
-- **Night bed (22:12 UTC, quick fix at her request, unheard):** `amb_night.wav` is now the synthesized cricket bed at the
-  front with the old bed (the one with birds, kept as `Audio_unused/amb_night_birds.wav`) sixteen decibels under it, at the
-  same loudness as before (-27 LUFS). If birds are still too present, drop the `volume=0.16` on the old bed; if the
-  crickets sound thin, a real cricket and cicada recording is still wanted.
-- Fly buzz: now loops, with its own attenuation (silent beyond about nine metres). Before that, sixteen swarms at the
-  shared attenuation's floor were audible as crackle over the opening.
+- The aerial and cabin still use their original mix. From the car door onward, the yard uses the bird-free `amb_yard` insect and wind bed. Room tone and the sustained indoor score follow the listener across the threshold in either direction. Swarms are visual only.
 - Deputy lines re-levelled to -16 LUFS with a presence lift (`gen_vo.py`, the plain branch) and played at 1.0: his first
   lines were "low as hell" on her speakers.
-- Trash crash is -9 LUFS (2D at 1.0 plus positional at 0.45).
+- The bin plays one 0.88-second positional metal impact with a softer lid strike (-2.7 dBTP).
 
 **Not done / open:**
 - Photographs in frames (Codex): give them dates from `Docs/TIMELINE.md`. The falling frame still uses kit pieces.
@@ -123,11 +118,11 @@ Built from her 19:33 to 20:12 list (in the level and compiled unless marked):
   tape could not be taken). Check runs: `-WCOutside` (knock, shed, tape, bin, door), `-WCAutoStop=<flag>`.
   **Her screen shows my check runs**: she took the bot's shortcut for cut content. Say so before running one.
 - **Opening as she laid it out (pass 129):** knock (`d_knock`), "It's locked ... check around the side" (`d_side`), shed
-  tape, the bin goes over (`trash_crash` at -9 LUFS, 2D and at `TrashPoint`, shake, `her_step` running to `TrashRunTo`,
+  tape, the bin goes over (`trash_crash` once at `TrashPoint`, shake, five `step_gravel` footfalls toward `TrashRunTo`,
   `d_shedcall` terrified), back at the front `d_openup` and the door opens on its last words, then `d_dooropen`.
 - **The bin and the trash:** `Scripts/art/trash_models.py` (exec'd by `build_items_fine.py`): BigBin (full, lid thrown
   back), BigBinDown, and twelve kinds of rubbish; 44 pieces fanned out in `exterior.py` plus kit props. Flies at the bin
-  and at every toilet and sink; `flies_buzz` now loops (it was silent after six seconds).
+  and at every toilet and sink; the swarms use instanced winged flies.
 - **Engine:** `Scripts/audio/make_engine.py`: a real V8 at low speed (SoundBits "Mad Mustang Mercury", Sonniss bundle 5,
   royalty-free), -15 LUFS, 100 s loop; old file in `Audio_unused/amb_car_old.wav`.
 - **1990s:** the night is Tuesday, November 9, 1993. All dates are in `Docs/TIMELINE.md` (the single source: notes.json,

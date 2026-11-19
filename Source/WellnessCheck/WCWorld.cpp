@@ -301,7 +301,7 @@ void AWCWatcher::Withdraw(bool bQuiet)
 	LeaveT = 0.f;
 	if (AWCDirector* D = AWCDirector::Get(this))
 	{
-		if (!bQuiet) D->PlayAt(Kind == 0 ? TEXT("skitter") : TEXT("scratch_wall"), Home, 0.9f, Kind == 0 ? 1.f : 1.2f, 1400.f);
+		if (!bQuiet && Kind != 0) D->PlayAt(TEXT("scratch_wall"), Home, 0.9f, 1.2f, 1400.f);
 		if (!bScripted) D->Event(FName(*FString::Printf(TEXT("watcher:%s"), *WCId.ToString())));
 	}
 }

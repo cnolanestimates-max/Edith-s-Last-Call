@@ -200,8 +200,8 @@ void AWCCharacter::BeginPlay()
 		if (FParse::Value(FCommandLine::Get(), TEXT("WCHand="), V, false)) Apply(FlashHand, V);
 		if (FParse::Value(FCommandLine::Get(), TEXT("WCGun="), V, false)) Apply(Gun, V);
 	}
-	UStaticMesh* Mote = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Sphere.Sphere"));
-	UMaterialInterface* MoteMat = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/WC/Materials/M_Dust.M_Dust"));
+	UStaticMesh* Mote = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Plane.Plane"));
+	UMaterialInterface* MoteMat = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/WC/Materials/M_DriftingDust.M_DriftingDust"));
 	if (Mote)
 	{
 		Dust->SetStaticMesh(Mote);
@@ -213,7 +213,7 @@ void AWCCharacter::BeginPlay()
 			const FVector P = C + FVector(R.FRandRange(-DustBox, DustBox), R.FRandRange(-DustBox, DustBox), R.FRandRange(-120.f, 150.f));
 			DustPos.Add(P);
 			DustVel.Add(FVector(R.FRandRange(-2.f, 2.f), R.FRandRange(-2.f, 2.f), R.FRandRange(-1.6f, 0.6f)));
-			const float S = R.FRandRange(0.0022f, 0.0058f);
+			const float S = R.FRandRange(.010f, .026f);
 			Dust->AddInstance(FTransform(FQuat::Identity, P, FVector(S)), true);
 		}
 	}
@@ -468,29 +468,31 @@ void AWCCharacter::TickDust(float Dt)
 	const FVector C = Cam->GetComponentLocation();
 	const int32 N = DustPos.Num();
 	// a slice per frame is enough: motes barely move
-	static int32 Cursor = 0;
+	const FQuat Facing = FRotationMatrix::MakeFromZ(-Cam->GetForwardVector()).ToQuat();
 	const int32 Slice = 65;
 	for (int32 k = 0; k < Slice; ++k)
 	{
-		const int32 i = (Cursor + k) % N;
+		const int32 i = (DustCursor + k) % N;
 		FVector& P = DustPos[i];
-		P += DustVel[i] * Dt * (float)N / (float)Slice;
+		const float Time = GetWorld()->GetTimeSeconds();
+		const FVector Drift = DustVel[i] + FVector(FMath::Sin(Time * .47f + i), FMath::Cos(Time * .31f + i), FMath::Sin(Time * .26f + i));
+		P += Drift * Dt * (float)N / (float)Slice;
 		bool bWrap = false;
 		for (int32 a = 0; a < 3; ++a)
 		{
 			const float Half = a == 2 ? 140.f : DustBox;
 			const float D = P[a] - C[a];
-			if (D > Half) { P[a] -= 2.f * Half; bWrap = true; }
-			else if (D < -Half) { P[a] += 2.f * Half; bWrap = true; }
+			if (FMath::Abs(D) > Half) { P[a] -= 2.f * Half * FMath::FloorToDouble((D + Half) / (2.f * Half)); bWrap = true; }
 		}
 		FTransform T;
 		Dust->GetInstanceTransform(i, T, true);
+		T.SetRotation(Facing);
 		T.SetLocation(P);
 		// (never bMarkRenderStateDirty here: it rebuilds the whole proxy every frame, and that crashed; see fix_pass126.py)
 		Dust->UpdateInstanceTransform(i, T, true, false, bWrap);
 
 	}
-	Cursor = (Cursor + Slice) % N;
+	DustCursor = (DustCursor + Slice) % N;
 }
 
 void AWCCharacter::Tick(float Dt)

@@ -65,10 +65,6 @@ GEN = {
     "car_door": (2, "A car door shutting outdoors at night on a quiet country road, no music"),
     "pickup": (1, "Picking up a small metal object from a wooden table, soft clink, " + DRY),
     "paper": (1, "Unfolding an old brittle sheet of paper, " + DRY),
-    "amb_night": (20, "A quiet rural night outdoors, soft wind in bare trees, a few distant crickets, far off owl, no music, no voices"),
-    "amb_house": (20, "The inside of an empty old wooden house at night, near silent room tone, faint wind outside, a clock ticking very faintly, no music, no voices"),
-    "amb_cellar": (20, "A damp stone cellar, low rumbling room tone, slow water drips echoing, no music, no voices"),
-    "amb_dawn": (20, "Early morning in the countryside, gentle dawn birdsong, light breeze, peaceful, no music, no voices"),
     "flies_buzz": (6, "A swarm of houseflies buzzing around rotting food, close, constant, no music, no voices"),
     "radio_click": (1, "A police radio squelch click and short burst of static, dry"),
     "radio_static": (4, "Police radio static hiss with crackles and faint warbling interference, no voices, no music"),
@@ -96,7 +92,6 @@ MUSIC = {
     "music_finale": ("Gathering Darkness - Kevin MacLeod.mp3", 0, None, "\"Gathering Darkness\" Kevin MacLeod (incompetech.com), CC BY 4.0"),
     "music_dawn": ("Sanctuary - Scott Buckley.mp3", 0, None, "\"Sanctuary\" Scott Buckley (scottbuckley.com.au), CC BY 4.0"),
 }
-LOOPS = {"flies_buzz", "amb_night", "amb_house", "amb_cellar", "amb_dawn", "phone_ring", "musicbox"}
 STEREO = {"amb_night", "amb_house", "amb_cellar", "amb_dawn", "sting_hit", "sting_low", "sting_rise", "sting_soft"} | set(MUSIC)
 LEVEL = {"amb_night": -30, "amb_house": -34, "amb_cellar": -30, "amb_dawn": -28, "musicbox": -24, "her_breath": -22, "whisper_far_01": -26,
          "whisper_far_02": -26, "music_drone": -27, "music_menu": -22, "music_finale": -20, "music_dawn": -21, "paper": -24, "pickup": -24,
@@ -142,7 +137,7 @@ def process(name, src, start=0.0, length=None):
     pre = ["-ss", str(start)] if start else []
     if length:
         pre += ["-t", str(length)]
-    if name in LOOPS or name.startswith("music_"):
+    if name.startswith(("amb_", "music_")):
         # loops: equal-power crossfade of the tail into the head so the seam is silent
         tmp = f"{RAW}/_loop_{name}.wav"
         ff(pre + ["-i", src, "-ac", ch, "-ar", "48000", tmp])
@@ -209,7 +204,16 @@ def main():
         else:
             print("  missing music", f)
     credits += ["", "## Voices", "Dialogue generated with Google Gemini TTS (see VO/_manifest.json). Radio and phone treatment: Cheyenne's Forklight Voice Effects v1 (voice_effects.py).", ""]
-    open(OUT + "/AUDIO_CREDITS.md", "w", encoding="utf-8").write("\n".join(credits))
+    # Later mastering passes maintain their own credit sections below Voices.
+    credit_file = os.path.join(OUT, "AUDIO_CREDITS.md")
+    if os.path.exists(credit_file):
+        with open(credit_file, encoding="utf-8") as prior:
+            voices = prior.read().partition("\n## Voices\n")[2]
+            extra = voices.partition("\n## ")[2]
+            if extra:
+                credits.append("## " + extra)
+    with open(credit_file, "w", encoding="utf-8") as out:
+        out.write("\n".join(credits))
     print(f"processed {done}; failed: {failed}")
 
 

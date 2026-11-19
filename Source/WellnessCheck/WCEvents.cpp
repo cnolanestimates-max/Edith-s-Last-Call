@@ -159,7 +159,7 @@ void AWCDirector::LeftScare()
 		AWCCharacter* Pl = Player();
 		return Pl ? Pl->GetActorLocation() - FRotator(0.f, Pl->GetControlRotation().Yaw, 0.f).Vector() * Dist + FVector(0, 0, Up) : FVector::ZeroVector;
 	};
-	SetLoop(TEXT("tick"), TEXT("clock_tick"), 0.55f, 4.f);
+	PlayAt(TEXT("clock_tick"), Behind(650.f, 20.f), 0.35f);
 	PlayAt(TEXT("whisper_far"), Behind(1300.f, 0.f), 0.6f, 1.f, 2600.f);
 	After(4.5f, [this, Behind]() { PlayAt(TEXT("whisper_far"), Behind(800.f, 0.f), 0.8f, 1.05f, 2200.f); });
 	After(8.0f, [this, Behind]() { PlayAt(TEXT("VO/m_left"), Behind(520.f, 20.f), 0.55f, 1.f, 1800.f); });
@@ -168,7 +168,6 @@ void AWCDirector::LeftScare()
 	// the beat: everything stops, even the clock
 	After(14.8f, [this]()
 	{
-		SetLoop(TEXT("tick"), TEXT(""), 0.f, 0.15f);
 		SetLoop(TEXT("amb"), TEXT(""), 0.f, 0.3f);
 		SetLoop(TEXT("music"), TEXT(""), 0.f, 0.3f);
 		for (TObjectIterator<UAudioComponent> It; It; ++It) if (It->GetWorld() == GetWorld() && It->Sound && It->Sound->GetName().Contains(TEXT("m_left"))) It->FadeOut(0.1f, 0.f);
@@ -681,12 +680,10 @@ namespace
 		// ---- the house only: before the thump
 		{ TEXT("enter:t_dining"), 1, TEXT("creak"), 0, 300.f, 600.f, 0.8f, 1.f, nullptr, 0 },
 		{ TEXT("enter:t_kitchen"), 1, TEXT(""), 0, 0.f, 0.f, 1.f, 1.f, nullptr, 5 },                    // something moves behind the wall vent
-		{ TEXT("use:vent"), 1, TEXT("skitter"), 2, 120.f, 220.f, 0.8f, 1.f, nullptr, 0 },
 		{ TEXT("enter:t_hall_mid"), 2, TEXT(""), 0, 0.f, 0.f, 1.f, 1.f, TEXT("locked_in"), 6 },          // a picture comes off the wall behind him
 		{ TEXT("enter:t_hall_mid"), 3, TEXT("steps_above"), 1, 100.f, 300.f, 0.9f, 1.f, nullptr, 0 },
 		{ TEXT("enter:t_dining"), 2, TEXT("thump_far"), 1, 200.f, 400.f, 0.9f, 0.95f, nullptr, 0 },
 		{ TEXT("enter:t_living"), 2, TEXT(""), 0, 0.f, 0.f, 1.f, 1.f, nullptr, 1 },
-		{ TEXT("enter:t_pantry"), 1, TEXT("skitter"), 2, 150.f, 300.f, 0.8f, 1.f, nullptr, 0 },
 		{ TEXT("enter:t_den"), 1, TEXT(""), 0, 0.f, 0.f, 1.f, 1.f, nullptr, 3 },
 		{ TEXT("enter:t_sickroom"), 1, TEXT("VO/m_hum"), 1, 200.f, 500.f, 0.45f, 1.f, TEXT("locked_in"), 0 },
 		{ TEXT("enter:t_up_landing"), 1, TEXT("house_groan"), 0, 500.f, 900.f, 0.9f, 1.f, nullptr, 0 },
@@ -703,7 +700,6 @@ namespace
 		{ TEXT("take:key_sitting"), 1, TEXT(""), 0, 0.f, 0.f, 1.f, 1.f, nullptr, 4 },
 		{ TEXT("door:sitting"), 1, TEXT("VO/m_laugh1"), 2, 250.f, 400.f, 0.5f, 1.f, nullptr, 0 },
 		{ TEXT("take:key_prayer"), 1, TEXT("thump_far"), 1, 200.f, 500.f, 0.9f, 1.f, nullptr, 0 },
-		{ TEXT("take:fuse"), 1, TEXT("skitter"), 2, 150.f, 260.f, 0.8f, 1.f, nullptr, 0 },
 		{ TEXT("enter:t_living"), 4, TEXT("scratch_wall"), 2, 200.f, 320.f, 0.9f, 0.85f, TEXT("phone_done"), 0 },
 		{ TEXT("enter:t_kitchen"), 5, TEXT("chair_scrape"), 3, 220.f, 320.f, 0.7f, 1.f, TEXT("phone_done"), 0 },
 		{ TEXT("enter:t_sitting"), 2, TEXT("VO/m_hum"), 2, 300.f, 500.f, 0.45f, 1.f, nullptr, 0 },
@@ -713,7 +709,6 @@ namespace
 		// ---- the back rooms upstairs, the attic, the cellar
 		{ TEXT("door:up_ell"), 1, TEXT("house_groan"), 0, 500.f, 900.f, 0.9f, 1.f, nullptr, 0 },
 		{ TEXT("enter:t_aide"), 1, TEXT("VO/m_laugh2"), 1, 300.f, 600.f, 0.5f, 1.f, nullptr, 0 },
-		{ TEXT("enter:t_bath2"), 1, TEXT("skitter"), 2, 150.f, 260.f, 0.8f, 1.f, nullptr, 0 },
 		{ TEXT("enter:t_up_ell"), 3, TEXT(""), 0, 0.f, 0.f, 1.f, 1.f, nullptr, 4 },
 		{ TEXT("enter:t_attic"), 1, TEXT("wind_gust"), 0, 600.f, 1000.f, 0.8f, 1.f, nullptr, 0 },
 		{ TEXT("take:key_cellar"), 1, TEXT("VO/m_moan2"), 1, 400.f, 800.f, 0.75f, 1.f, nullptr, 0 },
@@ -730,7 +725,7 @@ void AWCDirector::CueEvent(FName Id)
 	if (!(S.StartsWith(TEXT("enter:")) || S.StartsWith(TEXT("take:")) || S.StartsWith(TEXT("use:")) || S.StartsWith(TEXT("door:")))) return;
 	CueCount.FindOrAdd(Id) += 1;
 	AWCCharacter* P = Player();
-	if (!P || !Has(TEXT("inside")) || Has(TEXT("dawn")) || Has(TEXT("placed"))) return;
+	if (!P || SpaceAt(P->GetActorLocation()) == EListeningSpace::Exterior || !Has(TEXT("inside")) || Has(TEXT("dawn")) || Has(TEXT("placed"))) return;
 	// nothing over a staged moment, a hunt, or another of these
 	if (bBusy || bEventBusy || StalkState != 0 || Clock < CueFreeAt) return;
 	const int32 Count = CueCount[Id];
@@ -756,7 +751,7 @@ void AWCDirector::CueEvent(FName Id)
 		After(Rng.FRandRange(0.9f, 2.2f), [this, Sound, Vol, Pitch, Act, L, Off]()
 		{
 			AWCCharacter* Pl = Player();
-			if (!Pl || bBusy) return;
+			if (!Pl || bBusy || SpaceAt(Pl->GetActorLocation()) == EListeningSpace::Exterior) return;
 			if (!Sound.IsEmpty()) PlayAt(Sound, L + Off, Vol, Pitch * Rng.FRandRange(0.96f, 1.04f));
 			if (Act == 1)
 			{
@@ -779,7 +774,6 @@ void AWCDirector::CueEvent(FName Id)
 			else if (Act == 5)
 			{
 				const FVector Vp = Pos(TEXT("VentPoint"));
-				PlayAt(TEXT("skitter"), Vp, 1.f, 0.9f, 1600.f);
 				After(1.5f, [this, Vp]() { PlayAt(TEXT("scratch_wall"), Vp, 0.8f, 1.1f, 1600.f); });
 				After(2.3f, [this]() { if (!Has(TEXT("vent_seen")) && !bBusy) Feedback(TEXT("Something moved behind the wall vent.")); });
 			}
@@ -810,7 +804,7 @@ void AWCDirector::TickCues(float Dt)
 {
 	// the whispers, as they were: seldom, hers, only once the door has locked behind him (Cheyenne: "I like the whisper")
 	AWCCharacter* P = Player();
-	if (!P || !Has(TEXT("locked_in")) || Has(TEXT("dawn")) || Has(TEXT("placed"))) return;
+	if (!P || SpaceAt(P->GetActorLocation()) == EListeningSpace::Exterior || !Has(TEXT("locked_in")) || Has(TEXT("dawn")) || Has(TEXT("placed"))) return;
 	if (WhisperAt < 0.0) WhisperAt = Clock + Rng.FRandRange(300.f, 600.f);
 	if (Clock < WhisperAt || bBusy || bEventBusy || StalkState != 0 || Clock < CueFreeAt) return;
 	WhisperAt = Clock + Rng.FRandRange(420.f, 840.f);

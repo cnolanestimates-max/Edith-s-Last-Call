@@ -330,6 +330,7 @@ private:
 	FRotator CarHomeRot = FRotator::ZeroRotator;
 	TArray<FVector> NavPts;
 	double NextLightKill = 0.0;
+	double NextBoardCreak = 0.0;
 	int32 BuildStep = 0;
 	TWeakObjectPtr<AActor> RockActor;
 	double RockUntil = 0.0;
@@ -342,6 +343,10 @@ private:
 	void AutoTick(float Dt);
 	void AutoRoute(const FVector& From, const FVector& Goal, TArray<FVector>& Out);
 
+	enum class EListeningSpace : uint8 { Exterior, House, Cellar };
+	EListeningSpace ListeningSpace = EListeningSpace::Exterior;
+	static EListeningSpace SpaceAt(const FVector& Position);
+	void RefreshRoomTone(EListeningSpace Space);
 	void TickAudio(float Dt);
 	void TickLights(float Dt);
 	void TickFlies(float Dt);
@@ -364,7 +369,7 @@ private:
 	UPROPERTY(Transient) TMap<FString, TObjectPtr<USoundBase>> SoundCache;
 	TMap<FString, TArray<FString>> SoundVariants;
 	UPROPERTY(Transient) TObjectPtr<USoundAttenuation> Atten;
-	UPROPERTY(Transient) TObjectPtr<USoundAttenuation> FliesAtten;
+	UPROPERTY(Transient) TObjectPtr<USoundAttenuation> BinAtten;
 	TWeakObjectPtr<AWCEntity> HerActor;
 	TArray<TWeakObjectPtr<AWCTrigger>> Triggers;
 	TMap<FName, TWeakObjectPtr<AActor>> TagCache;

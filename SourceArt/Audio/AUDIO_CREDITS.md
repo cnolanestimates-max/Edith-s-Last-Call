@@ -3,7 +3,7 @@
 ## Generated
 Sound effects and ambiences named below were generated for this game with Higgsfield (Mirelo text-to-audio) on Cheyenne's paid plan; job ids are in raw/_jobs.json.
 
-amb_cellar, amb_dawn, amb_house, amb_night, body_fall, bulb_die, bullet_impact_01, car_door, chair_scrape, crawl_knocks, creak_01, creak_02, creak_03, creak_04, cut_rope, door_close_01, door_creak_long, door_locked_01, door_open_01, door_slam, door_unlock, drag_floor, flies_buzz, gun_empty, gun_reload, gun_shot, her_breath, her_scream_01, her_scream_02, her_scream_03, her_scream_short_01, her_scream_short_02, house_groan_01, house_groan_02, knock, knock_far_01, knock_far_02, musicbox, paper, phone_pickup, phone_ring, pickup, radio_click, radio_static, shelf_scrape, sting_hit, sting_low, sting_rise, sting_soft, thump_far_01, thump_far_02, thump_heavy, trunk_open, whisper_far_01, whisper_far_02
+amb_cellar, amb_house, amb_night, body_fall, bulb_die, bullet_impact_01, car_door, chair_scrape, crawl_knocks, creak_01, creak_02, creak_03, creak_04, cut_rope, door_close_01, door_creak_long, door_locked_01, door_open_01, door_slam, door_unlock, drag_floor, flies_buzz, gun_empty, gun_reload, gun_shot, her_breath, her_scream_01, her_scream_02, her_scream_03, her_scream_short_01, her_scream_short_02, house_groan_01, house_groan_02, knock, knock_far_01, knock_far_02, musicbox, paper, phone_pickup, phone_ring, pickup, radio_click, radio_static, shelf_scrape, sting_hit, sting_low, sting_rise, sting_soft, thump_far_01, thump_far_02, thump_heavy, trunk_open, whisper_far_01, whisper_far_02
 
 ## Kenney (CC0 1.0), from the Open Game SFX library
 
@@ -89,3 +89,8 @@ Dialogue generated with Google Gemini TTS (see VO/_manifest.json). Radio and pho
 - clock_tick: 344 Audio - Antique Clocks/CLOCKTick_Crooked Antique Clock_344 Audio_Antique Clocks.wav
 - bell_toll: Ivo Vicic - Church Bells/04 Church Bells, Near Distance, In Church Tower-3 Different Bell 02.wav (first stroke, pitched down)
 - tv_static: synthesised (noise, 60 Hz hum, line whine)
+
+## Yard and rear shed
+
+- `amb_yard` and `amb_dawn` are original synthesized wind and insect beds. `Scripts/audio/make_exterior_beds.py` masters both loops.
+- `trash_crash` uses two edited hits from 344 Audio, *Haunting Ambiences Vol. 3*, "Metal Bangs, Metal Hits, Banging On Doors." Source is the Sonniss GDC 2026 Game Audio Bundle 1 of 5, under the included GDC Game Audio license. The mastering recipe is in `Scripts/audio/make_trash.py`.

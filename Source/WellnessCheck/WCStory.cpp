@@ -242,11 +242,7 @@ void AWCDirector::ApplyWorldState()
 		}
 	}
 	if (AWCInteractable* Phone = Thing(TEXT("phone"))) Phone->bEnabled = !Has(TEXT("phone_done"));
-	const bool bIn = Has(TEXT("inside")) && !Has(TEXT("dawn"));
-	const bool bCellar = Has(TEXT("sprint_done")) && !Has(TEXT("dawn"));
-	SetLoop(TEXT("amb"), Has(TEXT("dawn")) ? TEXT("amb_dawn") : (bCellar ? TEXT("amb_cellar") : (bIn ? TEXT("amb_house") : TEXT("amb_night"))), 1.f, 3.f);
-	SetLoop(TEXT("drone"), bIn ? TEXT("music_drone") : TEXT(""), bIn ? 0.5f : 0.f, 4.f, EWCSnd::Music);
-		SetLoop(TEXT("low"), bIn ? TEXT("music_low") : TEXT(""), bIn ? 0.25f : 0.f, 6.f, EWCSnd::Music);
+	if (!bDriving && Player()) RefreshRoomTone(SpaceAt(Player()->GetActorLocation()));
 	SetLoop(TEXT("wind"), TEXT(""), 0.f, 2.f);          // the chimney-wind loop had a bump in it every few seconds: gone
 	SetLoop(TEXT("music"), TEXT(""), 0.f, 2.f, EWCSnd::Music);
 	if (AWCCharacter* P = Player()) P->SetGunAllowed(true);
@@ -362,18 +358,24 @@ void AWCDirector::StoryEvent(FName Id)
 		After(1.2f, [this]()
 		{
 			ApplyWorldState();                                   // the bin is over now, everything in it across the yard
-			// it is the first thing in the game that makes him jump: loud, everywhere, and it shakes him
-			Play2D(TEXT("trash_crash"), 1.f);
-			PlayAt(TEXT("trash_crash"), Pos(TEXT("TrashPoint")), 0.45f, 1.f, 9000.f);       // (the same sound twice at full would clip)
+			// One hollow impact at the bin, followed by retreating footsteps on the yard gravel.
+			PlayAt(TEXT("trash_crash"), Pos(TEXT("TrashPoint")), 0.95f);
 			if (AWCCharacter* Pl = Player()) Pl->AddShake(1.f);
 			After(0.45f, [this]() { if (AWCCharacter* Pl = Player()) Pl->AddShake(0.6f); });
 			Tension = 1.f;
 			// and whatever did it goes: heavy feet, fast, away along the back of the house and gone
 			const FVector From = Pos(TEXT("TrashPoint")), To = Pos(TEXT("TrashRunTo"));
 			if (!From.IsNearlyZero() && !To.IsNearlyZero())
-				for (int32 k = 0; k < 9; ++k) After(1.9f + k * 0.21f, [this, From, To, k]() { PlayAt(TEXT("her_step"), FMath::Lerp(From, To, k / 8.f) + FVector(0, 0, 10), 1.f - 0.07f * k, Rng.FRandRange(0.82f, 0.92f), 7000.f); });
+			{
+				const float Footfalls[] = {1.03f, 1.33f, 1.58f, 1.95f, 2.24f};
+				for (int32 k = 0; k < UE_ARRAY_COUNT(Footfalls); ++k)
+				{
+					const FVector At = FMath::Lerp(From, To, k / 4.f) + FVector(0, 0, 10);
+					After(Footfalls[k], [this, At, k]() { PlayAt(TEXT("step_gravel"), At, .78f - .11f * k, .86f, 2400.f); });
+				}
+			}
 			UE_LOG(LogWCStory, Display, TEXT("WCTRASH t=%.1f the bin goes over; something runs"), PlaySeconds);
-			const float T = Say(TEXT("d_shedcall"), 1.1f);
+			const float T = Say(TEXT("d_shedcall"), 2.6f);
 			After(T + 1.2f, [this]() { OutsideProgress(); });
 
 		});
@@ -466,7 +468,7 @@ void AWCDirector::StoryEvent(FName Id)
 			Set(TEXT("inside"));
 			InsideAt = PlaySeconds;
 			ApplyWorldState();
-			Say(TEXT("d_foyer"), 1.2f);
+			Set(TEXT("smell_pending"));
 			After(5.f, [this]() { SetObjective(TEXT("Search the house for Edith Harrow")); });
 			Checkpoint(TEXT("inside"));
 		}
@@ -765,9 +767,17 @@ void AWCDirector::StoryTick(float Dt)
 	AWCEntity* H = Her();
 	if (!P) return;
 
+	const EListeningSpace Space = SpaceAt(P->GetActorLocation());
+	const bool bIndoors = Space != EListeningSpace::Exterior;
+	if (!bDriving && Space != ListeningSpace) RefreshRoomTone(Space);
+	if (Has(TEXT("smell_pending")) && bIndoors && P->GetActorLocation().X >= 305.f && !bBusy)
+	{
+		Flags.Remove(TEXT("smell_pending"));
+		Say(TEXT("d_foyer"));
+	}
 	// (the house's own noises are no longer on a timer: each is set off by something he does.  WCEvents.cpp, TickCues)
 	// he calls out to her while he looks round, three times, before he has seen anything
-	if (Has(TEXT("inside")) && !Has(TEXT("heard_upstairs")) && !bBusy && CallStep < 3 && Clock > SpeechFreeAt)
+	if (bIndoors && Has(TEXT("inside")) && !Has(TEXT("heard_upstairs")) && !bBusy && CallStep < 3 && Clock > SpeechFreeAt)
 	{
 		static const float CallAt[3] = { 100.f, 235.f, 380.f };
 		static const TCHAR* CallId[3] = { TEXT("d_call1"), TEXT("d_call2"), TEXT("d_call3") };
@@ -783,8 +793,7 @@ void AWCDirector::StoryTick(float Dt)
 			else NextDoorAt = Clock + 6.0;
 		}
 	}
-	if (FLoop* Drone = Loops.Find(TEXT("drone"))) Drone->Target = Has(TEXT("inside")) && !Has(TEXT("dawn")) ? 0.30f + 0.30f * Tension : 0.f;
-	if (FLoop* Low = Loops.Find(TEXT("low"))) Low->Target = Has(TEXT("inside")) && !Has(TEXT("dawn")) ? 0.14f + 0.40f * Tension : 0.f;
+	if (FLoop* Drone = Loops.Find(TEXT("drone"))) Drone->Target = bIndoors && !Has(TEXT("dawn")) ? 0.24f + 0.20f * Tension : 0.f;
 	// tension eases back toward a floor that rises as the night goes on
 	{
 		const float Floor = Has(TEXT("sprint_done")) ? 0.6f : (Has(TEXT("lockin_done")) ? 0.45f : (Has(TEXT("peek_done")) ? 0.3f : (Has(TEXT("heard_upstairs")) ? 0.2f : 0.08f)));

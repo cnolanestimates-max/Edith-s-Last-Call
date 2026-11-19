@@ -153,10 +153,10 @@ void AWCDirector::BeginPlay()
 	for (TActorIterator<AWCEntity> It(GetWorld()); It; ++It) { HerActor = *It; break; }
 	for (TActorIterator<AWCTrigger> It(GetWorld()); It; ++It) Triggers.Add(*It);
 	// flies over everything that rots
-	if (UStaticMesh* FlyMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Sphere.Sphere")))
+	if (UStaticMesh* FlyMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Game/WC/Props/SM_HouseFly.SM_HouseFly")))
 	{
 		Flies->SetStaticMesh(FlyMesh);
-		if (UMaterialInterface* FlyMat = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/WC/Materials/M_Fly.M_Fly"))) Flies->SetMaterial(0, FlyMat);
+
 		for (TActorIterator<AActor> It(GetWorld()); It; ++It)
 		{
 			if (!It->ActorHasTag(TEXT("Flies"))) continue;
@@ -169,24 +169,9 @@ void AWCDirector::BeginPlay()
 				F.Freq = FVector(Rng.FRandRange(1.6f, 4.2f), Rng.FRandRange(1.6f, 4.2f), Rng.FRandRange(2.2f, 5.f));
 				F.Phase = FVector(Rng.FRandRange(0.f, 6.28f), Rng.FRandRange(0.f, 6.28f), Rng.FRandRange(0.f, 6.28f));
 				FlyData.Add(F);
-				Flies->AddInstance(FTransform(FQuat::Identity, F.Centre, FVector(0.0055f, 0.0035f, 0.0035f)), true);
+				Flies->AddInstance(FTransform(FQuat::Identity, F.Centre, FVector(.105f)), true);
 			}
-			// a loop, at the swarm: heard within about nine metres and not at all beyond.  (The shared attenuation never
-			// reaches silence, and sixteen swarms at its floor were a crackle over the whole opening.)
-			if (USoundBase* Buzz = Snd(TEXT("flies_buzz")))
-			{
-				if (!FliesAtten)
-				{
-					FliesAtten = NewObject<USoundAttenuation>(this);
-					FliesAtten->Attenuation.bAttenuate = true;
-					FliesAtten->Attenuation.bSpatialize = true;
-					FliesAtten->Attenuation.DistanceAlgorithm = EAttenuationDistanceModel::Linear;
-					FliesAtten->Attenuation.AttenuationShape = EAttenuationShape::Sphere;
-					FliesAtten->Attenuation.AttenuationShapeExtents = FVector(90.f);
-					FliesAtten->Attenuation.FalloffDistance = 800.f;
-				}
-				UGameplayStatics::SpawnSoundAtLocation(this, Buzz, C, FRotator::ZeroRotator, FMath::Max(0.8f * Vol(EWCSnd::SFX), 0.0001f), Rng.FRandRange(0.94f, 1.06f), 0.f, FliesAtten, nullptr, true);
-			}
+
 		}
 	}
 	for (TActorIterator<AActor> It(GetWorld()); It; ++It)
@@ -320,7 +305,11 @@ void AWCDirector::TickFlies(float Dt)
 			F.Radii.Y * (FMath::Sin(T * F.Freq.Y + F.Phase.Y) * 0.7f + FMath::Sin(T * F.Freq.Z * 1.9f + F.Phase.X) * 0.3f),
 			F.Radii.Z * FMath::Sin(T * F.Freq.Z + F.Phase.Z));
 		// (never bMarkRenderStateDirty here: it rebuilds the whole proxy every frame, and that crashed; see fix_pass126.py)
-		Flies->UpdateInstanceTransform(i, FTransform(FQuat::Identity, P, FVector(0.0055f, 0.0035f, 0.0035f)), true, false, true);
+		const FVector Velocity(
+			F.Radii.X * (.7f * F.Freq.X * FMath::Cos(T * F.Freq.X + F.Phase.X) + .69f * F.Freq.Y * FMath::Cos(T * F.Freq.Y * 2.3f + F.Phase.Z)),
+			F.Radii.Y * (.7f * F.Freq.Y * FMath::Cos(T * F.Freq.Y + F.Phase.Y) + .57f * F.Freq.Z * FMath::Cos(T * F.Freq.Z * 1.9f + F.Phase.X)),
+			F.Radii.Z * F.Freq.Z * FMath::Cos(T * F.Freq.Z + F.Phase.Z));
+		Flies->UpdateInstanceTransform(i, FTransform(Velocity.Rotation(), P, FVector(.09f + .006f * F.Freq.X)), true, false, false);
 
 	}
 }
@@ -679,6 +668,8 @@ UAudioComponent* AWCDirector::Play2D(const FString& Name, float Volume, EWCSnd C
 
 UAudioComponent* AWCDirector::PlayAt(const FString& Name, const FVector& Where, float Volume, float Pitch, float Radius)
 {
+	const bool bHouseSource = SpaceAt(Where) != EListeningSpace::Exterior;
+	if (bHouseSource && Player() && SpaceAt(Player()->GetActorLocation()) == EListeningSpace::Exterior) return nullptr;
 	USoundBase* S = Snd(Name);
 	if (!S) return nullptr;
 	static const bool bSndLogAt = FParse::Param(FCommandLine::Get(), TEXT("WCSndLog"));
@@ -701,11 +692,26 @@ UAudioComponent* AWCDirector::PlayAt(const FString& Name, const FVector& Where, 
 		Atten->Attenuation.OcclusionLowPassFilterFrequency = 1800.f;
 		Atten->Attenuation.OcclusionInterpolationTime = 0.3f;
 	}
-	return UGameplayStatics::SpawnSoundAtLocation(this, S, Where, FRotator::ZeroRotator, FMath::Max(Volume * Vol(EWCSnd::SFX), 0.0001f), Pitch, 0.f, Atten, nullptr, true);
+	USoundAttenuation* Profile = Atten;
+	if (Name == TEXT("trash_crash"))
+	{
+		if (!BinAtten)
+		{
+			BinAtten = DuplicateObject<USoundAttenuation>(Atten, this);
+			BinAtten->Attenuation.AttenuationShapeExtents = FVector(650.f);
+			BinAtten->Attenuation.FalloffDistance = 2400.f;
+		}
+		Profile = BinAtten;
+	}
+	UAudioComponent* Audio = UGameplayStatics::SpawnSoundAtLocation(this, S, Where, FRotator::ZeroRotator, FMath::Max(Volume * Vol(EWCSnd::SFX), 0.0001f), Pitch, 0.f, Profile, nullptr, true);
+	if (Audio && bHouseSource) Audio->ComponentTags.Add(TEXT("HouseAudio"));
+	return Audio;
 }
 
 void AWCDirector::SetLoop(FName Slot, const FString& Name, float Volume, float FadeSeconds, EWCSnd Cat)
 {
+	const bool bIndoor = Name == TEXT("amb_house") || Name == TEXT("amb_cellar") || Name == TEXT("music_drone") || Name == TEXT("music_low") || Name == TEXT("music_stalk");
+	if (bIndoor && Player() && SpaceAt(Player()->GetActorLocation()) == EListeningSpace::Exterior) return;
 	FLoop& L = Loops.FindOrAdd(Slot);
 	if (L.Name == Name && L.Audio.IsValid())
 	{
@@ -713,7 +719,12 @@ void AWCDirector::SetLoop(FName Slot, const FString& Name, float Volume, float F
 		L.Rate = 1.f / FMath::Max(FadeSeconds, 0.05f);
 		return;
 	}
-	if (UAudioComponent* Old = L.Audio.Get()) Old->FadeOut(FMath::Max(FadeSeconds, 0.05f), 0.f);
+	if (UAudioComponent* Old = L.Audio.Get())
+	{
+		Old->bAutoDestroy = true;
+		if (FadeSeconds <= 0.f) Old->Stop();
+		else Old->FadeOut(FadeSeconds, 0.f);
+	}
 	L = FLoop();
 	L.Name = Name;
 	L.Cat = Cat;
@@ -722,7 +733,11 @@ void AWCDirector::SetLoop(FName Slot, const FString& Name, float Volume, float F
 	if (USoundBase* S = Snd(Name))
 	{
 		UAudioComponent* A = UGameplayStatics::SpawnSound2D(this, S, 0.0001f, 1.f, 0.f, nullptr, false, false);
-		if (A) A->bIsUISound = false;
+		if (A)
+		{
+			A->bIsUISound = false;
+			if (bIndoor) A->ComponentTags.Add(TEXT("HouseAudio"));
+		}
 		L.Audio = A;
 	}
 }
@@ -733,6 +748,36 @@ void AWCDirector::ApplyVolumes()
 	{
 		if (UAudioComponent* A = P.Value.Audio.Get()) A->SetVolumeMultiplier(FMath::Max(P.Value.Vol * Vol(P.Value.Cat), 0.0001f));
 	}
+}
+
+// House coordinates match build_house.py and the ground-floor living-room extension.
+AWCDirector::EListeningSpace AWCDirector::SpaceAt(const FVector& P)
+{
+	if (P.X <= 0 || P.X >= 2800 || P.Y >= 600) return EListeningSpace::Exterior;
+	if (P.Y <= -600 && !(P.X < 800 && P.Y > -750 && P.Z >= 0 && P.Z < 330)) return EListeningSpace::Exterior;
+	return P.Z < -25 && P.X < 1620 ? EListeningSpace::Cellar : EListeningSpace::House;
+}
+
+void AWCDirector::RefreshRoomTone(EListeningSpace Space)
+{
+	const bool bOutside = Space == EListeningSpace::Exterior;
+	const bool bDarkInside = !bOutside && !Has(TEXT("dawn"));
+	if (bOutside && ListeningSpace != Space)
+	{
+		for (TObjectIterator<UAudioComponent> It; It; ++It)
+			if (It->GetWorld() == GetWorld() && It->ComponentHasTag(TEXT("HouseAudio"))) It->Stop();
+		for (auto& Pair : Loops)
+			if (Pair.Value.Audio.IsValid() && Pair.Value.Audio->ComponentHasTag(TEXT("HouseAudio")))
+				Pair.Value.Target = 0.f;
+	}
+	ListeningSpace = Space;
+	const TCHAR* Bed = bOutside ? (Has(TEXT("dawn")) ? TEXT("amb_dawn") : TEXT("amb_yard")) :
+		(Space == EListeningSpace::Cellar ? TEXT("amb_cellar") : TEXT("amb_house"));
+	SetLoop(TEXT("amb"), Bed, 1.f, bOutside ? 0.f : 0.65f);
+	SetLoop(TEXT("drone"), bDarkInside ? TEXT("music_drone") : TEXT(""), 0.34f, bDarkInside ? 1.2f : 0.f, EWCSnd::Music);
+	// One sustained, event-free score underneath the room tone.
+	if (FParse::Param(FCommandLine::Get(), TEXT("WCSndLog")))
+		UE_LOG(LogWC, Display, TEXT("WCROOM bed=%s interiorScore=%d"), Bed, bDarkInside);
 }
 
 void AWCDirector::TickAudio(float Dt)
@@ -747,7 +792,7 @@ void AWCDirector::TickAudio(float Dt)
 			L.Vol = FMath::FInterpConstantTo(L.Vol, L.Target, Dt, L.Rate);
 			A->SetVolumeMultiplier(FMath::Max(L.Vol * Vol(L.Cat), 0.0001f));
 		}
-		if (!A->IsPlaying() && L.Target > 0.f) A->Play();
+		if (!A->IsPlaying() && L.Target > 0.f && A->Sound && A->Sound->IsLooping()) A->Play();
 	}
 }
 
@@ -756,6 +801,10 @@ void AWCDirector::Footstep(const FVector& Feet, float Loud, FName Surface)
 	const FString Name = FString::Printf(TEXT("step_%s"), *Surface.ToString().ToLower());
 	UAudioComponent* A = Play2D(Name, 0.42f * Loud, EWCSnd::SFX, Rng.FRandRange(0.93f, 1.07f));
 	if (!A && Surface != TEXT("Wood")) Play2D(TEXT("step_wood"), 0.42f * Loud, EWCSnd::SFX, Rng.FRandRange(0.93f, 1.07f));
-	// old boards complain now and then
-	if ((Surface == TEXT("Wood") || Surface == TEXT("Stairs")) && Rng.FRand() < 0.34f) PlayAt(TEXT("creak"), Feet, 0.55f * Loud, Rng.FRandRange(0.85f, 1.15f));
+	if (Clock >= NextBoardCreak && (Surface == TEXT("Wood") || Surface == TEXT("Stairs")) &&
+		ListeningSpace != EListeningSpace::Exterior && Rng.FRand() < .12f)
+	{
+		NextBoardCreak = Clock + Rng.FRandRange(12.f, 26.f);
+		PlayAt(TEXT("creak"), Feet, .36f * Loud, Rng.FRandRange(.88f, 1.06f));
+	}
 }

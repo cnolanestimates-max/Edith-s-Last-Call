@@ -155,4 +155,5 @@ private:
 	FVector LastLoc = FVector::ZeroVector;
 	TArray<FVector> DustPos;
 	TArray<FVector> DustVel;
+	int32 DustCursor = 0;
 };

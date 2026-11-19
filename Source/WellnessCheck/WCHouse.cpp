@@ -733,7 +733,7 @@ void AWCDirector::EndDrive()
 			if (PC) { PC->SetViewTargetWithBlend(P, 0.f); PC->SetControlRotation(FRotator(0.f, 8.f, 0.f)); }
 		}
 		if (DriveCam.IsValid()) DriveCam->Destroy();
-		SetLoop(TEXT("amb"), TEXT("amb_night"), 1.f, 2.f);
+		SetLoop(TEXT("amb"), TEXT("amb_yard"), 1.f, 2.f);
 	});
 	After(5.2f, [this]()
 	{

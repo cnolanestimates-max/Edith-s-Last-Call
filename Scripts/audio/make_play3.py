@@ -1,9 +1,8 @@
 """Sounds for Cheyenne's play-test of 2026-11-19 19:33 UTC.  ffmpeg only; nothing generated or paid for.
-  trash_crash   the trash can going over behind the shed (layered metal impacts from the Open Game SFX library, CC0 Kenney packs)
   frame_fall    a picture frame hitting the floor: wood, then glass (same library)
   music_drone   the bed under the whole house.  The old one (a library track) had a low boom in it about every ten seconds,
                 which is the "thudding on a loop" she kept hearing.  This one is a steady synthesized drone: nothing ever hits.
-  amb_night     the generated night with real crickets is back (the synthesized one was too thin to hear)."""
+  The exterior beds and bin have their own mastering scripts."""
 import os, shutil, subprocess
 
 A = "C:/GameDev/Unreal/WellnessCheck/SourceArt/Audio"
@@ -28,12 +27,6 @@ def layer(out, parts, tail, level):
 
 
 I = K + "/Impacts and Footsteps/"
-R = K + "/RPG Audio/"
-layer(f"{A}/trash_crash.wav", [
-    (I + "impactMetal heavy 002.wav", 0, 1.0, 0.62), (R + "metalPot1.wav", 90, 0.9, 0.55), (I + "impactMetal heavy 000.wav", 230, 0.8, 0.70),
-    (I + "impactMetal medium 003.wav", 520, 0.7, 0.80), (R + "metalPot2.wav", 700, 0.6, 0.62), (I + "impactMetal light 001.wav", 980, 0.55, 0.9),
-    (I + "impactMetal light 004.wav", 1250, 0.45, 1.0), (I + "impactGlass light 002.wav", 640, 0.35, 0.9), (I + "impactMetal light 002.wav", 1650, 0.3, 0.85),
-    (R + "metalPot1.wav", 2050, 0.22, 0.5)], "aecho=0.8:0.5:70|160:0.25|0.15,apad=pad_dur=0.6", -15)
 layer(f"{A}/frame_fall.wav", [
     (f"{A}/wood_hit_far_01.wav", 0, 0.9, 1.3), (I + "impactGlass heavy 001.wav", 60, 1.0, 0.9), (I + "impactGlass medium 003.wav", 210, 0.6, 1.0),
     (I + "impactGlass light 000.wav", 420, 0.4, 1.1), (I + "impactGlass light 003.wav", 700, 0.25, 1.2)], "aecho=0.8:0.4:40|90:0.2|0.1,apad=pad_dur=0.4", -15)
@@ -50,9 +43,5 @@ ff(["-f", "lavfi", "-i", f"sine=frequency=55:duration={D}:sample_rate=48000", "-
     f"[a][b][c][d][e][n]amix=inputs=6:normalize=0,aecho=0.8:0.7:480|910:0.35|0.25,afade=t=in:d=3,afade=t=out:st={D - 3}:d=3,loudnorm=I=-27:TP=-6:LRA=4,pan=stereo|c0=c0|c1=c0",
     "-ar", "48000", "-c:a", "pcm_s16le", f"{A}/music_drone.wav"])
 
-if os.path.exists(f"{U}/amb_night_old.wav"):
-    if not os.path.exists(f"{U}/amb_night_synth.wav"):
-        shutil.copy2(f"{A}/amb_night.wav", f"{U}/amb_night_synth.wav")
-    shutil.copy2(f"{U}/amb_night_old.wav", f"{A}/amb_night.wav")
-for n in ("trash_crash", "frame_fall", "music_drone", "amb_night"):
+for n in ("frame_fall", "music_drone"):
     print(n, os.path.getsize(f"{A}/{n}.wav") // 1000, "KB")
