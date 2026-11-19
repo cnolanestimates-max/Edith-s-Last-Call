@@ -30,6 +30,11 @@ Done this evening (all in the build; details further down and in `Scripts/tools/
   has only car foley; the other zips have nothing but a siren. The Fab inventory lists no vehicle audio: look on Fab for a
   free car or truck engine pack (she asked), or ask her to pick one. In game the engine is full over the drone shot and
   0.30 in the cab (`TickDrive`), off on arrival.
+- **NIGHT BED: SECOND THING TO FIX (Cheyenne, 22:05 UTC):** birds can be heard chirping right at the start. At night birds
+  must be "very subtle"; crickets and cicadas dominate. The bed is `SourceArt/Audio/amb_night.wav` (the old generated
+  cricket bed, put back by `Scripts/audio/make_play3.py` when she asked for the crickets; a thinner synthesized one is in
+  `Audio_unused/amb_night_synth.wav`). It plays over the drone shot (`BeginDrive`, 0.5) and outside the house. Wanted: a
+  cricket and cicada bed with no birds, or the birds notched out and far back. Import with `chain.ps1 -NoBuild -Steps audio`.
 - Fly buzz: now loops, with its own attenuation (silent beyond about nine metres). Before that, sixteen swarms at the
   shared attenuation's floor were audible as crackle over the opening.
 - Deputy lines re-levelled to -16 LUFS with a presence lift (`gen_vo.py`, the plain branch) and played at 1.0: his first
