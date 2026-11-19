@@ -1,0 +1,46 @@
+{
+  "tool": "Built-in image generation",
+  "casting_reference": "SourceArt/TV/raw/living2_still.png",
+  "Porch": "Photorealistic-natural. Make one finished vertical 4:5 photographic print, full bleed, an ordinary family snapshot circa 1958 on the timber porch of a modest rural American farmhouse. Four fictional people ONLY: Edith Harrow, husband Walter, son Danny (about 10), daughter Ruth (about 5). The attached still is a casting reference: Edith is the younger, healthy, happy version of the elderly white-haired woman at far right, now chestnut-brown softly waved hair pinned back, high cheekbones, kindly creased eyes and an expressive smile; use the man at far left as Walter, deep-set eyes, dark side-parted hair, lean and clean-shaven. Match the two children to the boy and little girl in the still. Do not include the extra adult woman or any supernatural elements. Edith and Walter lean shoulder-to-shoulder behind the kids; Ruth has just giggled, Danny and both parents are smiling naturally at the family friend taking the picture. Period cotton blouse and everyday shirts, gingham, realistic teeth, subtly uneven focus in warm daylight, beautiful but ordinary people. Faces form a compact group in the middle 65% of the print, plenty of headroom, portrait/oval crop safe. Authentic slightly faded midcentury color film, clear eyes and readable faces, soft grain. The whole image is the photograph itself. No text, watermark, border, damage, horror, additional figures, ornament, collage or physical frame.",
+  "Anniversary": {
+    "reference": "Porch.png",
+    "direction": "Edith and Walter alone, about eighteen years older than the couple in the reference, recognizable with silver showing in Edith's chestnut curls. She is pinning a small carnation to his tan Sunday jacket on a late-1970s afternoon in the farmhouse dining room; their temples touch and they are both smiling. Crop at mid-torso. Faded warm color flash print."
+  },
+  "Baking": {
+    "reference": "Porch.png",
+    "direction": "Edith and her little daughter Ruth alone circa 1958, in the farmhouse kitchen. Edith smiles directly at whoever is taking the picture. Her daughter, perched on a stool in a gingham pinafore, cracks up at the flour on Edith's cheek. One plain mixing bowl low in frame. Faces together in the upper middle. Autumn daylight and delicate warm film grain; unposed."
+  },
+  "Siblings": {
+    "reference": "Porch.png",
+    "direction": "Only the two children from the reference photo, Danny 10 and Ruth 5. A candid of brother and sister on an old rope swing underneath a broad tree, faces side by side, Danny mischievously grinning while Ruth holds on to the rope. Faded midcentury color print. Heads clearly distinct inside central safe area, authentic 1950s everyday clothing."
+  },
+  "Walter": {
+    "reference": "Porch.png",
+    "direction": "Only Walter, the father at upper left in the reference. A candid waist-up black-and-white print from the early 1960s of an ordinary farmer in rolled workshirt sleeves leaning his forearms on a fence, giving his wife behind the camera his familiar crooked smile. Gentle direct sun and period gelatin-silver print with slight silvering. Keep head centered for an oval portrait."
+  },
+  "Daniel": {
+    "reference": "Porch.png",
+    "direction": "Only Danny, the boy at lower left in the reference, age-progressed to nineteen, just before 1969. Young, clean-shaven, light brown hair under a simple olive-drab US Army garrison cap in a slightly oversized period olive uniform, no weapons, no medals, no readable insignia. Squinting at the sun and smiling at his mother, a waist-up portrait on the gravel drive by the farmhouse before departure. Film print in soft natural color. Center his head."
+  },
+  "Christmas": {
+    "reference": "Porch.png",
+    "direction": "The same four people a few years older, circa 1962. The photographer has just interrupted their Christmas morning: Edith and Walter flanking the children close together on an old plaid sofa, Danny and Ruth in plaid pajamas holding a half-opened present. All four faces smiling, natural imperfect flash, a few blurred Christmas lights at the edge. All four faces fit in the central 70%; this is a portrait photograph suitable for a tall frame."
+  },
+  "Scratched": {
+    "reference": "Porch.png",
+    "direction": "An altered duplicate of this EXACT existing family photo. Preserve the print, people, framing, light and pose precisely. AFTER it was printed, somebody gouged the emulsion with little repeated crossed, jagged ivory-gray dry paper scratches precisely over BOTH eyes of Walter (top left) and BOTH eyes of Daniel (bottom left). Two small clusters per face (one per eye), deep scribbled cross-hatches concentrated on their eyes, highly visible even in small frames. Leave Edith and Ruth smiling and completely untouched. Entire image a non-graphic physically scratched photographic paper object, no injury, no ink, black bars, glitch, text, borders, or large diagonal claw marks."
+  },
+  "Attic": {
+    "reference": "Porch.png",
+    "direction": "Identity-preserve. The attached porch photograph is the exact underlying print in a fictional farmhouse's attic. Make one full-bleed upright photographic print of the identical four smiling Harrows, preserve all four familiar people and original 1958 snapshot, eye positions and poses. A much later crude narrow fifth silhouette has been daubed in cool grey household paint on the background, just behind and between the parents' shoulders, with a long slim head clearly visible against the siding above them. Unmistakable hand-painted flat brushwork with dry bristle edges, faceless, unconventional, no red color. It must read as paint applied on an otherwise loving family print. No sheet, no frame, captions, borders or lettering. Preserve original portrait aspect ratio."
+  },
+  "VowsDefaced": {
+    "reference": "Anniversary.png",
+    "decay": "Edit the reference photograph. Identity, composition, posing, gaze and especially the friendly genuine smiling expressions must be kept EXACTLY as in this particular snapshot. Recreate it as an eerie almost completely GREYSCALE silver-gelatin print: cold gray whites, graphite midtones, slightly faded corners, visible midtones, no brown/sepia or color. The photographic paper and glass are intact. Within the picture the subjects' SKIN itself has become disturbingly, unambiguously decayed in a dry mummified way: asymmetrical graphite-black mottling beneath the skin, large islands of pale grey peeling skin, fine wrinkled parchment stretched over the cheeks and temples, slightly sunken sockets. The decay follows facial contours, visible also on the hands. The clothes and background are still ordinary. Keep human eyes looking through their sockets, keep the teeth and the special geometry of each old smile identical. They are still smiling for the camera like it is a normal, happy day. Make the decay legible across a room and at thumbnail size. Real analog photography. No liquid, blood, exposed muscle or bone, missing body parts, grotesque wide grins, blacked-out mouths, horns, extra figures, clawed shadows, scratches across the print or labels. Vertical 4:5 edge-to-edge. The two adults, Edith and Walter still smile naturally with visibly decaying gray cheeks and foreheads.",
+    "damage": "Keep the already-gray print and its dry peeling decayed skin exactly as seen; keep the ordinary, happy smiles of the two adults. A vital physical detail: somebody has taken a pin to the photographic paper directly over the eyes of both ADULTS: each of the four adult eyes must be entirely scratched out with a dense, aggressively hand-scraped cluster of tiny ragged white and charcoal strokes in the emulsion. Two separate clusters per adult, one precisely over each eye, concealing iris and pupil. These uneven, overlapping paper scratches must be unmistakable from a distance. Keep the adults smiling, preserve the identifiable people, hair, pose, clothes, composition, and any unaffected faces. Old photographic paper, full bleed portrait, no text, color tint, other surface scratches, blood, or bodily injury. Viewer sees the damaged print, not a physical frame."
+  },
+  "EdithGarden": {
+    "reference": "VowsDefaced.png",
+    "direction": "Create a second, distinct fictional black-and-white supernatural album photograph with a single adult subject. The woman on the right in the attached anniversary print is the casting reference: Edith Harrow alone in her garden in her early sixties, seated in a summer dress, holding garden flowers. She has that same recognizable, genuinely happy smile. Cool grey silver gelatin print, her face and hands carry the same dry cracked grey parchment surface as the reference, each of her two eyes is precisely obscured by short dense needle scratches through the white photographic emulsion. Strong sidelighting reveals the cheek texture. A garden wall behind her, out of focus, ordinary sunny early afternoon. Waist-up 4:5 photograph. The man is absent. No other people, injuries, red tint, theatrical poses, monsters, text or border."
+  }
+}

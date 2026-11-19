@@ -92,7 +92,22 @@ void AWCDirector::AutoBegin()
 		Fade = 0.f; FadeTarget = 0.f;
 		SwitchRoom(TEXT("hall"), true, false);
 		Wait(4.f);
-		if (FParse::Param(FCommandLine::Get(), TEXT("WCBeamShots")))
+		if (FParse::Param(FCommandLine::Get(), TEXT("WCAlbumShots")))
+		{
+			auto Frame = [&](const TCHAR* At, const TCHAR* Name)
+			{
+				AutoSteps.Add({ A_Do, At, 0.f }); Wait(1.4f); Shot(Name);
+			};
+			Frame(TEXT("at:1400,20,92,90,11"), TEXT("01_porch"));
+			Frame(TEXT("at:1250,-36,92,-90,14"), TEXT("02_scratched"));
+			Frame(TEXT("at:250,-556,92,-90,18"), TEXT("03_claw_frame"));
+			Frame(TEXT("at:1300,-38,442,-90,10"), TEXT("04_silver_anniversary"));
+			Frame(TEXT("at:2000,-38,442,-90,10"), TEXT("05_edith_garden"));
+			Frame(TEXT("at:2200,-420,92,-90,28"), TEXT("06_walter"));
+			Frame(TEXT("at:1890,68,92,83,-58"), TEXT("07_fallen"));
+			Wait(1.f);
+		}
+		else if (FParse::Param(FCommandLine::Get(), TEXT("WCBeamShots")))
 		{
 			AutoSteps.Add({ A_Do, TEXT("at:3760,-720,59,-90,-6"), 0.f });
 			UE_LOG(LogWCAuto, Display, TEXT("WCBEAM selected %s"), *Settings.BeamLabel());
