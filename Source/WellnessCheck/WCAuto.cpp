@@ -536,7 +536,28 @@ void AWCDirector::AutoTick(float Dt)
 			FCollisionQueryParams Q(SCENE_QUERY_STAT(WCAutoSee), false, P);
 			const FVector Eye = P->EyeLocation();
 			const bool bBlocked = GetWorld()->LineTraceSingleByChannel(Hit, Eye, Goal, ECC_Visibility, Q) && Hit.GetActor() != T && Hit.Distance < FVector::Dist(Eye, Goal) - 14.f;
-			if (!bBlocked || D2 < 55.f || In > 22.0) { Next(); return; }
+			static int32 NearStep = -1, RoundStep = -1;
+			static double NearAt = 0.0;
+			if (NearStep != AutoIndex) { NearStep = AutoIndex; NearAt = Clock; }
+			if (!bBlocked || D2 < 55.f || Clock - NearAt > 14.0) { Next(); return; }
+			if (Clock - NearAt > 2.5 && RoundStep != AutoIndex)
+			{
+				// it is hidden from here: find a side it can be seen from, and go and stand there
+				RoundStep = AutoIndex;
+				Q.AddIgnoredActor(T);
+				for (int32 k = 0; k < 16; ++k)
+				{
+					const FVector Side = FRotator(0.f, 45.f * (k % 8), 0.f).Vector() * (k < 8 ? 105.f : 150.f);
+					const FVector Stand(Goal.X + Side.X, Goal.Y + Side.Y, Loc.Z);
+					const FVector StandEye = Stand + FVector(0, 0, 66.f);
+					FHitResult H2;
+					if (GetWorld()->LineTraceSingleByChannel(H2, StandEye, Goal, ECC_Visibility, Q)) continue;                         // cannot see it from there
+					if (GetWorld()->SweepSingleByChannel(H2, Loc, Stand, FQuat::Identity, ECC_Pawn, FCollisionShape::MakeSphere(26.f), Q)) continue;   // cannot walk straight there
+					AutoPath.Reset(); AutoPath.Add(Stand - FVector(0, 0, 88.f)); AutoPathIndex = 0;
+					UE_LOG(LogWCAuto, Display, TEXT("WCAUTO stepping round to see %s"), *S.Arg.ToString());
+					break;
+				}
+			}
 		}
 		if (!bToUse && D2 < Reach && FMath::Abs(Loc.Z - 88.f - Goal.Z) < 160.f) { Next(); return; }
 

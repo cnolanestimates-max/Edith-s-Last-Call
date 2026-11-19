@@ -848,7 +848,7 @@ void AWCDirector::Grab(float Hold, TFunction<void()> Then)
 	P->AddShake(1.f);
 	P->SetLightScale(1.f);
 	P->FlickerLight(Hold, 0.45f);
-	P->SetFaceLight(260.f);
+	P->SetFaceLight(120.f);
 	P->SetInputLocked(true);
 	GrabHoldUntil = Clock + Hold;
 	if (bAuto && !AutoShotDir.IsEmpty())

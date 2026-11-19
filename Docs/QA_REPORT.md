@@ -53,6 +53,37 @@ the wrong side of a wall), `A_Foyer` at dawn. Written after the run and not yet 
 enough" when nothing is in the way; the tub is turned to lie along the wall; the sewing chair is moved; the bathroom mirror,
 which hung across the boarded window, is moved to the wall beside it.
 
+## Run 9 (2026-11-19 01:35 to 02:13 UTC), full play-through at REAL pacing
+
+`wc.ps1 game auto9 "-WCAuto -WCAutoForce -WCNoDrive -WCShots=Saved/Auto9"` (no `-WCFast`). Log `Saved/Logs/auto9.log`.
+
+| Check | Result |
+|---|---|
+| Play length | **37 min 17 s** from standing by the car to the ending (`WCENDING t=2237.0`), for a bot that knows the route, reads nothing for longer than a second and never explores. The forest drive (about 50 s) is not included. A person reading 26 notes and searching should take roughly 60 to 80 minutes; that is an estimate, not a measurement |
+| First sight of her | 9 min 4 s after arriving (`S1_peek t=544.4`): inside the 8 to 10 minute target |
+| Scares | All ten in order: S1 544 s, S3 721 s, S2 1149 s, S10 1259 s, S4 1541 s, S7 1841 s, S9 1983 s, S5 2039 s, S6 2096 s, S8 2151 s |
+| Hunts | #1 at 951 s: the ambush, caught in 3.6 s as designed (five shots, no effect), memory 2. #2 at 1381 s and #3 at 1676 s: she walked in, was shot and was driven off in 9.3 s and 10.0 s |
+| Memories | 1 at 737 s, 2 at 956 s, 3 at 1177 s |
+| Frame time | Mean 11.0 ms (91 fps) over 55 windows; worst 99th-percentile window 28 ms |
+
+### Critical defect found by this run, and fixed
+
+**Nobody could climb out of the cellar.** The bot stuck at the same point on the cellar stairs in every run and had been
+teleporting out; the trace added for this run named what it was walking into. The house's foundation slab (z -40 to 0), the
+yard slab (-60 to -40) and the forest ground (-70 to -41) all ran across the stairwell, so his head hit them a quarter of the
+way up. The script throws him down those stairs, so they had never been walked in either direction. The game ends with him
+walking out at dawn: a player would have been stuck at the last step of the game.
+
+Fix: the three slabs are cut away under the house (`Scripts/level/exterior.py`). New test `-WCHerLook -WCStairOnly` walks, on
+foot, foyer to the upstairs landing, to the top of the attic stairs, down to the foot of the cellar stairs and back up to the
+foyer. Before the fix it failed twice (`Saved/Logs/stair1.log`, `stair2.log`); after it, all four legs pass with no forced
+step (`Saved/Logs/stair3.log`).
+
+Other things this run showed, all fixed afterwards and not yet re-run: the hall light switch was hidden behind the open front
+door (moved to the latch side); two notes on the sitting-room desk had overlapping grab boxes so one could not be aimed at
+(moved apart); a floor hole fills the second bathroom's far half and the bot's waypoint sat inside its guard (expected; bot
+route only).
+
 ## Other tests on 2026-11-19
 
 | Test | Result |

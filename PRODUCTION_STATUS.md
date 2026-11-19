@@ -1,9 +1,8 @@
 # Edith's Last Call: production status
 
-(Working title "Wellness Check"; the project folder keeps that name.) Updated 2026-11-19 01:30 UTC, session 1, in progress.
+(Working title "Wellness Check"; the project folder keeps that name.) Updated 2026-11-19 02:45 UTC, session 1, in progress.
 Engine: UE 5.9.0. Project: `C:\GameDev\Unreal\WellnessCheck`. Git: local repo on `main`, remote
-`github.com/cnolanestimates-max/Edith-s-Last-Call` (private). **The first push has to be run by Cheyenne**
-(`git -C C:/GameDev/Unreal/WellnessCheck push -u origin main`): pushes from this session are blocked by the safety check.
+`github.com/cnolanestimates-max/Edith-s-Last-Call` (private). Pushed; checkpoints are pushed as work lands.
 
 ## Build ID
 `elc-0.5-dev`. **No packaged build exists** (Cheyenne asked for no interim package). Nothing below has been played start to
@@ -25,14 +24,15 @@ finish by a person. Scores are my own estimate against the rubric; none is 8 exc
 - **Docs:** `Docs/STORY_AND_ENTITY_BIBLE.md`, `Docs/SCARE_MANIFEST.md`, `Docs/ASSET_AND_VOICE_MANIFEST.md`, `Docs/QA_REPORT.md`.
 
 ## Evidence (details in `Docs/QA_REPORT.md`)
-- **Run 8** (`Saved/Logs/auto8.log`, `Saved/Auto8/`, accelerated pacing): all ten scares in order, three memories, ending and
-  credits reached; mean frame 12.4 ms (81 fps), worst 99th-percentile window 46 ms, in the editor's `-game` mode at 1280x720.
-  The hand under the bed was photographed by the run itself from across the room. Six bot failures forced past, listed in
-  the QA report with causes; fixes for five are written and go into the next run.
-- **Look tests** (`Saved/Her5..7/`): pistol, eye behind the book, the silhouette, the drawings, the hand under the bed.
-- **Inventory photo test** (`Saved/Inv2/`): list, inspect, papers.
-- **Forest drive capture** (`Saved/Drive2/`): trunks in the headlights, but the road itself was black and the gauge glow was
-  a green slab. Fix written (a road wash light, small gauge marks); recapture pending.
+- **Run 9, real pacing** (`Saved/Logs/auto9.log`): ending reached in 37 min 17 s by a bot that reads and explores nothing
+  (a person: about 60 to 80 minutes, estimated); first sight of her at 9 min 4 s; all ten scares; hunts 2 and 3 driven off with
+  the pistol in about 10 s each; mean frame 11.0 ms (91 fps), worst 99th-percentile window 28 ms.
+- **A game-ending defect found and fixed:** nobody could climb out of the cellar (three ground slabs crossed the stairwell).
+  A stair-walking test now passes on every flight, up and down.
+- **Look tests** (`Saved/Her5..9/`, `Saved/Grab_*/`): pistol, eye behind the book, the silhouette, the drawings, the hand
+  under the bed, the grab (her face level with his, lit, mouth open).
+- **Inventory photo test** (`Saved/Inv2/`), **every interactable photographed** (`Saved/Items2/`), **forest drive**
+  (`Saved/Drive4/`: road, verges and trunks in the headlights).
 
 ## Rubric (my estimate, 2026-11-19 01:30 UTC)
 | Category | Weight | Score | Why not higher |

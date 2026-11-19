@@ -26,10 +26,10 @@ sun = actors.spawn_actor_from_class(unreal.DirectionalLight, V(0, 0, 2100), R(8,
 sun.set_actor_label("DawnSun")
 sc = sun.light_component
 sc.set_mobility(unreal.ComponentMobility.MOVABLE)
-sc.set_intensity(900.0)
+sc.set_intensity(700.0)
 sc.set_light_color(unreal.LinearColor(1.0, 0.72, 0.5, 1.0))
 sc.set_editor_property("atmosphere_sun_light", True)
-sc.set_editor_property("volumetric_scattering_intensity", 2.0)
+sc.set_editor_property("volumetric_scattering_intensity", 1.1)
 tag(sun, ["Show_dawn"])
 sun.set_folder_path("House/" + ENV)
 
@@ -92,8 +92,8 @@ grade("Grade_Night", NIGHT_EV, [
     ("color_contrast", unreal.Vector4(1.08, 1.08, 1.08, 1.0)), ("color_gain_shadows", unreal.Vector4(0.90, 0.98, 1.08, 1.0)),
     ("color_gamma_midtones", unreal.Vector4(0.98, 1.0, 1.02, 1.0)), ("white_temp", 6800.0),
     ("ambient_occlusion_intensity", 0.7), ("local_exposure_shadow_contrast_scale", 0.9)])
-grade("Grade_Dawn", NIGHT_EV + 5.5, [
-    ("vignette_intensity", 0.35), ("film_grain_intensity", 0.1), ("bloom_intensity", 0.9),
+grade("Grade_Dawn", NIGHT_EV + 4.1, [          # was +5.5: the foyer and porch at dawn were burnt out to white
+    ("vignette_intensity", 0.35), ("film_grain_intensity", 0.1), ("bloom_intensity", 0.5),
     ("color_saturation", unreal.Vector4(0.95, 0.93, 0.9, 1.0)), ("white_temp", 6000.0)], priority=5.0, tags=["PP_Dawn"], enabled=False)
 
 # ---------------------------------------------------------------- moonlight through the boards (and warm dawn light later)
