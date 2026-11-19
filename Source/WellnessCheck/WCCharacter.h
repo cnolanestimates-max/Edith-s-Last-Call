@@ -11,6 +11,8 @@ class UCameraComponent;
 class USpotLightComponent;
 class UPointLightComponent;
 class UStaticMeshComponent;
+class UStaticMesh;
+class UMaterialInterface;
 class UInstancedStaticMeshComponent;
 class UInputAction;
 class UInputMappingContext;
@@ -54,6 +56,12 @@ public:
 	void ToggleFlashlight();
 	void SetAiming(bool bAim) { bAiming = bAim; }
 
+	// inventory: one thing held up in front of the camera, lit by its own lamps, against black
+	void ShowInspect(UStaticMesh* InMesh, const TArray<UMaterialInterface*>& Mats, const FVector& PartScale);
+	void SetInspectView(const FQuat& Rot, float Zoom);
+	void HideInspect();
+	bool IsInspectFlat() const;
+
 	UPROPERTY(EditAnywhere, Category = "WC") float WalkSpeed = 100.f;
 	UPROPERTY(EditAnywhere, Category = "WC") float SprintSpeed = 190.f;
 	UPROPERTY(EditAnywhere, Category = "WC") float CrouchSpeed = 62.f;
@@ -73,6 +81,10 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = "WC") TObjectPtr<UStaticMeshComponent> Gun;
 	UPROPERTY(VisibleAnywhere, Category = "WC") TObjectPtr<UStaticMeshComponent> FlashHand;
 	UPROPERTY(VisibleAnywhere, Category = "WC") TObjectPtr<UInstancedStaticMeshComponent> Dust;
+	UPROPERTY(VisibleAnywhere, Category = "WC") TObjectPtr<UStaticMeshComponent> InspectMesh;
+	UPROPERTY(VisibleAnywhere, Category = "WC") TObjectPtr<UStaticMeshComponent> InspectBack;
+	UPROPERTY(VisibleAnywhere, Category = "WC") TObjectPtr<UPointLightComponent> InspectKey;
+	UPROPERTY(VisibleAnywhere, Category = "WC") TObjectPtr<UPointLightComponent> InspectFill;
 
 protected:
 	virtual void BeginPlay() override;
@@ -103,6 +115,8 @@ private:
 
 	TWeakObjectPtr<AWCInteractable> Focus;
 	bool bLightOn = false;
+	float AimDist = 600.f;
+	FVector InspectPart = FVector::OneVector;
 	bool bSprinting = false;
 	bool bAiming = false;
 	bool bInputLocked = false;

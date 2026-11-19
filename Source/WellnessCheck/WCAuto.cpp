@@ -22,7 +22,7 @@
 
 DEFINE_LOG_CATEGORY_STATIC(LogWCAuto, Log, All);
 
-enum { A_Go, A_Use, A_Wait, A_WaitFlag, A_Shot, A_Fire, A_Look, A_Light, A_LookHer, A_WaitHer, A_Crouch, A_Tele, A_Her, A_FaceItem, A_Aim };
+enum { A_Go, A_Use, A_Wait, A_WaitFlag, A_Shot, A_Fire, A_Look, A_Light, A_LookHer, A_WaitHer, A_Crouch, A_Tele, A_Her, A_FaceItem, A_Aim, A_Do };
 
 void AWCDirector::AutoBegin()
 {
@@ -120,6 +120,16 @@ void AWCDirector::AutoBegin()
 			AutoSteps.Add({ A_Tele, TEXT("N_den_shelf"), 0.f }); Wait(0.6f); AutoSteps.Add({ A_Look, TEXT("SettlersBook"), -1.f }); Wait(0.3f); Shot(TEXT("book_before"));
 			AutoSteps.Add({ A_Use, TEXT("book_settlers"), 0.f }); Wait(0.7f); Shot(TEXT("book_eye")); Wait(0.5f); Shot(TEXT("book_eye2")); Wait(2.4f); Shot(TEXT("book_after"));
 			AutoSteps.Add({ A_Tele, TEXT("Tour_00_yard"), 0.f }); Wait(1.5f); AutoSteps.Add({ A_Look, TEXT("A_Cruiser"), 0.f }); Wait(1.f); Shot(TEXT("cruiser"));
+			// the Company, her drawings, the hand under the bed, the three memories
+			AutoSteps.Add({ A_Her, TEXT("Idle"), 3000.f });
+			AutoSteps.Add({ A_Tele, TEXT("A_UpEll"), 0.f }); Wait(0.8f); AutoSteps.Add({ A_Look, TEXT("W_company_uprear"), -1.f }); Wait(0.2f); Shot(TEXT("company_uprear"));
+			AutoSteps.Add({ A_Tele, TEXT("A_Sitting"), 0.f }); Wait(0.8f); AutoSteps.Add({ A_Do, TEXT("drawings"), 0.f }); Wait(0.8f); Shot(TEXT("drawings_wall"));
+			AutoSteps.Add({ A_Tele, TEXT("A_Kids"), 0.f }); Wait(1.0f); AutoSteps.Add({ A_Do, TEXT("s7"), 0.f });
+			Wait(3.6f); Shot(TEXT("hand_1_coming")); Wait(1.7f); Shot(TEXT("hand_2_on_box")); Wait(1.6f); Shot(TEXT("hand_3_taking")); Wait(3.6f);
+			AutoSteps.Add({ A_Crouch, NAME_None, 1.f }); AutoSteps.Add({ A_Look, TEXT("pick_keep_ruth"), -1.f }); Wait(0.3f); Shot(TEXT("hand_4_box_under_bed")); AutoSteps.Add({ A_Crouch, NAME_None, 0.f });
+			AutoSteps.Add({ A_Do, TEXT("mem1"), 0.f }); Wait(10.5f);
+			AutoSteps.Add({ A_Do, TEXT("mem2"), 0.f }); Wait(10.5f);
+			AutoSteps.Add({ A_Do, TEXT("mem3"), 0.f }); Wait(10.5f);
 		}
 		else
 		{
@@ -397,6 +407,17 @@ void AWCDirector::AutoTick(float Dt)
 		}
 		Next(); return;
 	case A_Aim: P->SetAiming(S.F > 0.5f); Next(); return;
+	case A_Crouch: if (S.F > 0.5f) P->Crouch(); else P->UnCrouch(); Next(); return;
+	case A_Do:
+		if (S.Arg == TEXT("drawings"))
+		{
+			if (AController* C = P->GetController()) C->SetControlRotation((FVector(818.f, -430.f, P->GetActorLocation().Z + 72.f) - P->EyeLocation()).Rotation());
+		}
+		else if (S.Arg == TEXT("s7")) { bBusy = false; ScareUnderBed(); }
+		else if (S.Arg == TEXT("mem1")) PlayMemory(1, [this]() { bBusy = true; });
+		else if (S.Arg == TEXT("mem2")) PlayMemory(2, [this]() { bBusy = true; });
+		else if (S.Arg == TEXT("mem3")) PlayMemory(3, [this]() { bBusy = true; });
+		Next(); return;
 	case A_Tele:
 		if (AActor* T = AutoTarget(this, S.Arg)) P->TeleportToCheckpoint(T->GetActorLocation(), T->GetActorRotation().Yaw);
 		Next(); return;
@@ -451,6 +472,15 @@ void AWCDirector::AutoTick(float Dt)
 		}
 		else if (In > 4.0)
 		{
+			{
+				FHitResult Hit;
+				FCollisionQueryParams Q(SCENE_QUERY_STAT(WCAutoWhy), false, P);
+				const FVector Eye = P->EyeLocation();
+				const bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Eye, Eye + (Origin - Eye).GetSafeNormal() * 400.f, ECC_Visibility, Q);
+				UE_LOG(LogWCAuto, Error, TEXT("WCAUTO WHY %s: in the way = %s (%s) at %.0f cm; target at (%.0f,%.0f,%.0f) half (%.0f,%.0f,%.0f); eye (%.0f,%.0f,%.0f)"), *S.Arg.ToString(),
+					bHit && Hit.GetActor() ? *Hit.GetActor()->GetActorNameOrLabel() : TEXT("nothing"), bHit && Hit.GetComponent() ? *Hit.GetComponent()->GetName() : TEXT("-"), bHit ? Hit.Distance : -1.f,
+					Origin.X, Origin.Y, Origin.Z, Ext.X, Ext.Y, Ext.Z, Eye.X, Eye.Y, Eye.Z);
+			}
 			UE_LOG(LogWCAuto, Error, TEXT("WCAUTO FAIL could not focus %s (dist %.0f, enabled %d)%s"), *S.Arg.ToString(), FVector::Dist(P->EyeLocation(), Origin), T->CanInteract() ? 1 : 0, bForce ? TEXT(" -> forced") : TEXT(""));
 			if (bForce && T->CanInteract()) T->Interact(P);
 			Next();

@@ -96,7 +96,7 @@ place("Curtains_Torn_Window", 1800, -578, GZ + 20, 0, DN, collide=False)
 place("Book_Pile_Fallen", 1720, -400, GZ, 40, DN, collide=False)
 place("Clock_Grandfather_Broken", 1650, -245, GZ, 90, DN)
 put_note("note_doctor", "Letters_Scattered", 1885, -520, GZ + 98, 30, scale=0.7)
-put_pickup("pick_fuse", "fuse", "Spare fuse", CYL, 2352, -250, GZ + 132, 0, (0.03, 0.03, 0.075), grab=(10, 10, 10), mats={0: "Glass"})
+put_pickup("pick_fuse", "fuse", "Spare fuse", ("Fuse", CYL, (0.03, 0.03, 0.075), {0: "Glass"}), 2352, -250, GZ + 132, 0, grab=(10, 10, 10))
 ammo("ammo_den", 2300, -545, GZ + 0, 20)
 
 # ================================================================== GROUND: the downstairs bath
@@ -200,7 +200,7 @@ point("DanielRadioPoint", 2340, -400, UZ + 120)
 place("Curtains_Torn_Window", 1800, -578, UZ + 20, 0, DR, collide=False)
 place("Bunting_Banner", 2000, -578, UZ + 250, 0, DR, collide=False)
 put_note("note_daniel", "Letters_Scattered", 1686, -425, UZ + 78, 100, scale=0.7)
-put_pickup("pick_key_attic", "key_attic", "Attic key", CUBE, 1686, -372, UZ + 78, 110, (0.075, 0.022, 0.006), mats={0: "BrassOld"})
+put_pickup("pick_key_attic", "key_attic", "Attic key", ("Key", CUBE, (0.075, 0.022, 0.006), {0: "BrassOld"}), 1686, -372, UZ + 78, 110)
 ammo("ammo_daniel", 2085, -450, UZ + 62, 70)
 
 # ================================================================== UPSTAIRS: the sewing room that was going to be a nursery
@@ -217,7 +217,7 @@ put("Hatbox_Round", 2445, -525, UZ + 74, 0, SW)
 # the family, in rags: three with names stitched on, and one that is too tall
 for i, (m, s) in enumerate((("Rag_Doll_Sitting", 1.0), ("Rag_Doll_Sitting", 0.8), ("Rag_Doll_Sitting", 0.92), ("Effigy_Twig_Standing", 0.5))):
     put(m, 2440, -450 + i * 22, UZ + 74, 90, SW, name=f"FamilyDoll_{i}", scale=s)
-put_pickup("pick_shears", "shears", "Sewing shears", CUBE, 2456, -492, UZ + 74, 35, (0.21, 0.035, 0.008), grab=(14, 14, 9), mats={0: "Iron"})
+put_pickup("pick_shears", "shears", "Sewing shears", ("Shears", CUBE, (0.21, 0.035, 0.008), {0: "Iron"}), 2456, -492, UZ + 74, 35, grab=(14, 14, 9))
 put(CUBE, 2456, -492, UZ + 74.6, 62, SW, name="ShearsBlade2", scale=(0.21, 0.03, 0.007), mats={0: "Iron"}, tags=["Hide_shears"])
 place("Curtains_Torn_Window", 2600, -578, UZ + 20, 0, SW, collide=False)
 place("Teddy_Bear_Old", 2700, -520, UZ + 40, 30, SW, collide=False)

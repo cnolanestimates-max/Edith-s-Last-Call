@@ -431,8 +431,9 @@ def step_tex():
 exec(open(ROOT + "/Scripts/level/import_more.py", encoding="utf-8").read())
 exec(open(ROOT + "/Scripts/level/import_surfaces.py", encoding="utf-8").read())
 exec(open(ROOT + "/Scripts/level/import_variants.py", encoding="utf-8").read())
+exec(open(ROOT + "/Scripts/level/import_items.py", encoding="utf-8").read())
 
-for name, fn in (("kit", step_kit), ("her", step_her), ("mats", step_mats), ("audio", step_audio), ("tex", step_tex), ("props", step_props), ("decals", step_decals), ("extra", step_extra_mats), ("mega", step_mega), ("variants", step_variants), ("drawings", step_drawings)):
+for name, fn in (("kit", step_kit), ("her", step_her), ("mats", step_mats), ("audio", step_audio), ("tex", step_tex), ("props", step_props), ("decals", step_decals), ("extra", step_extra_mats), ("mega", step_mega), ("variants", step_variants), ("drawings", step_drawings), ("items", step_items)):
     if name in STEPS:
         try:
             fn()

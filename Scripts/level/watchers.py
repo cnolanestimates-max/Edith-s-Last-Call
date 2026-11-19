@@ -77,5 +77,5 @@ for i, (ox, oz, s_) in enumerate(((0, 0, 1.0), (4.2, 3.0, 0.6), (-3.6, -3.2, 0.5
     place(SPHERE, SETTLERS_X + ox, BKY - 0.4, BKZ + 13 + oz, -90, WF, name=f"BookHole_{i}", scale=(0.012, 8.6 * s_ / 50.0, 8.0 * s_ / 50.0), mats={0: "WC:M_Black"}, collide=False, shadow=False)
 watcher("book_eye", SETTLERS_X, BKY - 1.2, BKZ + 13, -90.0, 0.0, 0, 5.6, scripted=True)
 # the key that falls out of the hollowed book
-pickup("pick_key_desk", "key_desk", "Small desk key", CUBE, SETTLERS_X + 8, BKY - 52, GZ + 2.0, 35, (0.05, 0.018, 0.005), tags=["Show_bookkey"], mats={0: "BrassOld"})
+pickup("pick_key_desk", "key_desk", "Small desk key", ("Key", CUBE, (0.05, 0.018, 0.005), {0: "BrassOld"}), SETTLERS_X + 8, BKY - 52, GZ + 2.0, 35, tags=["Show_bookkey"])
 log("watchers: 8 eyes, 5 hanks of hair, the settlers book")

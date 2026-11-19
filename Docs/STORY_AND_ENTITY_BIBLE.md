@@ -63,8 +63,12 @@ going to be a nursery, the aide's room, a second bath. Attic. Cellar and the roo
 - **Movement:** she lurches, hips swaying, arms dangling like weights (Walk). When she comes fast her arms are out in front (Run) or
   she is down on all fours (Crawl). At rest she breathes and sways and her head ticks (Idle). She sits (the kitchen table, the rocking
   chair). She only stands to her full height twice (Rise / Tall). All of it is skeletal animation on a 24-bone rig.
-- **Sound:** a wet, rattling breath; the scream; a short hurt shriek when she is driven off; her own voice, close and gentle, when she
-  speaks. The house answers her: a floorboard under weight, a switch clicking off, a door that was shut.
+- **Face:** never still. The jaw hangs a little and works when she speaks; the brow creeps down over the eye; one side of the
+  upper lip twitches up off black teeth. When she screams the mouth opens far too long, down to her collar bone.
+- **Sound:** her feet first: bare, heavy, wet, on boards that creak under her weight. A wet, rattling breath; the scream; a short
+  hurt shriek when she is driven off. Her voice now is many voices at once, some far too low, a little out of step with each other.
+  Only in the memories does she sound like one old woman. Around the house, quietly: a laugh in another room, crying behind a wall,
+  humming, a whisper at the ear. The house answers her: a floorboard under weight, a switch clicking off, a door that was shut.
 - **Traces:** scratches at door height and above; pencil marks up a door frame; the places set at the table; lights that go out;
   flies.
 - **Rules (kept consistent):**
@@ -77,7 +81,23 @@ going to be a nursery, the aide's room, a second bath. Attic. Cellar and the roo
   5. She is strongest where she is tied: the three knots. Cut them where she lies and she is released.
 - **Staged reveal:** nothing for eight to ten minutes but the house (door, thumps, steps overhead, the rocking chair, a light going
   out, scratching, the radio) -> half a face at a doorway -> the whole of her walking the long hall -> her at the table -> her full
-  height in the dark -> under the bed -> in the rocking chair -> crawling in the attic -> sprinting the hall -> face to face in the cellar.
+  height in the dark -> only her arm, from under a bed -> in the rocking chair -> crawling in the attic -> sprinting the hall -> face
+  to face in the cellar.  Alongside, for anyone who looks: an eye in a hole in the wall, hair hanging from the rafters.
+
+## Entity bible: the Company
+
+- **What it is:** what answered her on the ninth night. It has no name; in her notes and drawings it is "my friend", "the Company",
+  "him". It gave her exactly what she asked for, never to be alone, by moving in.
+- **Look:** a standing black outline about nine feet tall with no face, no features and no light on it at all, like a hole cut in
+  the room. It never moves while it is looked at and it never comes closer.
+- **Behaviour:** it is seen at most four times, only after the first sight of Edith, at the far end of a room or hall. When the
+  light finds it the light stutters, and the corner is empty. It does not attack; Edith does that. It watches what it owns.
+- **Her drawings:** Edith has gone back to being a child. Crayon drawings on her sitting-room wall and around the house show a
+  small figure in a nightgown holding hands with a tall black one, the two of them at supper ("SUPPER FOR 2"), and in a
+  child's letters "HE NEVER LEVES". It is the only one who did not leave her.
+- **The memories:** each of the first three times she has hold of him he sees one, in order: the last Thanksgiving, her
+  family going out of the front door while she asks them to stay; the attic, where she finds her grandmother's book under
+  Danny's things; the ninth night, the candles, and the tall black shape in the corner. He later finds the same book in the attic.
 
 ## Beat sheet (planned route; times are estimates until a person has played it)
 
@@ -89,11 +109,11 @@ going to be a nursery, the aide's room, a second bath. Attic. Cellar and the roo
 | 3 | Upstairs hall | Climb the stairs | She is here | **S1 corner peek** |
 | 4 | Master bedroom | Follow her in | Empty room, diary 1; radio: the call came from inside the house; radio dies | |
 | 5 | Rear hall | Try the back door | Nailed. Fuse blows. Shots make her flinch | **S3 she walks the long hall, then runs** |
-| 6 | Pantry, den | Replace the fuse | Lights again | (stalks begin) |
+| 6 | Pantry, den | Replace the fuse | Lights again | (hunts begin: the first an ambush, later ones announced by her feet; each of the first three grabs shows a memory) |
 | 7 | Kitchen | The dead phone rings | "Sit down. Supper's getting cold." Drawer: brass key | **S2 she is at the table** |
-| 8 | Sitting room | Unlock | Diary 2, Ruth's letter, drawings; iron key, desk key | |
+| 8 | Sitting room, den | Unlock; read where the desk key is; pull the settlers' book | Diary 2, Ruth's letter, her drawings of her friend; iron key; desk key in the hollow book | **S10 her eye behind the book** |
 | 9 | Upstairs hall | Go back up | "She wants me here" | **S4 head by the ceiling, sprint** |
-| 10 | Ruth's room | Take the music box | Letter to Santa | **S7 under the bed** |
+| 10 | Ruth's room | Walk in; watch; then get the music box back from under the bed | Letter to Santa | **S7 the hand under the bed** (slow) |
 | 11 | Prayer room | Unlock | The knots, the last page, Walter's ring; needs scissors | |
 | 12 | Den | Open Walter's desk | His keys, cartridges | |
 | 13 | Upstairs rear | Daniel's room, aide's room, bath, sewing room | Danny's letter, attic key (his radio; "is that you, Danny?"); Pruitt's notebook; the dolls; shears | **S9 the rocking chair** |

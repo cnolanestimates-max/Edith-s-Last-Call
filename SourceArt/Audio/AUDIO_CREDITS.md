@@ -77,3 +77,7 @@ Dialogue generated with Google Gemini TTS (see VO/_manifest.json). Radio and pho
 - door_far_01: door_close_01 (re-processed)
 - door_far_02: door_creak_long (re-processed)
 - door_far_03: door_slam (re-processed)
+- her_step_01: Epic Stock Media - Tower Defense Game/WOODImpt_Hit Blood Spill Splat Wood Impact Light Hit Squelch Small Thump 03_ESM_TDG.wav + our own step_wood_01
+- her_step_02: Epic Stock Media - Tower Defense Game/WOODImpt_Hit Blood Spill Splat Wood Impact Light Hit Squelch Small Thump 03_ESM_TDG.wav + our own step_wood_03
+- her_step_03: Epic Stock Media - Tower Defense Game/WOODImpt_Hit Blood Spill Splat Wood Impact Light Hit Squelch Small Thump 03_ESM_TDG.wav + our own step_wood_02
+- her_step_04: Epic Stock Media - Tower Defense Game/WOODImpt_Hit Blood Spill Splat Wood Impact Light Hit Squelch Small Thump 03_ESM_TDG.wav + our own step_wood_05

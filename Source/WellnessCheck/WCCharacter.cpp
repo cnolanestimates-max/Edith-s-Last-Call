@@ -97,6 +97,38 @@ AWCCharacter::AWCCharacter()
 	Fill->SetVolumetricScatteringIntensity(0.f);
 	Fill->bUseInverseSquaredFalloff = true;
 
+	InspectBack = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("InspectBack"));
+	InspectBack->SetupAttachment(Cam);
+	InspectBack->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	InspectBack->SetCastShadow(false);
+	InspectBack->SetRelativeLocation(FVector(33.f, 0.f, 0.f));
+	InspectBack->SetRelativeScale3D(FVector(0.01f, 6.f, 6.f));
+	InspectBack->SetHiddenInGame(true);
+	InspectBack->bAffectDynamicIndirectLighting = false;
+	InspectBack->bAffectDistanceFieldLighting = false;
+	InspectMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("InspectMesh"));
+	InspectMesh->SetupAttachment(Cam);
+	InspectMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	InspectMesh->SetCastShadow(false);
+	InspectMesh->SetLightingChannels(false, false, true);
+	InspectMesh->SetHiddenInGame(true);
+	InspectMesh->bAffectDynamicIndirectLighting = false;
+	InspectMesh->bAffectDistanceFieldLighting = false;
+	for (int32 i = 0; i < 2; ++i)
+	{
+		UPointLightComponent* L = CreateDefaultSubobject<UPointLightComponent>(i == 0 ? TEXT("InspectKey") : TEXT("InspectFill"));
+		L->SetupAttachment(Cam);
+		L->SetRelativeLocation(i == 0 ? FVector(3.f, -15.f, 13.f) : FVector(6.f, 17.f, -9.f));
+		L->SetIntensityUnits(ELightUnits::Lumens);
+		L->SetIntensity(0.f);
+		L->SetAttenuationRadius(90.f);
+		L->SetLightColor(i == 0 ? FLinearColor(1.f, 0.9f, 0.76f) : FLinearColor(0.6f, 0.7f, 1.f));
+		L->SetCastShadows(false);
+		L->SetVolumetricScatteringIntensity(0.f);
+		L->SetLightingChannels(false, false, true);
+		(i == 0 ? InspectKey : InspectFill) = L;
+	}
+
 	Dust = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("Dust"));
 	Dust->SetupAttachment(GetCapsuleComponent());
 	Dust->SetUsingAbsoluteLocation(true);
@@ -501,7 +533,25 @@ void AWCCharacter::Tick(float Dt)
 	Cam->SetFieldOfView(FMath::FInterpTo(Cam->FieldOfView, WantFov, Dt, 8.f));
 
 	// ---- flashlight: lags behind the view and sways with your steps
-	const FQuat Target = Cam->GetComponentQuat();
+	{
+		FHitResult FH;
+		FCollisionQueryParams FQ(SCENE_QUERY_STAT(WCFlashAim), false, this);
+		const FVector CS = Cam->GetComponentLocation();
+		const FVector CFwd = Cam->GetForwardVector();
+		float Want = GetWorld()->LineTraceSingleByChannel(FH, CS, CS + CFwd * 1200.f, ECC_Visibility, FQ) ? FMath::Max(FH.Distance, 100.f) : 1200.f;
+		if (AWCDirector* DD = AWCDirector::Get(this))
+		{
+			AWCEntity* E = DD->Her();
+			if (E && E->IsShown())
+			{
+				const FVector Head = E->HeadLocation();
+				const float T = FVector::DotProduct(Head - CS, CFwd);
+				if (T > 30.f && T < Want && FVector::Dist(CS + CFwd * T, Head) < 95.f) Want = FMath::Max(T, 100.f);
+			}
+		}
+		AimDist = FMath::FInterpTo(AimDist, Want, Dt, 7.f);
+	}
+	const FQuat Target = ((Cam->GetComponentLocation() + Cam->GetForwardVector() * AimDist) - Flash->GetComponentLocation()).ToOrientationQuat();
 	AimQuat = FQuat::Slerp(AimQuat, Target, 1.f - FMath::Exp(-13.f * Dt)).GetNormalized();
 	const float Walk = FMath::Clamp(Speed / WalkSpeed, 0.f, 1.7f);
 	const FRotator SwayRot(0.7f * Walk * FMath::Sin(Clock * 6.3f), 0.9f * Walk * FMath::Sin(Clock * 3.15f), 0.f);
@@ -547,4 +597,54 @@ void AWCCharacter::Tick(float Dt)
 		}
 	}
 	TickDust(Dt);
+}
+
+// ---------------------------------------------------------------------------------------------- inventory: the thing held up
+void AWCCharacter::ShowInspect(UStaticMesh* InMesh, const TArray<UMaterialInterface*>& Mats, const FVector& PartScale)
+{
+	if (!InspectBack->GetStaticMesh())
+	{
+		InspectBack->SetStaticMesh(LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube")));
+		InspectBack->SetMaterial(0, LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/WC/Materials/M_Void.M_Void")));
+	}
+	InspectBack->SetHiddenInGame(false);
+	GunPivot->SetHiddenInGame(true, true);
+	FlashHand->SetHiddenInGame(true, true);
+	InspectPart = PartScale;
+	InspectMesh->SetStaticMesh(InMesh);
+	InspectMesh->EmptyOverrideMaterials();
+	for (int32 i = 0; i < Mats.Num(); ++i) if (Mats[i]) InspectMesh->SetMaterial(i, Mats[i]);
+	InspectMesh->SetHiddenInGame(InMesh == nullptr);
+	InspectKey->SetIntensity(InMesh ? 150.f : 0.f);
+	InspectFill->SetIntensity(InMesh ? 45.f : 0.f);
+}
+
+bool AWCCharacter::IsInspectFlat() const
+{
+	const UStaticMesh* M = InspectMesh->GetStaticMesh();
+	if (!M) return false;
+	const FVector E = M->GetBounds().BoxExtent * InspectPart;
+	return E.Z < 0.42f * FMath::Min(E.X, E.Y) || E.Z < 0.16f * FMath::Max(E.X, E.Y);
+}
+
+void AWCCharacter::SetInspectView(const FQuat& Rot, float Zoom)
+{
+	const UStaticMesh* M = InspectMesh->GetStaticMesh();
+	if (!M) return;
+	const FBoxSphereBounds B = M->GetBounds();
+	const float Radius = FMath::Max((B.BoxExtent * InspectPart).Size(), 0.3f);
+	const FVector Scale = InspectPart * (6.2f * Zoom / Radius);
+	InspectMesh->SetRelativeScale3D(Scale);
+	InspectMesh->SetRelativeRotation(Rot);
+	InspectMesh->SetRelativeLocation(FVector(21.f, 0.f, 1.4f) - Rot.RotateVector(B.Origin * Scale));
+}
+
+void AWCCharacter::HideInspect()
+{
+	InspectBack->SetHiddenInGame(true);
+	InspectMesh->SetHiddenInGame(true);
+	InspectKey->SetIntensity(0.f);
+	InspectFill->SetIntensity(0.f);
+	GunPivot->SetHiddenInGame(false, true);
+	FlashHand->SetHiddenInGame(false, true);
 }

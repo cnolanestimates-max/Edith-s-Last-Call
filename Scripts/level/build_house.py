@@ -285,7 +285,16 @@ def note(wid, mesh, x, y, z, yaw=0.0, scale=1.0, grab=(18, 18, 8), tags=(), pitc
     return a
 
 
+def ITEM(name, fallback=None):
+    """One of the small carried models (Scripts/art/build_items.py), or the plain shape it replaces if it is not imported yet."""
+    p = f"{G}/Props/SM_Item_{name}"
+    return asset(p) if eal.does_asset_exist(p) else fallback
+
+
 def pickup(wid, item, display, mesh, x, y, z, yaw=0.0, scale=1.0, grab=(12, 12, 8), tags=(), mats=None):
+    if isinstance(mesh, tuple):          # (item model name, plain fallback mesh, fallback scale, fallback mats)
+        real = ITEM(mesh[0])
+        mesh, scale, mats = (real, 1.0, None) if real else (mesh[1], mesh[2], mesh[3])
     a = interact("WCPickup", wid, mesh, x, y, z, yaw, "Take", grab, (0, 0, 4), scale, tags, mats=mats)
     a.set_editor_property("item_id", unreal.Name(item))
     a.set_editor_property("display_name", display)
@@ -633,7 +642,7 @@ interact("WCUsable", "phone", "Telephone_Rotary", 868, 536, GZ + 98, 20, "Pick u
 point("PhonePoint", 868, 536, GZ + 110)
 note("note_calendar", "Newspaper_Single", 1100, 219, GZ + 150, 0, pitch=0, roll=90, grab=(22, 6, 22))
 note("note_grocery", "Clipboard_Chart", 1480, 150, GZ + 4, 30)
-pickup("pick_key_sitting", "key_sitting", "Small brass key", CUBE, 1530, 300, GZ + 97, 20, (0.07, 0.022, 0.006), tags=["Show_drawer"], mats={0: "BrassOld"})
+pickup("pick_key_sitting", "key_sitting", "Small brass key", ("Key", CUBE, (0.07, 0.022, 0.006), {0: "BrassOld"}), 1530, 300, GZ + 97, 20, tags=["Show_drawer"])
 # ---- sitting room (back left, locked): her room
 S = D + "Sitting"
 place("Rug_Persian_Worn", 1200, -400, GZ, 90, S, collide=False)
@@ -647,7 +656,7 @@ place("Candle_Melted_Puddle", 1500, -470, GZ + 101, 0, S, collide=False)
 # (her drawings on this wall are real drawings now: memory.py)
 note("note_diary2", "Book_Open_Pages", 1500, -400, GZ + 101, 100)
 note("note_ruth", "Letters_Scattered", 1490, -340, GZ + 101, 60, scale=0.7)
-pickup("pick_key_prayer", "key_prayer", "Iron key on a ribbon", CUBE, 1510, -450, GZ + 102, 70, (0.08, 0.024, 0.006), mats={0: "Iron"})
+pickup("pick_key_prayer", "key_prayer", "Iron key on a ribbon", ("KeyIron", CUBE, (0.08, 0.024, 0.006), {0: "Iron"}), 1510, -450, GZ + 102, 70)
 note("note_deskkey", "Letters_Scattered", 1488, -372, GZ + 101.5, 20, scale=0.55)
 # ---- upstairs hall
 UH = D + "UpperHall"
@@ -721,7 +730,7 @@ for i, (x, y) in enumerate(((1100, 380), (1200, 300), (1300, 380))):
 place("Mirror_Standing_Cheval", 900, 520, UZ, 40, PR)
 place("Chain_Hanging", 1500, 560, UZ + 140, 0, PR, collide=False)
 note("note_prayer", "Scroll_Open", 1450, 320, UZ + 112, 250, grab=(22, 22, 14))
-pickup("pick_keep_walter", "keep_walter", "Walter's wedding ring", CYL, 1180, 535, UZ + 102, 0, (0.022, 0.022, 0.006), mats={0: "Gold"})
+pickup("pick_keep_walter", "keep_walter", "Walter's wedding ring", ("Ring", CYL, (0.022, 0.022, 0.006), {0: "Gold"}), 1180, 535, UZ + 102, 0)
 # ---- attic
 AT = D + "Attic"
 interact("WCUsable", "trunk", "Chest_Trunk", 760, -430, AZ, 90, "Open the footlocker", (50, 30, 36), (0, 0, 36))

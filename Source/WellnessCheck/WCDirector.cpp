@@ -362,6 +362,7 @@ void AWCDirector::GiveItem(FName Item, const FString& DisplayName)
 	Items.Add(Item);
 	Play2D(TEXT("pickup"), 0.7f);
 	if (!DisplayName.IsEmpty()) ShowToast(FString::Printf(TEXT("Taken: %s"), *DisplayName));
+	if (!Item.ToString().StartsWith(TEXT("ammo")) && !Has(TEXT("inv_hint"))) { Set(TEXT("inv_hint")); ShowHint(TEXT("Tab: what you are carrying"), 7.f); }
 }
 
 void AWCDirector::SetObjective(const FString& Text)

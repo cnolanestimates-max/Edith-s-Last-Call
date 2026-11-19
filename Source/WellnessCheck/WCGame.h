@@ -28,7 +28,7 @@ public:
 };
 
 UENUM()
-enum class EWCScreen : uint8 { None, Main, Pause, Settings, Controls };
+enum class EWCScreen : uint8 { None, Main, Pause, Settings, Controls, Inventory };
 
 UCLASS()
 class WELLNESSCHECK_API AWCHUD : public AHUD
@@ -52,6 +52,30 @@ private:
 	void DrawNote(AWCDirector* D);
 	void DrawMenu(AWCDirector* D);
 	void DrawCredits(AWCDirector* D);
+
+	// inventory
+	struct FInvItem { FName Id; FString Name; FString Desc; };
+	void DrawInventory(AWCDirector* D);
+	void DrawNotePage(const class AWCNote* N, const TCHAR* Footer);
+	void OpenInventory(AWCDirector* D);
+	void CloseInventory(AWCDirector* D);
+	void BuildInventory(AWCDirector* D, TArray<FInvItem>& Out) const;
+	void ShowInvItem(AWCDirector* D, FName Id);
+	void InvUse(AWCDirector* D, FName Id);
+	bool InvCanDrop(AWCDirector* D, FName Id, FString& Why) const;
+	void InvDrop(AWCDirector* D, FName Id);
+	void InvSay(const FString& Line) { InvMsg = Line; InvMsgUntil = RealNow + 3.5; }
+	int32 InvSel = 0, InvAct = 0, InvTab = 0, InvPaper = 0;
+	bool bInvInspect = false;
+	float InvYaw = 0.f, InvPitch = 0.f, InvZoom = 1.f, InvMX = 0.f, InvMY = 0.f;
+	double InvLast = 0.0, InvMsgUntil = 0.0, InvTouchedAt = -10.0;
+	FName InvShown;
+	FString InvMsg;
+	TWeakObjectPtr<class AWCInteractable> InvFocus;
+	TWeakObjectPtr<class AWCNote> InvNote;
+	FString InvTestDir;
+	int32 InvTestStage = 0;
+	double InvTestAt = 0.0;
 	void BuildItems(AWCDirector* D, TArray<FItem>& Out) const;
 	void Activate(AWCDirector* D, const FItem& It, int32 Dir);
 	void Open(EWCScreen S);

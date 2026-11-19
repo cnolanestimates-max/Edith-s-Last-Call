@@ -185,6 +185,30 @@ bool AWCDirector::HouseEvent(FName Id)
 		After(0.8f, [this]() { Think(TEXT("A living hand, and something to cut with. She said scissors.")); });
 		return false;     // the story also listens for this
 	}
+	if (Id == TEXT("invuse:radio"))
+	{
+		Play2D(TEXT("radio_static"), 0.6f);
+		Think(Has(TEXT("locked_in")) ? TEXT("Static. Nothing gets out of this house.") : TEXT("Dispatch reads me fine out here."));
+		return true;
+	}
+	if (Id == TEXT("invuse:keep_ruth"))
+	{
+		// it still plays; and somewhere in the house something hums along
+		TWeakObjectPtr<UAudioComponent> Box = Play2D(TEXT("musicbox"), 0.55f);
+		After(6.5f, [Box]() { if (Box.IsValid()) Box->FadeOut(1.5f, 0.f); });
+		Think(TEXT("It still plays."));
+		if (Has(TEXT("locked_in")) && !bBusy)
+		{
+			After(4.6f, [this]()
+			{
+				AWCCharacter* Pl = Player();
+				if (!Pl || bBusy) return;
+				PlayAt(TEXT("VO/m_hum"), Pl->GetActorLocation() + FRotator(0.f, Rng.FRandRange(0.f, 360.f), 0.f).Vector() * 650.f, 0.6f, 1.f, 2600.f);
+				Tension = FMath::Min(1.f, Tension + 0.2f);
+			});
+		}
+		return true;
+	}
 	if (Id == TEXT("use:fusebox"))
 	{
 		Set(TEXT("seen_fusebox"));
