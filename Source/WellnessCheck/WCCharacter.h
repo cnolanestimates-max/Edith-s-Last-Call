@@ -70,7 +70,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "WC") float SprintSpeed = 190.f;
 	UPROPERTY(EditAnywhere, Category = "WC") float CrouchSpeed = 62.f;
 	UPROPERTY(EditAnywhere, Category = "WC") float InteractRange = 230.f;
-	UPROPERTY(EditAnywhere, Category = "WC") float FlashLumens = 1500.f;
+	UPROPERTY(EditAnywhere, Category = "WC") float FlashLumens = 980.f;
 
 	int32 Ammo = 8;
 	int32 Reserve = 16;

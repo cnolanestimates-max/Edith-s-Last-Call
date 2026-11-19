@@ -617,6 +617,11 @@ void AWCDirector::StoryTick(float Dt)
 		Tension = FMath::FInterpConstantTo(Tension, Floor, Dt, 0.012f);
 	}
 
+	for (int32 i = Deferred.Num() - 1; i >= 0; --i)
+	{
+		if (Deferred[i].Valid && !Deferred[i].Valid()) { FDeferred D = Deferred[i]; Deferred.RemoveAt(i); if (D.Skip) D.Skip(); }
+		else if (!bBusy && (Gate() || Clock >= Deferred[i].Deadline)) { FDeferred D = Deferred[i]; Deferred.RemoveAt(i); if (D.Go) D.Go(); }
+	}
 	if (Has(TEXT("kids_pending")) && !Has(TEXT("kids_open")) && Gate())
 	{
 		// a quiet while after the hallway, a door that was locked creaks open and a music box starts
@@ -1031,6 +1036,17 @@ void AWCDirector::ScareAttic()
 	After(T, [this]() { GiveItem(TEXT("key_cellar"), TEXT("Padlock key")); });
 	After(T + 1.4f, [this]()
 	{
+		const float AtticZ = Pos(TEXT("Her_AtticFar")).Z;
+		WhenQuiet([this]() { AtticCrawl(); },
+			[this, AtticZ]() { AWCCharacter* Pl = Player(); return Pl && Pl->GetActorLocation().Z > AtticZ - 40.f; },
+			[this]() { Set(TEXT("attic_done")); Rest(60.f); SetObjective(TEXT("Unlock the cellar")); Checkpoint(TEXT("attic_done")); }, 50.f);
+	});
+}
+
+void AWCDirector::AtticCrawl()
+{
+	UE_LOG(LogWCStory, Display, TEXT("WCSCARE t=%.1f S5_crawl"), PlaySeconds);
+	{
 		AWCEntity* H = Her();
 		AWCCharacter* P = Player();
 		if (!H || !P) { Set(TEXT("attic_done"));
@@ -1076,16 +1092,45 @@ void AWCDirector::ScareAttic()
 				});
 			});
 		});
-	});
+	}
 }
 
 // ---------------------------------------------------------------------------------------------- S6 the sprint down the hall
 void AWCDirector::ScareCellarDoor()
 {
 	Set(TEXT("sprint_started"));
-	UE_LOG(LogWCStory, Display, TEXT("WCSCARE t=%.1f S6_sprint"), PlaySeconds);
 	float T = Say(TEXT("d_cellar_open"), 0.6f);
 	After(T + 0.5f, [this]()
+	{
+		// she comes when it has been quiet for a while; if he is already at the bottom by then, the door just shuts on him
+		WhenQuiet([this]() { CellarSprint(); },
+			[this]() { AWCCharacter* Pl = Player(); return Pl && Pl->GetActorLocation().Z > -230.f; },
+			[this]() { CellarQuiet(); }, 150.f);
+	});
+}
+
+void AWCDirector::CellarQuiet()
+{
+	if (Has(TEXT("sprint_done"))) return;
+	UE_LOG(LogWCStory, Display, TEXT("WCEVENT t=%.1f cellar door shuts behind him (no rush)"), PlaySeconds);
+	if (AWCDoor* D = Door(TEXT("cellar")))
+	{
+		D->Slam(); D->SetLocked(true); D->KeyId = NAME_None;
+		PlayAt(TEXT("door_slam"), D->GetActorLocation() + FVector(0, 0, 110), 1.f, 0.9f, 3000.f);
+	}
+	if (AWCCharacter* Pl = Player()) { Pl->FlickerLight(1.4f, 0.8f); Pl->AddShake(0.4f); }
+	Tension = 0.8f;
+	Set(TEXT("sprint_done"));
+	ApplyWorldState();
+	After(1.6f, [this]() { Think(TEXT("The door. She shut it.")); });
+	Say(TEXT("d_cellar"), 4.f);
+	SetObjective(TEXT("Find her"));
+	Checkpoint(TEXT("cellar"));
+}
+
+void AWCDirector::CellarSprint()
+{
+	UE_LOG(LogWCStory, Display, TEXT("WCSCARE t=%.1f S6_sprint"), PlaySeconds);
 	{
 		AWCEntity* H = Her();
 		AWCCharacter* P = Player();
@@ -1099,7 +1144,16 @@ void AWCDirector::ScareCellarDoor()
 		SprintStart = -1.0;
 		bSprintActive = true;
 		Tension = 1.f;
-	});
+	}
+}
+
+void AWCDirector::WhenQuiet(TFunction<void()> Go, TFunction<bool()> Valid, TFunction<void()> Skip, float MaxWait)
+{
+	if (Gate() && !bBusy) { Go(); return; }
+	FDeferred D;
+	D.Go = MoveTemp(Go); D.Valid = MoveTemp(Valid); D.Skip = MoveTemp(Skip);
+	D.Deadline = Clock + MaxWait * FMath::Max(TestPace, 0.15f);
+	Deferred.Add(MoveTemp(D));
 }
 
 // ---------------------------------------------------------------------------------------------- S8 finale

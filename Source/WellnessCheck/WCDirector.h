@@ -144,7 +144,14 @@ public:
 	/** A line of on-screen text with no voice: what he notices. */
 	void Think(const FString& Text, float Seconds = -1.f);
 		bool Gate() const { return Clock >= NextScareAt && StalkState == 0 && !bDriving; }
-	void Rest(float Seconds) { NextScareAt = FMath::Max(NextScareAt, Clock + Seconds * TestPace); }
+	void Rest(float Seconds) { NextScareAt = FMath::Max(NextScareAt, Clock + Seconds * 1.6f * TestPace); }       // 1.6: she asked for them further apart
+	/** Run Go at the next quiet stretch (now, if it is quiet). If Valid turns false first, run Skip instead. */
+	void WhenQuiet(TFunction<void()> Go, TFunction<bool()> Valid, TFunction<void()> Skip, float MaxWait);
+	struct FDeferred { TFunction<void()> Go; TFunction<bool()> Valid; TFunction<void()> Skip; double Deadline = 0.0; };
+	TArray<FDeferred> Deferred;
+	void CellarSprint();
+	void CellarQuiet();
+	void AtticCrawl();
 	float TestPace = 1.f;
 	double NextScareAt = 0.0;
 	float LockInDist0 = 0.f;

@@ -211,6 +211,7 @@ void AWCDirector::BeginPlay()
 void AWCDirector::EndPlay(const EEndPlayReason::Type Reason)
 {
 	Steps.Reset();
+	Deferred.Reset();
 	Super::EndPlay(Reason);
 }
 

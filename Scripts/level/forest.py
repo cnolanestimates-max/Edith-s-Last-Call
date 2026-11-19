@@ -222,8 +222,8 @@ for i, dy in enumerate((-62, 62)):
 # what the headlights do to the road itself: a wide wash from above the bumper, falling on the dirt and the verges
 cpart(light_spot("RoadWash", CRX + 230, CRY, 120, 0, -17, 8500, (1.0, 0.93, 0.8), 3600, 34, 62, "Cruiser", tags=["Hide_dawn", "Headlight"], shadows=False, vol=0.5))
 cpart(light_point("TailGlow", CRX - 262, CRY, 50, 30, (1.0, 0.05, 0.03), 500, "Cruiser", tags=["Hide_dawn", "CarRunning"], shadows=False, vol=1.0, source=10))
-cpart(light_point("DashGlow", CRX + 44, CRY - 37, -40 + 92, 0.16, (0.55, 1.0, 0.7), 60, "Cruiser", tags=["CarRunning"], shadows=False, vol=0.0, source=1))
-cpart(light_point("CabinFill", CRX - 10, CRY - 10, -40 + 138, 0.55, (0.55, 0.66, 1.0), 170, "Cruiser", tags=["CarRunning"], shadows=False, vol=0.0, source=6))
+cpart(light_point("DashGlow", CRX + 44, CRY - 37, -40 + 92, 5.0, (0.55, 1.0, 0.7), 60, "Cruiser", tags=["CarRunning"], shadows=False, vol=0.0, source=1))
+cpart(light_point("CabinFill", CRX - 10, CRY - 10, -40 + 138, 30.0, (0.55, 0.66, 1.0), 170, "Cruiser", tags=["CarRunning"], shadows=False, vol=0.0, source=6))
 cpart(box("LightbarR", CRX - 20, CRX + 5, CRY + 8, CRY + 60, 136, 148, "WC:M_Black", "Cruiser", collide=False, shadow=False))
 cpart(box("LightbarB", CRX - 20, CRX + 5, CRY - 60, CRY - 8, 136, 148, "WC:M_Black", "Cruiser", collide=False, shadow=False))
 # the cabin from the driver's seat (the car model has no interior): dash, wheel, pillars, roof, mirror, radio
@@ -233,7 +233,7 @@ DASH = "WC:M_Dash"
 
 def cab(name, f0, f1, l0, l1, u0, u1, mat=DASH):
     """Box in car space: f = forward of the car's middle, l = to the driver's left, u = up from the ground."""
-    return cpart(box(name, CRX + f0, CRX + f1, CRY - l1, CRY - l0, -40 + u0, -40 + u1, mat, CAB, collide=False, shadow=False))
+    return cpart(box(name, CRX + f0, CRX + f1, CRY - l1, CRY - l0, -40 + u0, -40 + u1, mat, CAB, collide=False, shadow=False, tags=["CabinOnly"]))
 
 
 cab("DashTop", 62, 108, -80, 80, 92, 104)
@@ -262,10 +262,10 @@ for k in range(14):
     def wp(a):
         # ring in a plane tilted 22 degrees back from vertical
         return (CRX + WX - math.sin(a) * WR * 0.38, CRY - (WL + math.cos(a) * WR), -40 + WU + math.sin(a) * WR * 0.93)
-    cpart(beam(f"Wheel_{k}", wp(a0), wp(a1), 3.4, 3.4, DASH, wdir=(1, 0, 0), shadow=False, folder=CAB))
-cpart(beam("WheelSpoke", (CRX + WX, CRY - (WL - WR), -40 + WU), (CRX + WX, CRY - (WL + WR), -40 + WU), 3.0, 3.0, DASH, wdir=(1, 0, 0), shadow=False, folder=CAB))
-cpart(beam("WheelColumn", (CRX + WX, CRY - WL, -40 + WU), (CRX + 62, CRY - WL, -40 + 86), 7, 7, DASH, wdir=(0, 1, 0), shadow=False, folder=CAB))
-cpart(point("DriverSeat", CRX + 6, CRY - 37, -40 + 119, 0, tags=["DriverSeat"], folder="Cruiser"))
+    cpart(beam(f"Wheel_{k}", wp(a0), wp(a1), 3.4, 3.4, DASH, wdir=(1, 0, 0), shadow=False, folder=CAB, tags=["CabinOnly"]))
+cpart(beam("WheelSpoke", (CRX + WX, CRY - (WL - WR), -40 + WU), (CRX + WX, CRY - (WL + WR), -40 + WU), 3.0, 3.0, DASH, wdir=(1, 0, 0), shadow=False, folder=CAB, tags=["CabinOnly"]))
+cpart(beam("WheelColumn", (CRX + WX, CRY - WL, -40 + WU), (CRX + 62, CRY - WL, -40 + 86), 7, 7, DASH, wdir=(0, 1, 0), shadow=False, folder=CAB, tags=["CabinOnly"]))
+cpart(point("DriverSeat", CRX + 6, CRY - 37, -40 + 126, 0, tags=["DriverSeat"], folder="Cruiser"))
 for a in CAR_PARTS:
     a.attach_to_actor(car, unreal.Name(""), unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD, False)
 interact("WCUsable", "cruiser", None, CRX + 30, CRY - 100, 40, 0, "Radio it in", (90, 30, 50), (0, 0, 0))

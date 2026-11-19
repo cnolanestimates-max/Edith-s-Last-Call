@@ -578,7 +578,7 @@ place("Coat_Rack", 60, 150, GZ, 0, D + "Hall")
 place("Umbrella_Stand_Umbrellas", 55, -150, GZ, 0, D + "Hall")
 place(TABLE, 300, 150, GZ, 0, D + "Hall")
 place("Clock_Grandfather", 1100, -168, GZ, 0, D + "Hall")
-place("Portrait_Large", 1000, 181, GZ + 130, 180, D + "Hall", collide=False)
+place("Portrait_Large", 1400, 181, GZ + 130, 180, D + "Hall", collide=False)        # was at x 1000: the middle of the kitchen doorway
 place("Portrait_Oval", 600, 181, GZ + 150, 180, D + "Hall", collide=False)
 place("Portrait_Slashed", 1250, -181, GZ + 140, 0, D + "Hall", collide=False)
 place("Mirror_Covered_Sheet", 2730, 120, GZ, 250, D + "Hall")

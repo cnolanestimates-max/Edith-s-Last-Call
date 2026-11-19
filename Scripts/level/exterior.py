@@ -94,9 +94,15 @@ for _h in _open:
     _rects = cut(_rects, _h)
 for _i, (_a, _b, _c, _d) in enumerate(_rects):
     box(f"Foundation_{_i}", _a, _b, _c, _d, -40, 0, M_STONE, EX)
-box("WaterTable", -64, XB + 64, -664, 664, -6, 8, M_TRIM, EX, collide=False)
-box("BandBoard", -58, XB + 58, -658, 658, 328, 352, M_TRIM, EX, collide=False)
-box("Frieze", -60, XB + 60, -660, 660, 662, 702, M_TRIM, EX, collide=False)
+# The three trim bands run right through the house as slabs (their tops are what you walk on indoors), so each one has to
+# be open over the stair tower and over the places where its floor has rotted through.  They used to be solid: you walked
+# up or down through a floor at the cellar, the upstairs landing and the attic.
+for _nm, (_m, _lo, _hi, _lvl) in {"WaterTable": (64, -6, 8, GZ), "BandBoard": (58, 328, 352, UZ), "Frieze": (60, 662, 702, AZ)}.items():
+    _rects = [(-_m, XB + _m, -600 - _m, 600 + _m)]
+    for _h in [(SX0, SX1, SY0, SY1 + 16)] + list(HOLES.get(_lvl, [])):
+        _rects = cut(_rects, _h)
+    for _i, (_a, _b, _c, _d) in enumerate(_rects):
+        box(f"{_nm}_{_i}", _a, _b, _c, _d, _lo, _hi, M_TRIM, EX, collide=False)
 for (x, y) in ((-52, -652), (-52, 652), (XB + 52, -652), (XB + 52, 652), (1600, -652), (1600, 652)):
     box(f"CornerBoard_{int(x)}_{int(y)}", x - 9, x + 9, y - 9, y + 9, 0, 700, M_TRIM, EX, collide=False)
 

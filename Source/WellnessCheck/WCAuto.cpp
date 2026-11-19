@@ -8,6 +8,8 @@
 #include "WCWorld.h"
 
 #include "EngineUtils.h"
+#include "Engine/StaticMesh.h"
+#include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
@@ -89,10 +91,27 @@ void AWCDirector::AutoBegin()
 		Fade = 0.f; FadeTarget = 0.f;
 		SwitchRoom(TEXT("hall"), true, false);
 		Wait(4.f);
-		if (FParse::Param(FCommandLine::Get(), TEXT("WCStairOnly")))
+		if (FParse::Param(FCommandLine::Get(), TEXT("WCCarOnly")))
+		{
+			static const TCHAR* Views[][2] = {
+				{ TEXT("at:-1180,60,52,141,-6"), TEXT("car_1_front_quarter") }, { TEXT("at:-1480,-60,52,90,-6"), TEXT("car_2_side") },
+				{ TEXT("at:-1800,520,52,-35,-6"), TEXT("car_3_rear_quarter") }, { TEXT("at:-1250,560,110,-131,-14"), TEXT("car_4_high_quarter") },
+				{ TEXT("at:-1130,300,52,180,-4"), TEXT("car_5_front") } };
+			for (const auto& Vw : Views) { AutoSteps.Add({ A_Do, Vw[0], 0.f }); Wait(1.2f); Shot(Vw[1]); }
+		}
+		else if (FParse::Param(FCommandLine::Get(), TEXT("WCStairOnly")))
 		{
 			if (AWCDoor* Cd = Door(TEXT("cellar"))) { Cd->SetLocked(false); Cd->SetOpen(true, 0.1f, true); }
 			if (AWCDoor* Ad = Door(TEXT("up_attic"))) { Ad->SetLocked(false); Ad->SetOpen(true, 0.1f, true); }
+			static const TCHAR* Views[][2] = {
+				{ TEXT("at:150,-88,-258,0,8"), TEXT("view_01_cellar_hall_to_stairs") }, { TEXT("at:440,-88,-225,0,30"), TEXT("view_02_cellar_flight_foot_up") },
+				{ TEXT("at:600,-88,-83,0,22"), TEXT("view_03_cellar_flight_mid_up") }, { TEXT("at:770,-88,62,180,-34"), TEXT("view_04_cellar_flight_top_down") },
+				{ TEXT("at:930,70,92,-133,-4"), TEXT("view_05_hall_to_cellar_door") }, { TEXT("at:330,-88,92,0,24"), TEXT("view_06_main_flight_foot_up") },
+				{ TEXT("at:600,-88,267,0,22"), TEXT("view_07_main_flight_mid_up") }, { TEXT("at:770,-88,412,180,-34"), TEXT("view_08_main_flight_top_down") },
+				{ TEXT("at:330,-88,442,0,24"), TEXT("view_09_attic_flight_foot_up") }, { TEXT("at:600,-88,617,0,22"), TEXT("view_10_attic_flight_mid_up") },
+				{ TEXT("at:770,-88,762,180,-34"), TEXT("view_11_attic_flight_top_down") }, { TEXT("at:1040,120,792,-140,-22"), TEXT("view_12_attic_to_stair_opening") },
+				{ TEXT("at:600,-88,442,0,60"), TEXT("view_13_upstairs_in_well_look_up") }, { TEXT("at:600,-88,-258,0,60"), TEXT("view_14_cellar_in_well_look_up") } };
+			for (const auto& Vw : Views) { AutoSteps.Add({ A_Do, Vw[0], 0.f }); Wait(0.9f); Shot(Vw[1]); }
 			AutoSteps.Add({ A_Tele, TEXT("A_Foyer"), 0.f }); Wait(1.5f);
 			AutoSteps.Add({ A_Go, TEXT("N_up_land"), 0.f }); Shot(TEXT("stairs_1_up_landing"));
 			AutoSteps.Add({ A_Go, TEXT("N_attic_top"), 0.f }); Shot(TEXT("stairs_2_attic_top"));
@@ -222,7 +241,7 @@ void AWCDirector::AutoBegin()
 	Use(TEXT("up_attic")); Go(TEXT("A_Attic")); Wait(2.f); Shot(TEXT("22_attic")); Use(TEXT("trunk")); Flag(TEXT("attic_started"), 5.f);
 	WaitHer(25.f); LookHer(1.2f); Shot(TEXT("23_S5_crawl")); LookHer(2.2f); Shot(TEXT("24_S5_rise")); Flag(TEXT("attic_done"), 30.f); Wait(8.f);
 	// ---- S6: the cellar door
-	Use(TEXT("cellar")); Flag(TEXT("sprint_started"), 10.f); WaitHer(12.f); LookHer(0.7f); Shot(TEXT("25_S6_sprint")); LookHer(4.f);
+	Use(TEXT("cellar")); Flag(TEXT("sprint_started"), 10.f); WaitHer(40.f); LookHer(0.7f); Shot(TEXT("25_S6_sprint")); LookHer(4.f);
 	Flag(TEXT("sprint_done"), 40.f); Wait(5.f); Shot(TEXT("26_cellar"));
 	// ---- finale
 	Go(TEXT("A_CellarShelf")); Use(TEXT("shelf")); Wait(5.f); Go(TEXT("A_Root")); Flag(TEXT("seen_body"), 10.f); Wait(6.f); Shot(TEXT("27_body"));
@@ -439,6 +458,46 @@ void AWCDirector::AutoTick(float Dt)
 		if (S.Arg == TEXT("drawings"))
 		{
 			if (AController* C = P->GetController()) C->SetControlRotation((FVector(818.f, -430.f, P->GetActorLocation().Z + 72.f) - P->EyeLocation()).Rotation());
+		}
+		else if (S.Arg.ToString().StartsWith(TEXT("at:")))
+		{
+			TArray<FString> V;
+			S.Arg.ToString().Mid(3).ParseIntoArray(V, TEXT(","));
+			if (V.Num() >= 5)
+			{
+				P->TeleportToCheckpoint(FVector(FCString::Atof(*V[0]), FCString::Atof(*V[1]), FCString::Atof(*V[2])), FCString::Atof(*V[3]));
+				if (AController* C = P->GetController()) C->SetControlRotation(FRotator(FCString::Atof(*V[4]), FCString::Atof(*V[3]), 0.f));
+				P->SetFlashlight(true, false);
+				{
+					// anything, whether or not it has collision: trace against the visible meshes themselves
+					const FVector Eye(FCString::Atof(*V[0]), FCString::Atof(*V[1]), FCString::Atof(*V[2]) + 66.f);
+					const FVector Fwd = FRotator(FCString::Atof(*V[4]), FCString::Atof(*V[3]), 0.f).Vector();
+					auto What = [this, &Eye](const FVector& Dir, float Len) -> FString
+					{
+						FString Out; float Best = Len;
+						for (TActorIterator<AActor> It(GetWorld()); It; ++It)
+						{
+							if (It->IsHidden()) continue;
+							TArray<UStaticMeshComponent*> Comps; It->GetComponents(Comps);
+							for (UStaticMeshComponent* C2 : Comps)
+							{
+								if (!C2->IsVisible() || !C2->GetStaticMesh()) continue;
+								// in the piece's own space, so a tilted board is tested as the board it is
+								const FTransform Tm = C2->GetComponentTransform();
+								const FBox B = C2->GetStaticMesh()->GetBoundingBox();
+								FVector HitLoc, HitNorm; float HitT;
+								if (FMath::LineExtentBoxIntersection(B, Tm.InverseTransformPosition(Eye), Tm.InverseTransformPosition(Eye + Dir * Len), FVector::ZeroVector, HitLoc, HitNorm, HitT) && HitT * Len < Best && HitT > 0.001f)
+								{
+									Best = HitT * Len;
+									Out = FString::Printf(TEXT("%s at %.0f cm"), *It->GetActorNameOrLabel(), Best);
+								}
+							}
+						}
+						return Out.IsEmpty() ? FString(TEXT("nothing")) : Out;
+					};
+					UE_LOG(LogWCAuto, Display, TEXT("WCVIEW %s: ahead = %s; straight up = %s"), *S.Arg.ToString(), *What(Fwd, 900.f), *What(FVector(0, 0, 1), 900.f));
+				}
+			}
 		}
 		else if (S.Arg == TEXT("s7")) { bBusy = false; ScareUnderBed(); }
 		else if (S.Arg == TEXT("grab"))

@@ -14,6 +14,7 @@
 #include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "HAL/FileManager.h"
 #include "Engine/PostProcessVolume.h"
 #include "UnrealClient.h"
 #include "Misc/Paths.h"
@@ -24,6 +25,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogWCHouse, Log, All);
 // ================================================================================================ set-up
 void AWCDirector::HouseBegin()
 {
+	ShowTagged(TEXT("CabinOnly"), false);
 	Rooms.Reset();
 	for (TActorIterator<AActor> It(GetWorld()); It; ++It)
 	{
@@ -57,7 +59,7 @@ void AWCDirector::HouseBegin()
 		if (It->ActorHasTag(TEXT("DriverSeat"))) Seat = *It;
 	}
 	bPowerOut = Has(TEXT("power_out")) && !Has(TEXT("fuse_done"));
-	NextStalkAt = Clock + 120.0;
+	NextStalkAt = Clock + 300.0;
 	UE_LOG(LogWCHouse, Display, TEXT("WCHOUSE %d lit rooms, %d nav points, car %d"), Rooms.Num(), NavPts.Num(), Car.IsValid() ? 1 : 0);
 }
 
@@ -384,6 +386,7 @@ static FVector PathPoint(const TArray<FVector>& Pts, const TArray<float>& Len, f
 
 void AWCDirector::BeginDrive()
 {
+	ShowTagged(TEXT("CabinOnly"), true);          // the inside of the car exists only while he is in it
 	DrivePts.Reset(); DriveLen.Reset();
 	TArray<TPair<FString, FVector>> Raw;
 	for (TActorIterator<AActor> It(GetWorld()); It; ++It)
@@ -479,11 +482,13 @@ void AWCDirector::EndDrive()
 	if (!bDriving) return;
 	bDriving = false;
 	Set(TEXT("arrived"));
+	ShowTagged(TEXT("CabinOnly"), false);
 	if (FParse::Param(FCommandLine::Get(), TEXT("WCDriveOnly")))
 	{
 		const FString Dir0 = AutoShotDir;
 		After(5.f, [Dir0]() { if (!Dir0.IsEmpty()) FScreenshotRequest::RequestScreenshot(Dir0 / TEXT("drive_parked.png"), false, false); });
-		After(7.f, [this]() { UKismetSystemLibrary::QuitGame(this, UGameplayStatics::GetPlayerController(this, 0), EQuitPreference::Quit, false); });
+		// when filming, stay until he has walked up to the house
+		After(FParse::Param(FCommandLine::Get(), TEXT("WCFilm")) ? 34.f : 7.f, [this]() { UKismetSystemLibrary::QuitGame(this, UGameplayStatics::GetPlayerController(this, 0), EQuitPreference::Quit, false); });
 	}
 	if (Car.IsValid()) Car->SetActorLocationAndRotation(CarHome, CarHomeRot);
 	Play2D(TEXT("car_stop"), 0.6f);
@@ -523,7 +528,7 @@ void AWCDirector::TickStalk(float Dt)
 	if (StalkState == 0)
 	{
 		const bool bMay = Has(TEXT("lockin_done")) && !Has(TEXT("sprint_started")) && !Has(TEXT("dawn")) && !bBusy && !H->IsShown() && !ActiveNote.IsValid()
-			&& !Has(TEXT("phone_ringing")) && Clock >= NextScareAt && Clock >= NextStalkAt && StalksDone < 6 && L.Z > -60.f && L.Z < 560.f && !P->IsDown();
+			&& !Has(TEXT("phone_ringing")) && Clock >= NextScareAt && Clock >= NextStalkAt && StalksDone < 4 && L.Z > -60.f && L.Z < 560.f && !P->IsDown();
 		if (!bMay) return;
 		// somewhere on this floor, not too near, where he is not looking
 		FVector Best = FVector::ZeroVector; float BestScore = -1.f;
@@ -609,7 +614,7 @@ void AWCDirector::TickStalk(float Dt)
 				}
 			});
 			Rest(170.f);
-			NextStalkAt = Clock + Rng.FRandRange(210.f, 320.f) * FMath::Max(TestPace, 0.3f);
+			NextStalkAt = Clock + Rng.FRandRange(360.f, 540.f) * FMath::Max(TestPace, 0.3f);
 			return;
 		}
 		// she gives up if he gets right away from her
@@ -661,7 +666,7 @@ void AWCDirector::EndStalk(bool bDriven)
 		else H->Vanish();
 	}
 	Rest(bDriven ? 150.f : 90.f);
-	NextStalkAt = Clock + Rng.FRandRange(200.f, 330.f) * FMath::Max(TestPace, 0.3f);
+	NextStalkAt = Clock + Rng.FRandRange(360.f, 540.f) * FMath::Max(TestPace, 0.3f);
 	Tension = 0.5f;
 	UE_LOG(LogWCHouse, Display, TEXT("WCSTALK t=%.1f end driven=%d"), PlaySeconds, bDriven ? 1 : 0);
 }
@@ -669,6 +674,18 @@ void AWCDirector::EndStalk(bool bDriven)
 // ================================================================================================ per-frame
 void AWCDirector::HouseTick(float Dt)
 {
+	{
+		// -WCVideo=<dir>: every frame of the opening as a numbered picture (run with -UseFixedTimeStep -FPS=30)
+		static FString VideoDir;
+		static bool bVideoInit = false;
+		static int32 VideoFrame = 0;
+		if (!bVideoInit)
+		{
+			bVideoInit = true;
+			if (FParse::Value(FCommandLine::Get(), TEXT("WCVideo="), VideoDir)) { VideoDir = FPaths::ConvertRelativePathToFull(VideoDir); IFileManager::Get().MakeDirectory(*VideoDir, true); }
+		}
+		if (!VideoDir.IsEmpty() && Mode == EWCMode::Playing && VideoFrame < 4500) FScreenshotRequest::RequestScreenshot(VideoDir / FString::Printf(TEXT("f_%05d.png"), VideoFrame++), false, false);
+	}
 	if (bDriving) { TickDrive(Dt); return; }
 	if (Clock < LookAtUntil)
 	{
@@ -848,7 +865,7 @@ void AWCDirector::Grab(float Hold, TFunction<void()> Then)
 	P->AddShake(1.f);
 	P->SetLightScale(1.f);
 	P->FlickerLight(Hold, 0.45f);
-	P->SetFaceLight(120.f);
+	P->SetFaceLight(85.f);
 	P->SetInputLocked(true);
 	GrabHoldUntil = Clock + Hold;
 	if (bAuto && !AutoShotDir.IsEmpty())

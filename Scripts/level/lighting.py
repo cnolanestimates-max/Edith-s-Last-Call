@@ -26,10 +26,10 @@ sun = actors.spawn_actor_from_class(unreal.DirectionalLight, V(0, 0, 2100), R(8,
 sun.set_actor_label("DawnSun")
 sc = sun.light_component
 sc.set_mobility(unreal.ComponentMobility.MOVABLE)
-sc.set_intensity(700.0)
-sc.set_light_color(unreal.LinearColor(1.0, 0.72, 0.5, 1.0))
+sc.set_intensity(170.0)
+sc.set_light_color(unreal.LinearColor(0.78, 0.74, 0.84, 1.0))
 sc.set_editor_property("atmosphere_sun_light", True)
-sc.set_editor_property("volumetric_scattering_intensity", 1.1)
+sc.set_editor_property("volumetric_scattering_intensity", 0.8)
 tag(sun, ["Show_dawn"])
 sun.set_folder_path("House/" + ENV)
 
@@ -92,9 +92,9 @@ grade("Grade_Night", NIGHT_EV, [
     ("color_contrast", unreal.Vector4(1.08, 1.08, 1.08, 1.0)), ("color_gain_shadows", unreal.Vector4(0.90, 0.98, 1.08, 1.0)),
     ("color_gamma_midtones", unreal.Vector4(0.98, 1.0, 1.02, 1.0)), ("white_temp", 6800.0),
     ("ambient_occlusion_intensity", 0.7), ("local_exposure_shadow_contrast_scale", 0.9)])
-grade("Grade_Dawn", NIGHT_EV + 4.1, [          # was +5.5: the foyer and porch at dawn were burnt out to white
-    ("vignette_intensity", 0.35), ("film_grain_intensity", 0.1), ("bloom_intensity", 0.5),
-    ("color_saturation", unreal.Vector4(0.95, 0.93, 0.9, 1.0)), ("white_temp", 6000.0)], priority=5.0, tags=["PP_Dawn"], enabled=False)
+grade("Grade_Dawn", NIGHT_EV + 2.4, [          # the first grey before sunrise (Cheyenne: "barely breaking morning, not bright sun")
+    ("vignette_intensity", 0.45), ("film_grain_intensity", 0.15), ("bloom_intensity", 0.3),
+    ("color_saturation", unreal.Vector4(0.72, 0.74, 0.8, 1.0)), ("white_temp", 6900.0)], priority=5.0, tags=["PP_Dawn"], enabled=False)
 
 # ---------------------------------------------------------------- moonlight through the boards (and warm dawn light later)
 def shaft(name, x, y, z, yaw, pitch=-15.0):
@@ -105,7 +105,7 @@ def shaft(name, x, y, z, yaw, pitch=-15.0):
     z -= 42.0
     m_ = light_spot(name + "_moon", x, y, z, yaw, pitch, 9000, (0.5, 0.63, 1.0), 900, 36, 62, "Lights/Windows", tags=["Hide_dawn"], shadows=True, vol=2.0)
     m_.light_component.set_editor_property("lighting_channels", LC_SHAFT)
-    light_spot(name + "_dawn", x, y, z, yaw, pitch + 4, 42000, (1.0, 0.7, 0.45), 1100, 36, 62, "Lights/Windows", tags=["Show_dawn"], shadows=True, vol=2.4)
+    light_spot(name + "_dawn", x, y, z, yaw, pitch + 4, 9000, (0.72, 0.76, 0.92), 1100, 36, 62, "Lights/Windows", tags=["Show_dawn"], shadows=True, vol=2.4)
 
 
 for z, f in ((GZ, "G"), (UZ, "U")):

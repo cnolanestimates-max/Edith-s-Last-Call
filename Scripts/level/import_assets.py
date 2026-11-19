@@ -177,7 +177,7 @@ def step_her():
     usage(m, "SKELETAL_MESH")
     tb = mel.create_material_expression(m, unreal.MaterialExpressionTextureSample, -700, -200)
     tb.set_editor_property("texture", bc)
-    tint = vparam(m, "Tint", (0.50, 0.46, 0.41, 1), -700, -420)
+    tint = vparam(m, "Tint", (0.21, 0.19, 0.17, 1), -700, -420)        # Cheyenne: "way darker"; was (0.50, 0.46, 0.41)
     mul = mel.create_material_expression(m, unreal.MaterialExpressionMultiply, -400, -260)
     mel.connect_material_expressions(tb, "RGB", mul, "A")
     mel.connect_material_expressions(tint, "", mul, "B")
