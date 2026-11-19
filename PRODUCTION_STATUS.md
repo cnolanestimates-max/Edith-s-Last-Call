@@ -34,6 +34,11 @@ play-test in the morning.
    to confirm she no longer shows against the hall window from the stairs (the window light is dimmed to 4% during the peek).
    Cheyenne, 06:24 UTC: the peek must vanish FAST, instantly when lit. The cold glow is confirmed: keep it at long distances and
    wherever she has to be seen for a scare to work.
+1b. **Whole-game filter previews (Cheyenne 06:27 UTC, right after the peek fix).** One switchable post-process layer that changes
+   nothing else in the game (a command-line flag or console command choosing the look; a post-process material or volume
+   settings on top of `Grade_Night`). Make all five and send before/after screenshots from the same 2 or 3 spots (for example the
+   foyer, the upstairs hall and the forest road) for her to pick: VHS/camcorder grain, old film (scratches and flicker),
+   desaturated cold grade, warped fisheye bodycam, black-and-white night vision.
 2. **Bot regression run** with the short reach and short flashlight: `chain.ps1 -NoBuild -Run auto13` (fast), then a real-pace
    run (`-Real`) to see S11, S12, S13 and S14 in order and to check that the far scares (long hall, ceiling, hunts) read.
    The 05:52 real-pace run (`auto12`) was stopped at about 15 minutes: it showed the TV as the first scare (now fixed) and
