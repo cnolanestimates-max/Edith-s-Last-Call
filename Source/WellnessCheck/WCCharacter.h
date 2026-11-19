@@ -61,6 +61,8 @@ public:
 	void SetInspectView(const FQuat& Rot, float Zoom);
 	void HideInspect();
 	bool IsInspectFlat() const;
+	/** How the thing is turned so its broad side faces him. */
+	FQuat InspectBase() const;
 
 	UPROPERTY(EditAnywhere, Category = "WC") float WalkSpeed = 100.f;
 	UPROPERTY(EditAnywhere, Category = "WC") float SprintSpeed = 190.f;
@@ -116,6 +118,8 @@ private:
 	TWeakObjectPtr<AWCInteractable> Focus;
 	bool bLightOn = false;
 	float AimDist = 600.f;
+	float FaceAim = 0.f;
+	FVector FacePoint = FVector::ZeroVector;
 	FVector InspectPart = FVector::OneVector;
 	bool bSprinting = false;
 	bool bAiming = false;

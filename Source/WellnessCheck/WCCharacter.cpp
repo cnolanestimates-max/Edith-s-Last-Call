@@ -10,6 +10,7 @@
 #include "Components/SpotLightComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
+#include "Engine/Engine.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -539,6 +540,7 @@ void AWCCharacter::Tick(float Dt)
 		const FVector CS = Cam->GetComponentLocation();
 		const FVector CFwd = Cam->GetForwardVector();
 		float Want = GetWorld()->LineTraceSingleByChannel(FH, CS, CS + CFwd * 1200.f, ECC_Visibility, FQ) ? FMath::Max(FH.Distance, 100.f) : 1200.f;
+		float FaceWant = 0.f;
 		if (AWCDirector* DD = AWCDirector::Get(this))
 		{
 			AWCEntity* E = DD->Her();
@@ -546,12 +548,17 @@ void AWCCharacter::Tick(float Dt)
 			{
 				const FVector Head = E->HeadLocation();
 				const float T = FVector::DotProduct(Head - CS, CFwd);
-				if (T > 30.f && T < Want && FVector::Dist(CS + CFwd * T, Head) < 95.f) Want = FMath::Max(T, 100.f);
+				const float Off = FVector::Dist(CS + CFwd * T, Head);
+				if (T > 30.f && T < Want && Off < 95.f) Want = FMath::Max(T, 100.f);
+				// close and in front of him: the light finds her face
+				if (T > 20.f && T < 330.f && Off < 0.75f * T + 40.f) { FaceWant = 1.f; FacePoint = Head + FVector(0, 0, -6.f); }
 			}
 		}
 		AimDist = FMath::FInterpTo(AimDist, Want, Dt, 7.f);
+		FaceAim = FMath::FInterpTo(FaceAim, FaceWant, Dt, 6.f);
 	}
-	const FQuat Target = ((Cam->GetComponentLocation() + Cam->GetForwardVector() * AimDist) - Flash->GetComponentLocation()).ToOrientationQuat();
+	const FVector AimPoint = FMath::Lerp(Cam->GetComponentLocation() + Cam->GetForwardVector() * AimDist, FacePoint, FaceAim * 0.9f);
+	const FQuat Target = (AimPoint - Flash->GetComponentLocation()).ToOrientationQuat();
 	AimQuat = FQuat::Slerp(AimQuat, Target, 1.f - FMath::Exp(-13.f * Dt)).GetNormalized();
 	const float Walk = FMath::Clamp(Speed / WalkSpeed, 0.f, 1.7f);
 	const FRotator SwayRot(0.7f * Walk * FMath::Sin(Clock * 6.3f), 0.9f * Walk * FMath::Sin(Clock * 3.15f), 0.f);
@@ -600,6 +607,7 @@ void AWCCharacter::Tick(float Dt)
 }
 
 // ---------------------------------------------------------------------------------------------- inventory: the thing held up
+static const float InspectK = 0.45f;
 void AWCCharacter::ShowInspect(UStaticMesh* InMesh, const TArray<UMaterialInterface*>& Mats, const FVector& PartScale)
 {
 	if (!InspectBack->GetStaticMesh())
@@ -607,16 +615,37 @@ void AWCCharacter::ShowInspect(UStaticMesh* InMesh, const TArray<UMaterialInterf
 		InspectBack->SetStaticMesh(LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube")));
 		InspectBack->SetMaterial(0, LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/WC/Materials/M_Void.M_Void")));
 	}
+	// everything is held small and very close, so the room cannot come between the eye and the black card
+	InspectBack->SetRelativeLocation(FVector(33.f * InspectK, 0.f, 0.f));
+	InspectBack->SetRelativeScale3D(FVector(0.004f, 6.f * InspectK, 6.f * InspectK));
+	InspectKey->SetRelativeLocation(FVector(3.f, -15.f, 13.f) * InspectK);
+	InspectFill->SetRelativeLocation(FVector(6.f, 17.f, -9.f) * InspectK);
+	InspectKey->SetAttenuationRadius(90.f * InspectK);
+	InspectFill->SetAttenuationRadius(90.f * InspectK);
+	if (GEngine) GEngine->Exec(GetWorld(), TEXT("r.SetNearClipPlane 2"));
 	InspectBack->SetHiddenInGame(false);
 	GunPivot->SetHiddenInGame(true, true);
 	FlashHand->SetHiddenInGame(true, true);
+	Dust->SetHiddenInGame(true);
 	InspectPart = PartScale;
 	InspectMesh->SetStaticMesh(InMesh);
 	InspectMesh->EmptyOverrideMaterials();
 	for (int32 i = 0; i < Mats.Num(); ++i) if (Mats[i]) InspectMesh->SetMaterial(i, Mats[i]);
 	InspectMesh->SetHiddenInGame(InMesh == nullptr);
-	InspectKey->SetIntensity(InMesh ? 150.f : 0.f);
-	InspectFill->SetIntensity(InMesh ? 45.f : 0.f);
+	InspectKey->SetIntensity(InMesh ? 150.f * InspectK * InspectK : 0.f);
+	InspectFill->SetIntensity(InMesh ? 45.f * InspectK * InspectK : 0.f);
+}
+
+FQuat AWCCharacter::InspectBase() const
+{
+	const UStaticMesh* M = InspectMesh->GetStaticMesh();
+	if (!M) return FQuat::Identity;
+	const FVector E = M->GetBounds().BoxExtent * InspectPart;
+	const float Big = E.GetMax();
+	if (E.Z <= E.X && E.Z <= E.Y && E.Z < 0.45f * Big) return FQuat(FRotator(68.f, 0.f, 0.f));        // lies flat: tip its top toward him
+	if (E.Y <= E.X && E.Y <= E.Z && E.Y < 0.45f * Big) return FQuat(FRotator(0.f, -90.f, 0.f));       // thin from side to side: show the side
+	if (E.X < 0.45f * Big) return FQuat::Identity;
+	return FQuat(FRotator(8.f, 180.f, 0.f));
 }
 
 bool AWCCharacter::IsInspectFlat() const
@@ -633,10 +662,10 @@ void AWCCharacter::SetInspectView(const FQuat& Rot, float Zoom)
 	if (!M) return;
 	const FBoxSphereBounds B = M->GetBounds();
 	const float Radius = FMath::Max((B.BoxExtent * InspectPart).Size(), 0.3f);
-	const FVector Scale = InspectPart * (6.2f * Zoom / Radius);
+	const FVector Scale = InspectPart * (6.2f * InspectK * Zoom / Radius);
 	InspectMesh->SetRelativeScale3D(Scale);
 	InspectMesh->SetRelativeRotation(Rot);
-	InspectMesh->SetRelativeLocation(FVector(21.f, 0.f, 1.4f) - Rot.RotateVector(B.Origin * Scale));
+	InspectMesh->SetRelativeLocation(FVector(21.f, 0.f, 1.4f) * InspectK - Rot.RotateVector(B.Origin * Scale));
 }
 
 void AWCCharacter::HideInspect()
@@ -647,4 +676,6 @@ void AWCCharacter::HideInspect()
 	InspectFill->SetIntensity(0.f);
 	GunPivot->SetHiddenInGame(false, true);
 	FlashHand->SetHiddenInGame(false, true);
+	Dust->SetHiddenInGame(false);
+	if (GEngine) GEngine->Exec(GetWorld(), TEXT("r.SetNearClipPlane 10"));
 }

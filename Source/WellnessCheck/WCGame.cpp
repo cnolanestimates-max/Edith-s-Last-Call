@@ -622,11 +622,11 @@ void AWCHUD::DrawMenu(AWCDirector* D)
 // ---------------------------------------------------------------------------------------------- inventory
 namespace
 {
-	struct FItemInfo { const TCHAR* Id; const TCHAR* Name; const TCHAR* Desc; const TCHAR* Mesh; };
-	const FItemInfo GItemInfo[] = {
-		{ TEXT("flashlight"), TEXT("Flashlight"), TEXT("County issue, three cells. It goes dim when she is close, and out when she is closer."), TEXT("/Game/WC/Props/SM_HandFlashlight.SM_HandFlashlight") },
-		{ TEXT("pistol"), TEXT("Service pistol"), TEXT("Eight to the magazine. It does not hurt her. She cannot stand the noise and the flash: three or four shots and she goes, for a while."), TEXT("/Game/WC/Props/SM_HandPistol.SM_HandPistol") },
-		{ TEXT("radio"), TEXT("Radio"), TEXT("Clear as a bell in the car. Inside this house it gives nothing but static."), TEXT("") },
+	struct FWCItemInfo { const TCHAR* Id; const TCHAR* Name; const TCHAR* Desc; const TCHAR* Mesh; };
+	const FWCItemInfo GWCItemInfo[] = {
+		{ TEXT("flashlight"), TEXT("Flashlight"), TEXT("County issue, three cells. It goes dim when she is close, and out when she is closer."), TEXT("/Game/HorrorHouseKit/Meshes/Lights_Ambience/SM_Flashlight_Off.SM_Flashlight_Off") },
+		{ TEXT("pistol"), TEXT("Service pistol"), TEXT("Eight to the magazine. It does not hurt her. She cannot stand the noise and the flash: three or four shots and she goes, for a while."), TEXT("/Game/WC/Props/SM_Item_Pistol.SM_Item_Pistol") },
+		{ TEXT("radio"), TEXT("Radio"), TEXT("Clear as a bell in the car. Inside this house it gives nothing but static."), TEXT("/Game/WC/Props/SM_Item_Radio.SM_Item_Radio") },
 		{ TEXT("key_sitting"), TEXT("Small brass key"), TEXT("From the kitchen drawer that was shut a minute before. Worn smooth. Her sitting room is the only door downstairs that is locked."), TEXT("/Game/WC/Props/SM_Item_Key.SM_Item_Key") },
 		{ TEXT("key_prayer"), TEXT("Iron key on a ribbon"), TEXT("Heavy and old, on a faded red ribbon. For the locked room upstairs, the one she prayed in."), TEXT("/Game/WC/Props/SM_Item_KeyIron.SM_Item_KeyIron") },
 		{ TEXT("key_desk"), TEXT("Small desk key"), TEXT("It was inside a hollow book. Walter's desk, in the den."), TEXT("/Game/WC/Props/SM_Item_Key.SM_Item_Key") },
@@ -639,9 +639,9 @@ namespace
 		{ TEXT("keep_walter"), TEXT("Walter's wedding ring"), TEXT("Worn thin. It was lying with her knots."), TEXT("/Game/WC/Props/SM_Item_Ring.SM_Item_Ring") },
 		{ TEXT("keep_daniel"), TEXT("Daniel's dog tags"), TEXT("HARROW, DANIEL. He went, and in March of 1969 a telegram came instead of him."), TEXT("/Game/WC/Props/SM_Item_Tags.SM_Item_Tags") },
 	};
-	const FItemInfo* FindItemInfo(FName Id)
+	const FWCItemInfo* FindWCItemInfo(FName Id)
 	{
-		for (const FItemInfo& I : GItemInfo) if (Id == I.Id) return &I;
+		for (const FWCItemInfo& I : GWCItemInfo) if (Id == I.Id) return &I;
 		return nullptr;
 	}
 }
@@ -650,7 +650,7 @@ void AWCHUD::BuildInventory(AWCDirector* D, TArray<FInvItem>& Out) const
 {
 	auto Add = [&Out](FName Id)
 	{
-		const FItemInfo* I = FindItemInfo(Id);
+		const FWCItemInfo* I = FindWCItemInfo(Id);
 		FInvItem It; It.Id = Id; It.Name = I ? I->Name : ItemName(Id); It.Desc = I ? I->Desc : TEXT("");
 		Out.Add(It);
 	};
@@ -686,7 +686,7 @@ void AWCHUD::ShowInvItem(AWCDirector* D, FName Id)
 	UStaticMesh* Mesh = nullptr;
 	TArray<UMaterialInterface*> Mats;
 	FVector Part = FVector::OneVector;
-	const FItemInfo* I = FindItemInfo(Id);
+	const FWCItemInfo* I = FindWCItemInfo(Id);
 	if (I && I->Mesh[0]) Mesh = LoadObject<UStaticMesh>(nullptr, I->Mesh, nullptr, LOAD_NoWarn | LOAD_Quiet);
 	if (!Mesh)
 	{
@@ -838,7 +838,7 @@ void AWCHUD::DrawInventory(AWCDirector* D)
 	}
 	if (RealNow - InvTouchedAt > 2.5) InvYaw += 22.f * Dt;                 // left alone, it turns slowly
 	{
-		const FQuat Base = P->IsInspectFlat() ? FQuat(FRotator(68.f, 0.f, 0.f)) : FQuat(FRotator(8.f, 180.f, 0.f));
+		const FQuat Base = P->InspectBase();
 		const FQuat Q = FQuat(FRotator(InvPitch, 0.f, 0.f)) * FQuat(FRotator(0.f, InvYaw, 0.f)) * Base;
 		static float ZoomShown = 1.f;
 		ZoomShown = FMath::FInterpTo(ZoomShown, InvZoom * (bInvInspect ? 1.3f : 0.92f), Dt, 9.f);

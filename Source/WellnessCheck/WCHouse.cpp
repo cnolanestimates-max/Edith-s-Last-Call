@@ -13,6 +13,7 @@
 #include "EngineUtils.h"
 #include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetSystemLibrary.h"
 #include "Engine/PostProcessVolume.h"
 #include "UnrealClient.h"
 #include "Misc/Paths.h"
@@ -444,6 +445,12 @@ void AWCDirector::TickDrive(float Dt)
 	const float Want = Left < 2600.f ? FMath::Max(55.f, 800.f * FMath::Sqrt(FMath::Max(Left, 0.f) / 2600.f)) : 800.f;
 	DriveSpeed = FMath::FInterpTo(DriveSpeed, Want, Dt, 2.5f);
 	DriveDist = FMath::Min(DriveTotal, DriveDist + DriveSpeed * Dt);
+	if (bAuto && !AutoShotDir.IsEmpty())
+	{
+		static int32 DriveShotN = -1;
+		const int32 ShotN = (int32)(DriveDist / 3500.f);
+		if (ShotN != DriveShotN) { DriveShotN = ShotN; FScreenshotRequest::RequestScreenshot(AutoShotDir / FString::Printf(TEXT("drive_%02d.png"), ShotN), false, false); }
+	}
 	const FVector Pos0 = PathPoint(DrivePts, DriveLen, DriveDist);
 	const FVector Ahead = PathPoint(DrivePts, DriveLen, DriveDist + 420.f), Behind = PathPoint(DrivePts, DriveLen, DriveDist - 220.f);
 	float Heading = (Ahead - Behind).IsNearlyZero(1.f) ? DriveHeading : (Ahead - Behind).Rotation().Yaw;
@@ -472,6 +479,12 @@ void AWCDirector::EndDrive()
 	if (!bDriving) return;
 	bDriving = false;
 	Set(TEXT("arrived"));
+	if (FParse::Param(FCommandLine::Get(), TEXT("WCDriveOnly")))
+	{
+		const FString Dir0 = AutoShotDir;
+		After(5.f, [Dir0]() { if (!Dir0.IsEmpty()) FScreenshotRequest::RequestScreenshot(Dir0 / TEXT("drive_parked.png"), false, false); });
+		After(7.f, [this]() { UKismetSystemLibrary::QuitGame(this, UGameplayStatics::GetPlayerController(this, 0), EQuitPreference::Quit, false); });
+	}
 	if (Car.IsValid()) Car->SetActorLocationAndRotation(CarHome, CarHomeRot);
 	Play2D(TEXT("car_stop"), 0.6f);
 	SetLoop(TEXT("car"), TEXT(""), 0.f, 1.8f);

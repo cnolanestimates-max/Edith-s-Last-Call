@@ -11,6 +11,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "Misc/CommandLine.h"
 #include "Sound/SoundBase.h"
+#include "UnrealClient.h"
+#include "Misc/Paths.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogWCStory, Log, All);
 
@@ -458,7 +460,7 @@ void AWCDirector::StoryEvent(FName Id)
 		return;
 	}
 	if (Is(Id, TEXT("take:keep_ruth"))) { Think(TEXT("Ruth's. Her name is scratched in the bottom.")); Checkpoint(TEXT("underbed")); return; }
-	if (Is(Id, TEXT("trig:t_kids")) && Has(TEXT("kids_open")) && !Has(TEXT("underbed_done")) && Gate()) { ScareUnderBed(); return; }
+	
 	if (Is(Id, TEXT("unlock:up_prayer"))) { Say(TEXT("d_prayer"), 3.f); Checkpoint(TEXT("prayer")); return; }
 	if (Is(Id, TEXT("take:keep_walter")))
 	{
@@ -621,6 +623,20 @@ void AWCDirector::StoryTick(float Dt)
 		Set(TEXT("kids_open"));
 		if (AWCDoor* D = Door(TEXT("up_kids"))) { D->SetLocked(false); D->SetOpen(true, 4.5f, true); PlayAt(TEXT("door_creak_long"), D->GetActorLocation() + FVector(0, 0, 110), 1.f); }
 		PlayAt(TEXT("musicbox"), Pos(TEXT("MusicBoxPoint")), 1.f);
+	}
+	if (Has(TEXT("kids_open")) && !Has(TEXT("underbed_done")) && !bBusy && Gate())
+	{
+		// he has to be looking into the room, with the box in plain sight
+		AWCCharacter* Pl = Player();
+		AWCInteractable* Box = Thing(TEXT("pick_keep_ruth"));
+		if (Pl && Box && !Pl->IsDown())
+		{
+			const FVector Eye = Pl->EyeLocation(), At = Box->GetActorLocation() + FVector(0, 0, 9);
+			FHitResult Hit;
+			FCollisionQueryParams Q(SCENE_QUERY_STAT(WCBoxSeen), false, Pl);
+			Q.AddIgnoredActor(Box);
+			if (FVector::Dist(Eye, At) < 420.f && FMath::Abs(Eye.Z - At.Z) < 220.f && !GetWorld()->LineTraceSingleByChannel(Hit, Eye, At, ECC_Visibility, Q)) ScareUnderBed();
+		}
 	}
 	if (Has(TEXT("backdoor_tried")) && !Has(TEXT("phone_ringing")) && !Has(TEXT("phone_done")) && Gate() && P->GetActorLocation().Z < 200.f && P->GetActorLocation().Z > -50.f)
 	{
@@ -950,6 +966,13 @@ void AWCDirector::ScareUnderBed()
 	H->SetGlow(0.f);
 	Tension = 0.8f;
 	SetLoop(TEXT("amb"), TEXT("amb_house"), 0.1f, 1.5f);
+	if (bAuto && !AutoShotDir.IsEmpty())
+	{
+		const FString Dir0 = AutoShotDir;
+		After(3.6f, [Dir0]() { FScreenshotRequest::RequestScreenshot(Dir0 / TEXT("S7_auto_1_coming.png"), false, false); });
+		After(5.2f, [Dir0]() { FScreenshotRequest::RequestScreenshot(Dir0 / TEXT("S7_auto_2_on_box.png"), false, false); });
+		After(7.2f, [Dir0]() { FScreenshotRequest::RequestScreenshot(Dir0 / TEXT("S7_auto_3_taking.png"), false, false); });
+	}
 	After(1.6f, [this, AtBox, BoxFrom, Dir]()
 	{
 		AWCEntity* E = Her();
@@ -976,7 +999,7 @@ void AWCDirector::ScareUnderBed()
 		{
 			AWCEntity* E2 = Her();
 			if (!E2 || !IsValid(Box)) return;
-			const float Back = FMath::Clamp(FVector::DotProduct(HerAt - E2->GetActorLocation(), Dir), 0.f, 100.f);
+			const float Back = FMath::Clamp(FVector::DotProduct(HerAt - E2->GetActorLocation(), Dir), 0.f, 60.f);      // just under the edge of the bed: he can always reach it
 			Box->SetActorLocation(BoxFrom - Dir * Back);
 		});
 	});

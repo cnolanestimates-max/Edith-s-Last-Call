@@ -14,7 +14,8 @@ OUT = argv[0]
 PREVIEW = "--preview" in argv
 os.makedirs(OUT, exist_ok=True)
 COL = {"Brass": (0.55, 0.38, 0.12, 1), "Iron": (0.09, 0.08, 0.075, 1), "Gold": (0.83, 0.62, 0.2, 1), "Steel": (0.5, 0.5, 0.5, 1),
-       "Glass": (0.6, 0.72, 0.7, 1), "Ceramic": (0.78, 0.74, 0.66, 1), "Ribbon": (0.3, 0.03, 0.04, 1)}
+       "Glass": (0.6, 0.72, 0.7, 1), "Ceramic": (0.78, 0.74, 0.66, 1), "Ribbon": (0.3, 0.03, 0.04, 1),
+       "Polymer": (0.02, 0.02, 0.022, 1), "Gunmetal": (0.07, 0.07, 0.075, 1)}
 
 
 def mat(name):
@@ -25,7 +26,7 @@ def mat(name):
         b = m.node_tree.nodes.get("Principled BSDF")
         if b:
             b.inputs["Base Color"].default_value = COL[name]
-            b.inputs["Metallic"].default_value = 0.0 if name in ("Glass", "Ceramic", "Ribbon") else 1.0
+            b.inputs["Metallic"].default_value = 0.0 if name in ("Glass", "Ceramic", "Ribbon", "Polymer") else 1.0
             b.inputs["Roughness"].default_value = 0.35
     return m
 
@@ -236,6 +237,43 @@ def tags():
     return P
 
 
+def pistol():
+    # a plain black striker-fired service pistol (Cheyenne's reference 2): muzzle toward +X, upright
+    a = 0.26
+    P = [box(0.186, 0.027, 0.026, (0.0, 0, 0.118), m="Gunmetal", bevel=0.003)]
+    P.append(cyl(0.0062, 0.006, (0.094, 0, 0.116), (0, math.pi / 2, 0), "Gunmetal", 16))
+    P.append(box(0.172, 0.0265, 0.018, (-0.004, 0, 0.097), m="Polymer", bevel=0.003))
+    P.append(box(0.052, 0.0255, 0.012, (0.058, 0, 0.084), m="Polymer", bevel=0.003))
+    P.append(box(0.052, 0.029, 0.105, (-0.062, 0, 0.045), (0, a, 0), "Polymer", 0.006))
+    P.append(box(0.058, 0.030, 0.008, (-0.077, 0, -0.008), (0, a, 0), "Polymer", 0.002))
+    P.append(box(0.052, 0.012, 0.005, (-0.008, 0, 0.058), m="Polymer"))
+    P.append(box(0.005, 0.012, 0.032, (0.017, 0, 0.073), (0, -0.25, 0), "Polymer"))
+    P.append(box(0.006, 0.006, 0.022, (-0.012, 0, 0.074), (0, 0.3, 0), "Gunmetal"))
+    P.append(box(0.008, 0.020, 0.005, (-0.082, 0, 0.1335), m="Gunmetal"))
+    P.append(box(0.005, 0.004, 0.005, (0.084, 0, 0.1335), m="Gunmetal"))
+    for k in range(6):
+        P.append(box(0.002, 0.0278, 0.017, (-0.058 - 0.0055 * k, 0, 0.118), m="Gunmetal"))
+    P.append(box(0.030, 0.0274, 0.010, (0.012, 0, 0.124), m="Polymer"))          # ejection port, read as a dark panel
+    return P
+
+
+def radio():
+    # a deputy's handheld: face (grille, little window) toward -Y, upright
+    P = [box(0.062, 0.034, 0.115, (0, 0, 0.0575), m="Polymer", bevel=0.005)]
+    P.append(cyl(0.004, 0.095, (-0.019, 0.004, 0.160), m="Polymer", v=12))
+    P.append(cyl(0.0055, 0.008, (-0.019, 0.004, 0.118), m="Gunmetal", v=12))
+    P.append(cyl(0.008, 0.013, (0.016, 0.002, 0.121), m="Gunmetal", v=16))
+    P.append(cyl(0.006, 0.010, (0.0, 0.002, 0.120), m="Gunmetal", v=16))
+    for k in range(6):
+        P.append(box(0.040, 0.0012, 0.003, (0, -0.0172, 0.066 + 0.0075 * k), m="Gunmetal"))
+    P.append(box(0.032, 0.0012, 0.014, (0, -0.0172, 0.040), m="Glass"))
+    P.append(box(0.003, 0.012, 0.030, (-0.0318, 0, 0.072), m="Gunmetal"))
+    P.append(box(0.020, 0.004, 0.050, (0, 0.019, 0.07), m="Gunmetal"))               # belt clip
+    return P
+
+
+build("Pistol", pistol)
+build("Radio", radio)
 build("Key", lambda: key_parts("Brass"))
 build("KeyIron", lambda: key_parts("Iron", 1.1) + [box(0.060, 0.0085, 0.0006, (-0.036, 0.004, -0.0012), (0, 0, 0.3), "Ribbon"), box(0.050, 0.0085, 0.0006, (-0.030, -0.010, -0.0012), (0, 0, -0.45), "Ribbon")])
 build("Keyring", keyring)

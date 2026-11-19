@@ -24,6 +24,8 @@ def step_items():
         "Glass": item_material("M_ItemGlass", (0.50, 0.62, 0.60), 0.08, 0.0),
         "Ceramic": item_material("M_ItemCeramic", (0.74, 0.70, 0.62), 0.5, 0.0),
         "Ribbon": item_material("M_ItemRibbon", (0.26, 0.03, 0.04), 0.9, 0.0),
+        "Polymer": item_material("M_ItemPolymer", (0.025, 0.025, 0.028), 0.55, 0.0),
+        "Gunmetal": item_material("M_ItemGunmetal", (0.075, 0.075, 0.08), 0.36, 1.0),
     }
     for f in sorted(os.listdir(d)):
         if not f.lower().endswith(".fbx"):
