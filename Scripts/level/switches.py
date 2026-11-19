@@ -36,7 +36,7 @@ def switch(room, x, y, z_floor, face):
 
 # room: ([bulbs (x, y)], floor z, switch (x, y, face))      rooms with no bulbs have a switch that does nothing
 HOUSE_LIGHTS = {
-    "hall": ([(250, 0), (1200, 30)], GZ, (16.5, -96, "x+")),
+    "hall": ([(250, 0), (1200, 30)], GZ, (16.5, 96, "x+")),          # latch side: the open front door used to hide it
     "hallrear": ([(2000, 0), (2560, 0)], GZ, (1616.5, 150, "x+")),
     "living": ([(420, -400)], GZ, (348, -216.5, "y-")),
     "dining": ([], GZ, (348, 216.5, "y+")),                         # the chandelier is on the floor

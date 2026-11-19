@@ -14,6 +14,7 @@
 #include "HAL/FileManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Components/CapsuleComponent.h"
 #include "Misc/CommandLine.h"
 #include "Misc/Paths.h"
 #include "NavigationPath.h"
@@ -88,7 +89,17 @@ void AWCDirector::AutoBegin()
 		Fade = 0.f; FadeTarget = 0.f;
 		SwitchRoom(TEXT("hall"), true, false);
 		Wait(4.f);
-		if (FParse::Param(FCommandLine::Get(), TEXT("WCGrabOnly")))
+		if (FParse::Param(FCommandLine::Get(), TEXT("WCStairOnly")))
+		{
+			if (AWCDoor* Cd = Door(TEXT("cellar"))) { Cd->SetLocked(false); Cd->SetOpen(true, 0.1f, true); }
+			if (AWCDoor* Ad = Door(TEXT("up_attic"))) { Ad->SetLocked(false); Ad->SetOpen(true, 0.1f, true); }
+			AutoSteps.Add({ A_Tele, TEXT("A_Foyer"), 0.f }); Wait(1.5f);
+			AutoSteps.Add({ A_Go, TEXT("N_up_land"), 0.f }); Shot(TEXT("stairs_1_up_landing"));
+			AutoSteps.Add({ A_Go, TEXT("N_attic_top"), 0.f }); Shot(TEXT("stairs_2_attic_top"));
+			AutoSteps.Add({ A_Go, TEXT("N_c_bot"), 0.f }); Shot(TEXT("stairs_3_cellar_foot"));
+			AutoSteps.Add({ A_Go, TEXT("A_Foyer"), 0.f }); Shot(TEXT("stairs_4_back_in_foyer")); Wait(1.f);
+		}
+		else if (FParse::Param(FCommandLine::Get(), TEXT("WCGrabOnly")))
 		{
 			AutoSteps.Add({ A_Tele, TEXT("A_Foyer"), 0.f }); Wait(1.0f); AutoSteps.Add({ A_Her, TEXT("Idle"), 400.f }); Wait(0.5f);
 			AutoSteps.Add({ A_Do, TEXT("grab"), 0.f }); Wait(0.75f); Shot(TEXT("grab_face_1")); Wait(0.45f); Shot(TEXT("grab_face_2")); Wait(2.5f);
@@ -272,7 +283,16 @@ void AWCDirector::AutoRoute(const FVector& From, const FVector& Goal, TArray<FVe
 	};
 	const FVector Feet = From - FVector(0, 0, 88);
 	const int32 A = Nearest(Feet), B = Nearest(Goal);
-	if (A == INDEX_NONE || B == INDEX_NONE || (FVector::Dist2D(Feet, Goal) < 260.f && FMath::Abs(Feet.Z - Goal.Z) < 130.f)) { Out.Add(Goal); return; }
+	bool bDirect = FVector::Dist2D(Feet, Goal) < 260.f && FMath::Abs(Feet.Z - Goal.Z) < 130.f;
+	if (bDirect)
+	{
+		// only if nothing stands between him and it
+		FHitResult Hit;
+		FCollisionQueryParams Q(SCENE_QUERY_STAT(WCAutoDirect), false, Player());
+		const FVector To(Goal.X, Goal.Y, FMath::Max(Goal.Z, Feet.Z + 60.f));
+		if (GetWorld()->LineTraceSingleByChannel(Hit, From, To, ECC_Visibility, Q) && Hit.Distance < FVector::Dist(From, To) - 45.f) bDirect = false;
+	}
+	if (A == INDEX_NONE || B == INDEX_NONE || bDirect) { Out.Add(Goal); return; }
 	// Dijkstra
 	TArray<float> Cost; Cost.Init(1e12f, Nodes.Num());
 	TArray<int32> Prev; Prev.Init(INDEX_NONE, Nodes.Num());
@@ -560,9 +580,14 @@ void AWCDirector::AutoTick(float Dt)
 						FHitResult Hit;
 						FCollisionQueryParams Q(SCENE_QUERY_STAT(WCAutoWall), false, P);
 						const FVector From = Loc - FVector(0, 0, 30.f);
-						const bool bHit = GetWorld()->SweepSingleByChannel(Hit, From, From + Dir * 90.f, FQuat::Identity, ECC_Pawn, FCollisionShape::MakeSphere(22.f), Q);
-						UE_LOG(LogWCAuto, Error, TEXT("WCAUTO WHY %s: walking into %s (%s) %.0f cm ahead, at (%.0f,%.0f,%.0f) heading (%.2f,%.2f)"), *S.Arg.ToString(),
-							bHit && Hit.GetActor() ? *Hit.GetActor()->GetActorNameOrLabel() : TEXT("nothing found"), bHit && Hit.GetComponent() ? *Hit.GetComponent()->GetName() : TEXT("-"), bHit ? Hit.Distance : -1.f, Loc.X, Loc.Y, Loc.Z, Dir.X, Dir.Y);
+						(void)From;
+						// his own capsule, lifted a hand's breadth so the floor he stands on does not count, pushed the way he is trying to go
+						const FCollisionShape Cap = FCollisionShape::MakeCapsule(P->GetCapsuleComponent()->GetScaledCapsuleRadius() - 1.f, P->GetCapsuleComponent()->GetScaledCapsuleHalfHeight() - 12.f);
+						const FVector Up0 = Loc + FVector(0, 0, 14.f);
+						const bool bHit = GetWorld()->SweepSingleByChannel(Hit, Up0, Up0 + Dir * 60.f + FVector(0, 0, 50.f), FQuat::Identity, ECC_Pawn, Cap, Q);
+						UE_LOG(LogWCAuto, Error, TEXT("WCAUTO WHY %s: walking into %s (%s) %.0f cm ahead, touching at (%.0f,%.0f,%.0f)%s; he is at (%.0f,%.0f,%.0f) heading (%.2f,%.2f)"), *S.Arg.ToString(),
+							bHit && Hit.GetActor() ? *Hit.GetActor()->GetActorNameOrLabel() : TEXT("nothing found"), bHit && Hit.GetComponent() ? *Hit.GetComponent()->GetName() : TEXT("-"), bHit ? Hit.Distance : -1.f,
+							Hit.ImpactPoint.X, Hit.ImpactPoint.Y, Hit.ImpactPoint.Z, bHit && Hit.bStartPenetrating ? TEXT(" (already inside it)") : TEXT(""), Loc.X, Loc.Y, Loc.Z, Dir.X, Dir.Y);
 					}
 					UE_LOG(LogWCAuto, Error, TEXT("WCAUTO FAIL unreachable %s%s"), *S.Arg.ToString(), bForce ? TEXT(" -> teleported") : TEXT(""));
 					if (bForce)

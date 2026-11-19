@@ -88,7 +88,12 @@ for z in (GZ, UZ):
         for side, wins in ((-1, LEFT_WIN[z]), (1, RIGHT_WIN[z])):
             piece = "Wall_Exterior_Siding_Window" if x in wins else ("Wall_Exterior_Siding_Broken" if (x, side * 636, z) in BROKEN else "Wall_Exterior_Siding")
             ext(piece, x, side * 636, z, 0)
-box("Foundation", -60, XB + 60, -660, 660, -40, 0, M_STONE, EX)
+_open = [(SX0, SX1, SY0, SY1 + 16)] + list(HOLES.get(GZ, []))          # where the house is open to the cellar below
+_rects = [(-60, XB + 60, -660, 660)]
+for _h in _open:
+    _rects = cut(_rects, _h)
+for _i, (_a, _b, _c, _d) in enumerate(_rects):
+    box(f"Foundation_{_i}", _a, _b, _c, _d, -40, 0, M_STONE, EX)
 box("WaterTable", -64, XB + 64, -664, 664, -6, 8, M_TRIM, EX, collide=False)
 box("BandBoard", -58, XB + 58, -658, 658, 328, 352, M_TRIM, EX, collide=False)
 box("Frieze", -60, XB + 60, -660, 660, 662, 702, M_TRIM, EX, collide=False)
@@ -397,8 +402,12 @@ beam("GutterFallen", (-80, 100, 690), (-120, 560, 560), 9, 8, "Rust", wdir=(1, 0
 beam("Downspout", (-70, -655, 690), (-70, -655, 0), 8, 8, "Rust", wdir=(0, 1, 0), shadow=False)
 
 # ================================================================== THE YARD
-box("ForestGround", -40000, 9000, -9000, 9000, -70, -41, M_FOREST, EX, tags=["Floor_Gravel"])
-box("Yard", -2600, XB + 1600, -2400, 2400, -60, -40, M_GROUND, EX, tags=["Floor_Gravel"])
+# the ground stops at the house: under it are the foundation slab and the cellar, not a second floor of forest dirt
+_rects = cut([(-40000, 9000, -9000, 9000)], (-58, XB + 58, -658, 658))
+for _i, (_a, _b, _c, _d) in enumerate(_rects):
+    box(f"ForestGround_{_i}", _a, _b, _c, _d, -70, -41, M_FOREST, EX, tags=["Floor_Gravel"])
+for _i, (_a, _b, _c, _d) in enumerate(cut([(-2600, XB + 1600, -2400, 2400)], (-58, XB + 58, -658, 658))):
+    box(f"Yard_{_i}", _a, _b, _c, _d, -60, -40, M_GROUND, EX, tags=["Floor_Gravel"])
 box("Path", -1700, -420, -90, 90, -40, -38.5, M_GRAVEL, EX, collide=False)
 box("Drive", -2600, -1150, 110, 500, -40, -38.5, M_GRAVEL, EX, collide=False)
 # invisible limits: the front yard only (the story keeps him at the house)
