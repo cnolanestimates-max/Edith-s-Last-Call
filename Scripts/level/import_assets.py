@@ -373,7 +373,7 @@ def step_audio():
             if not isinstance(w, unreal.SoundWave):
                 continue
             nm = w.get_name()
-            loop = nm.startswith(("amb_", "music_")) or nm in ("phone_ring", "musicbox", "radio_static_loop", "her_breath_loop")
+            loop = nm.startswith(("amb_", "music_")) or nm in ("phone_ring", "musicbox", "radio_static_loop", "her_breath_loop", "flies_buzz")      # (the flies were silent after six seconds: their buzz did not loop)
             w.set_editor_property("looping", loop)
             eal.save_loaded_asset(w, False)
             n += 1

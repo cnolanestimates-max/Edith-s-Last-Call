@@ -9,7 +9,7 @@
  {
   "id": "r_arrive1",
   "who": "dispatch",
-  "text": "Copy, Fourteen. Caller asked for a wellness check on an Edith Harrow, eighty-six, lives alone. Family's out of state. Nobody's laid eyes on her in months.",
+  "text": "Copy, Fourteen. Caller asked for a welfare check on an Edith Harrow, seventy-two, lives alone. Family's out of state. Nobody's laid eyes on her in months.",
   "fx": "radio",
   "style": "A warm, experienced woman in her fifties working the night desk at a small county sheriff's office, talking over the police radio to a deputy she has known for years. A real person, not an announcer: natural rises and falls, small pauses, feeling showing through the professionalism. Conversational, alive, never flat or robotic. American Midwest. Easy and familiar, a little tired, reading off a note; a hint of sympathy on 'lives alone' and 'in months'."
  },
@@ -70,6 +70,20 @@
   "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. Quiet, wary, then calling into the house."
  },
  {
+  "id": "d_side",
+  "who": "deputy",
+  "text": "It's locked. ...Maybe I'll check around the side.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. At a front door in the dark. The first two words flat and matter-of-fact as he lets go of the handle. Then to himself, thinking aloud, unhurried."
+ },
+ {
+  "id": "d_openup",
+  "who": "deputy",
+  "text": "Mrs. Harrow, people are worried about you. We're just trying to see if you're okay. ...Can you please open up?",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. Calling through a closed front door, loud enough to carry into the house. Patient and concerned, but rattled: something just frightened him badly round the back and he is trying not to show it. The last sentence slower, a real request, almost pleading."
+ },
+ {
   "id": "d_call1",
   "who": "deputy",
   "text": "Mrs. Harrow?",
@@ -93,9 +107,9 @@
  {
   "id": "d_shedcall",
   "who": "deputy",
-  "text": "Mrs. Harrow? ...Is that you?",
+  "text": "Jesus Christ! ...Who's there?! Sheriff's department! ...Mrs. Harrow? ...Is that you?",
   "fx": "dry",
-  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. Badly startled by a crash behind him outdoors at night: the name sharp and loud as he spins round, then after a held breath, quieter and unsure, 'Is that you?'"
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. Scared out of his wits by a huge metal crash right behind him outdoors at night. The first two words are a shout that cracks, breath knocked out of him. 'Who's there' loud and shaking. 'Sheriff's department' barked, trying to get his voice under control, breathing hard. Then a long held breath, and the last two questions small, quiet and frightened."
  },
  {
   "id": "d_foyer",
@@ -177,7 +191,7 @@
  {
   "id": "r_trace",
   "who": "dispatch",
-  "text": "Fourteen, be advised. We ran the number on that wellness call. It came from the Harrow landline. From inside that house.",
+  "text": "Fourteen, be advised. We ran the number on that welfare call. It came from Mrs. Harrow's own telephone. From inside that house.",
   "fx": "radio",
   "style": "A warm, experienced woman in her fifties working the night desk at a small county sheriff's office, talking over the police radio to a deputy she has known for years. A real person, not an announcer: natural rises and falls, small pauses, feeling showing through the professionalism. Conversational, alive, never flat or robotic. American Midwest. Urgent, breaking protocol slightly, uneasy."
  },
@@ -632,7 +646,7 @@
  {
   "id": "r_end3",
   "who": "dispatch",
-  "text": "Fourteen... it's the Harrow landline again.",
+  "text": "Fourteen... it's the Harrow number again.",
   "fx": "radio",
   "style": "A warm, experienced woman in her fifties working the night desk at a small county sheriff's office, talking over the police radio to a deputy she has known for years. A real person, not an announcer: natural rises and falls, small pauses, feeling showing through the professionalism. Conversational, alive, never flat or robotic. American Midwest. Hushed and frightened, almost whispering."
  },

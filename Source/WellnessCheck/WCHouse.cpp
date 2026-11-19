@@ -693,7 +693,8 @@ void AWCDirector::TickDrive(float Dt)
 		else DriveCam->SetActorLocationAndRotation(SeatPos, SeatRot);
 	}
 	// a 1990s V8 cruiser: it is always there, idling or pulling, and it can be heard from the air too (Cheyenne: "amplified ... engines were louder")
-	if (FLoop* Eng = Loops.Find(TEXT("car"))) Eng->Target = (0.80f + 0.20f * Rough) * (0.45f + 0.55f * AirS * AirS);
+	// (Cheyenne, 21:49: loud until the camera is in the cab; then well down, so the deputy and dispatch are heard over it)
+	if (FLoop* Eng = Loops.Find(TEXT("car"))) Eng->Target = FMath::Lerp(1.f, 0.30f + 0.05f * Rough, FMath::SmoothStep(0.f, 1.f, (AirS - 0.6f) / 0.4f));
 
 	if (Left < 4.f && DriveSpeed < 70.f) EndDrive();
 }

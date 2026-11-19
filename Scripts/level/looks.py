@@ -3,7 +3,7 @@
 LOOKS = [
     # ---- outside
     ("porch_boxes", -125, -165, 30, "Hartley's Market. Three delivery boxes. The milk in the bottom one has gone to something solid.", (40, 40, 30)),
-    ("porch_papers", -110, 130, 14, "Newspapers still in their bands. The oldest is fourteen months back.", (34, 34, 16)),
+    ("porch_papers", -110, 130, 14, "Newspapers still in their bands. The oldest is September of 1992, fourteen months back.", (34, 34, 16)),
     ("porch_rocker", -200, 470, 55, "The seat is worn pale. This was her chair. It is the only thing on the porch without dust on it.", (34, 34, 50)),
     ("grave_walter", -560, 960, 30, "WALTER J. HARROW. 1921 - 1989. The flowers in the jar are dead, but they are not fourteen months dead.", (40, 40, 55)),
     ("grave_daniel", -700, 990, 25, "PVT. DANIEL W. HARROW. 1949 - 1969. No grave in front of it. They never got him back to bury.", (40, 40, 50)),
@@ -22,7 +22,7 @@ LOOKS = [
     ("piano", 90, -420, 90, "The lid's down and there's dust on it, except on the keys. Somebody still plays.", (36, 70, 50)),
     ("mantel_photos", 600, -548, 150, "Every face scratched out of every frame. Every one but hers.", (60, 16, 26)),
     ("living_rocker", 690, -500, 60, "A shawl over the arm, still folded. It is rocking. No. It just stopped.", (32, 32, 55)),
-    ("living_shelf", 60, -540, 110, "Scrapbooks. Ruth's school reports, Danny's ribbons. The last page of each one is torn out.", (26, 60, 90)),
+    ("living_shelf", 60, -540, 110, "Scrapbooks. Danny's ribbons from the county fair, 1961. Ruth's school reports, 1967 to 1979. The last page of each one is torn out.", (26, 60, 90)),
     # ---- dining room
     ("dining_table", 420, 400, 95, "Four places laid. The food went to mould months ago, but the napkins have been refolded.", (110, 60, 22)),
     ("dining_chandelier", 600, 300, 30, "It came down on the table end. Nobody moved it. She just kept setting places around it.", (60, 60, 34)),
@@ -31,7 +31,7 @@ LOOKS = [
     ("stove", 1180, 545, 95, "Every knob taped down in the off position. Then the tape's been picked at.", (50, 32, 30)),
     ("fridge", 1545, 520, 100, "Don't. ...I did. Don't.", (40, 44, 80)),
     ("kitchen_sink", 1050, 560, 95, "Dishes for four, stacked dirty. One plate has been licked clean.", (44, 30, 24)),
-    ("pantry_shelves", 1930, 550, 110, "Preserves, labelled by year. The newest ones are not fruit.", (60, 22, 90)),
+    ("pantry_shelves", 1930, 550, 110, "Preserves, labelled by year. 1974. 1981. 1988. The newest ones are not fruit.", (60, 22, 90)),
     # ---- her sitting room
     ("drawings", 824, -410, 160, "Crayon, like a child's. A small woman and a tall black shape, holding hands. MY FREND. She was eighty-six.", (10, 160, 80)),
     
@@ -45,7 +45,7 @@ LOOKS = [
     ("bathg_tub", 2690, -400, 50, "A ring of grey hair around the drain, long as my arm.", (44, 80, 34)),
     ("sick_bed", 2480, 505, 70, "Leather cuffs on the rails. The buckles are open. The leather is not torn. It is stretched.", (50, 100, 40)),
     ("sick_wheelchair", 2240, 420, 60, "County property tag on the frame. They never came back for it.", (34, 34, 50)),
-    ("sick_door_marks", 2200, 216, 150, "Pencil marks up the door frame. 'E.H. March.' Then April, a hand higher. The last mark is above the lintel.", (56, 10, 90)),
+    ("sick_door_marks", 2200, 216, 150, "Pencil marks up the door frame. 'E.H. March 1992.' Then April, a hand higher. The last mark is above the lintel.", (56, 10, 90)),
     ("hall_wheelchair", 2520, -110, 50, "On its side. One wheel is still turning.", (40, 40, 44)),
     # ---- upstairs front
     ("master_bed", 560, 440, UZ + 80, "One side slept in. The other side has his pyjamas laid out on the pillow.", (100, 80, 40)),
@@ -57,7 +57,7 @@ LOOKS = [
     # ---- upstairs rear
     ("tricycle", 2300, -110, UZ + 40, "Ruth's, I'd guess. No dust on the seat.", (30, 30, 34)),
     ("daniel_bed", 2230, -450, UZ + 80, "Made up tight, army corners. Dusted. In a house like this. She kept one room for him and let the rest go.", (100, 80, 40)),
-    ("daniel_photo", 1640, -350, UZ + 118, "A boy in a uniform that doesn't fit yet, squinting at the sun. The glass is clean.", (16, 16, 16)),
+    ("daniel_photo", 1640, -350, UZ + 118, "A boy in a uniform that doesn't fit yet, squinting at the sun. 'Fort Polk, 1968' on the mat. The glass is clean.", (16, 16, 16)),
     ("family_dolls", 2445, -412, UZ + 122, "Four rag dolls. WALTER. RUTH. DANNY, stitched across their chests. The fourth one has no name. It is taller than the others and it has one eye.", (16, 50, 24)),
     ("sewing_cradle", 2700, -540, UZ + 45, "Empty. It always was.", (30, 40, 36)),
     ("aide_chair", 1905, 268, UZ + 40, "A chair, split along the top rail where it was jammed under the doorknob. From the inside. She slept like that.", (30, 30, 40)),
@@ -66,7 +66,7 @@ LOOKS = [
     ("bath2_hole", 2540, 390, UZ + 30, "Floor's gone through to the sickroom. Rotted from the top. Something stood in this spot for a long time.", (70, 70, 40)),
     # ---- attic and cellar
     ("attic_easel", 1000, 420, AZ + 120, "A family portrait under a sheet. Four people. Five, now. Someone has painted a tall grey shape in behind them, in house paint.", (40, 40, 80)),
-    ("attic_wardrobe", 780, 560, AZ + 110, "Christmas boxes. Every tag says 'To Danny' or 'To Ruth.' Forty years of them. None opened.", (60, 30, 100)),
+    ("attic_wardrobe", 780, 560, AZ + 110, "Christmas boxes. Every tag says 'To Danny' or 'To Ruth.' One for every Christmas since 1969. None opened.", (60, 30, 100)),
     ("furnace", 600, -500, CZ + 70, "Cold. There's bedding in front of it. She was sleeping down here, as close to the ground as she could get.", (44, 44, 60)),
     ("cellar_jars", 700, 185, CZ + 120, "More preserves. And hair. Jars of grey hair, each one labelled with a name.", (60, 22, 90)),
 ]

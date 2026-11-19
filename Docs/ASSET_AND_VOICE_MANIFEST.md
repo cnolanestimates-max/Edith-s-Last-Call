@@ -70,3 +70,13 @@ Edith's eleven new ones). The pistol, the face, the drawings, the footsteps and 
 2. Kevin MacLeod / Scott Buckley / Darren Curtis credits must stay in the credits roll (they are).
 3. Fab Standard License covers shipping these assets inside a game; do not redistribute the source assets.
 4. The Sonniss GDC bundle licence text is inside each bundle zip in the Forklight library; keep a copy with the project records.
+
+## Added 2026-11-19 (evening)
+| Asset | Source | Licence / note |
+|---|---|---|
+| Cruiser engine (`amb_car`) | SoundBits "Cars - Mad Mustang Mercury", `VEHCar_Various Driving at Slow Speed 15 06`, from the Sonniss GDC 2026 bundle 5 in the Forklight library, over the earlier InMotionAudio cabin ambience (`make_engine.py`). | Sonniss GDC bundle: royalty-free, commercial use allowed, no attribution required. |
+| Bin crash (`trash_crash`), frame fall (`frame_fall`) | Layered impacts from the Open Game SFX library (Kenney packs) (`make_trash.py`, `make_play3.py`). | CC0. |
+| Big bin and twelve kinds of rubbish (`SM_Item_BigBin`, `...Down`, `TrashBag`, `MeatJoint`, `RottenFruit`, ...) | Modelled and textured in Blender by script (`Scripts/art/trash_models.py`). | Original work; nothing generated or bought. |
+| Voice lines `d_side`, `d_openup`, `d_shedcall`, `r_arrive1`, `r_trace`, `r_end3` | Google (Gemini) TTS, one generation each. | Paid per generation. |
+| Edith's skin, look D | Baked in Blender from procedural layers (`Scripts/her/her_tex.py`). Cheyenne's texture reference images were looked at only; none is in the game or in git. | Original work. |
+

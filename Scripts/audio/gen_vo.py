@@ -51,7 +51,10 @@ DIRECT = {
     "d_call1": "Calling out into a silent house, not loud, a question hanging in the air. Careful, a little uneasy.",
     "d_call2": "Calling out again, a bit louder, then quieter and less sure of himself on the second part.",
     "d_call3": "Calling through the house, official but strained, listening for any answer.",
-    "d_shedcall": "Badly startled by a crash behind him outdoors at night: the name sharp and loud as he spins round, then after a held breath, quieter and unsure, 'Is that you?'",
+    "d_shedcall": "Scared out of his wits by a huge metal crash right behind him outdoors at night. The first two words are a shout that cracks, breath knocked out of him. 'Who's there' loud and shaking. 'Sheriff's department' barked, trying to get his voice under control, breathing hard. Then a long held breath, and the last two questions small, quiet and frightened.",
+    "d_side": "At a front door in the dark. The first two words flat and matter-of-fact as he lets go of the handle. Then to himself, thinking aloud, unhurried.",
+    "d_openup": "Calling through a closed front door, loud enough to carry into the house. Patient and concerned, but rattled: something just frightened him badly round the back and he is trying not to show it. The last sentence slower, a real request, almost pleading.",
+
     "d_arrive3": "Dry, uneasy, under his breath.",
     "d_knock": "Calling out loudly at a front door, projecting, official.",
     "d_dooropen": "Quiet, wary, then calling into the house.",
@@ -170,7 +173,10 @@ def process(line):
         ff(["-i", tmp, "-af", "asetrate=48000*0.94,aresample=48000,atempo=1.04,highpass=f=140,"
             "aecho=0.8:0.55:38|71:0.32|0.22,aecho=0.9:0.5:260|410:0.20|0.12,loudnorm=I=-18:TP=-2.0", "-ac", "1", "-ar", "48000", "-c:a", "pcm_s16le", dst])
     else:
-        ff(["-i", tmp, "-ac", "1", "-ar", "48000", "-c:a", "pcm_s16le", dst])
+        # The deputy, in the room.  (Cheyenne, 2026-11-19: his first lines were "low as hell".  The takes are quiet and
+        # chesty by direction, and small speakers lose the chest: so a little presence, evened out, and two decibels up.)
+        ff(["-i", tmp, "-af", "highpass=f=100,equalizer=f=2800:t=q:w=1.0:g=3.5,acompressor=threshold=-24dB:ratio=3:attack=8:release=140:makeup=2,loudnorm=I=-16:TP=-1.5:LRA=9",
+            "-ac", "1", "-ar", "48000", "-c:a", "pcm_s16le", dst])
     os.remove(tmp)
 
 

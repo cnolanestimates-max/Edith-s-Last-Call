@@ -137,6 +137,7 @@ fab("Urban_Ruin_Bathtub_Tiled_Derelict", 2690, -400, GZ, 90, "BathG") or fab("Ur
 fab("Urban_Australian_Desolation_Sink_Mixed_Weathered", 2450, -330, GZ, 90, "BathG")
 if TOILET:
     place(TOILET, 2470, -545, GZ, float(os.environ.get("WC_TOILET_YAW", "90")), BG, name="ToiletG")
+point("Flies_toilet_g", 2470, -530, GZ + 70, tags=["Flies"])            # (Cheyenne: flies and buzzing "especially in the kitchen and bathrooms")
 place("Mirror_Wall_Ornate_Cracked", 2423, -330, GZ + 150, 90, BG, collide=False)
 place("Medicine_Cabinet_Wall_Broken", 2423, -450, GZ + 140, 90, BG, collide=False)
 place("Wheelchair_Rusted_NoFootrest", 2560, -500, GZ, 300, BG)
@@ -293,6 +294,8 @@ if _tub2:
 place("Sink_Hospital", 2738, 572, UZ, 180, B2)
 if TOILET:
     place(TOILET, 2470, 550, UZ, float(os.environ.get("WC_TOILET_YAW", "90")) + 180, B2, name="Toilet2")
+point("Flies_toilet_2", 2470, 535, UZ + 70, tags=["Flies"])
+point("Flies_sink_2", 2738, 560, UZ + 100, tags=["Flies"])
 place("Mirror_Wall_Oval", 2738, 582, UZ + 150, 180, B2, collide=False)
 place("Medicine_Cabinet_Wall_Open", 2462, 582, UZ + 150, 180, B2, collide=False)
 place("Laundry_Cart", 2596, 540, UZ, 8, B2)

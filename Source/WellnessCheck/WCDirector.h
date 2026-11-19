@@ -364,6 +364,7 @@ private:
 	UPROPERTY(Transient) TMap<FString, TObjectPtr<USoundBase>> SoundCache;
 	TMap<FString, TArray<FString>> SoundVariants;
 	UPROPERTY(Transient) TObjectPtr<USoundAttenuation> Atten;
+	UPROPERTY(Transient) TObjectPtr<USoundAttenuation> FliesAtten;
 	TWeakObjectPtr<AWCEntity> HerActor;
 	TArray<TWeakObjectPtr<AWCTrigger>> Triggers;
 	TMap<FName, TWeakObjectPtr<AActor>> TagCache;

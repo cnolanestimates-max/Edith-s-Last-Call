@@ -351,11 +351,17 @@ void AWCDirector::AutoBegin()
 	Go(TEXT("A_Porch")); Shot(TEXT("02_porch"));
 	if (FParse::Param(FCommandLine::Get(), TEXT("WCOutside")))
 	{
-		Use(TEXT("front")); Flag(TEXT("knocked_first"), 10.f); Wait(9.f); Shot(TEXT("02b_no_answer"));
+		Use(TEXT("front")); Flag(TEXT("knocked_first"), 10.f); Wait(14.f); Shot(TEXT("02b_no_answer"));
+		AutoSteps.Add({ A_Do, TEXT("at:3230,-560,59,146,-8"), 0.f }); Wait(2.f); Shot(TEXT("02b2_bin_full_upright"));
+		AutoSteps.Add({ A_Do, TEXT("at:3030,-420,59,150,-6"), 0.f }); Wait(1.5f); Shot(TEXT("02b3_bin_close"));
+
 		AutoSteps.Add({ A_Tele, TEXT("A_Shed"), 0.f }); Wait(2.5f); Shot(TEXT("02c_at_the_shed"));
 		AutoSteps.Add({ A_Do, TEXT("at:3790,-745,59,-22,-28"), 0.f }); Wait(1.5f); Shot(TEXT("02d_shed_tape"));
 		Use(TEXT("pick_tape1")); Flag(TEXT("tape1_taken"), 15.f); Wait(8.f);
-		AutoSteps.Add({ A_Do, TEXT("at:3140,-470,59,140,-18"), 0.f }); Wait(1.5f); Shot(TEXT("02e_trash_can_over"));
+		AutoSteps.Add({ A_Do, TEXT("at:3480,-560,59,152,-12"), 0.f }); Wait(1.5f); Shot(TEXT("02e_trash_can_over"));
+		AutoSteps.Add({ A_Do, TEXT("at:3230,-470,59,160,-30"), 0.f }); Wait(1.2f); Shot(TEXT("02f_trash_close"));
+		AutoSteps.Add({ A_Do, TEXT("at:3120,-300,59,-120,-38"), 0.f }); Wait(1.2f); Shot(TEXT("02g_trash_closer"));
+
 		AutoSteps.Add({ A_Tele, TEXT("A_Porch"), 0.f }); Wait(1.5f);
 	}
 	Use(TEXT("front")); Flag(TEXT("door_opened"), 30.f); Wait(4.f); Shot(TEXT("03_door_ajar"));

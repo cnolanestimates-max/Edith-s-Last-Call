@@ -22,7 +22,7 @@ struct FWCLine { const TCHAR* Id; const TCHAR* Speaker; const TCHAR* Text; int32
 
 static const FWCLine GLines[] = {
 	{ TEXT("d_arrive1"), TEXT("Deputy Brandt"), TEXT("Dispatch, Fourteen. I'm out on County Road Nine, coming up on the Harrow place."), 0 },
-	{ TEXT("r_arrive1"), TEXT("Dispatch"), TEXT("Copy, Fourteen. Caller asked for a wellness check on an Edith Harrow, eighty-six, lives alone. Family's out of state. Nobody's laid eyes on her in months."), 1 },
+	{ TEXT("r_arrive1"), TEXT("Dispatch"), TEXT("Copy, Fourteen. Caller asked for a welfare check on an Edith Harrow, seventy-two, lives alone. Family's out of state. Nobody's laid eyes on her in months."), 1 },
 	{ TEXT("d_arrive2"), TEXT("Deputy Brandt"), TEXT("Copy. House is dark. No lights, no vehicle."), 0 },
 	{ TEXT("r_arrive2"), TEXT("Dispatch"), TEXT("Caller didn't leave a name, Fourteen. Gave the address, said she needs company, and hung up."), 1 },
 	{ TEXT("d_arrive3"), TEXT("Deputy Brandt"), TEXT("...Needs company. Copy."), 0 },
@@ -31,10 +31,13 @@ static const FWCLine GLines[] = {
 	{ TEXT("d_leave_early"), TEXT("Deputy Brandt"), TEXT("Not until I've laid eyes on her."), 0 },
 	{ TEXT("d_knock"), TEXT("Deputy Brandt"), TEXT("Sheriff's office! Mrs. Harrow? Your daughter asked us to check on you."), 0 },
 	{ TEXT("d_dooropen"), TEXT("Deputy Brandt"), TEXT("...Door's open. Mrs. Harrow, I'm coming in."), 0 },
+	{ TEXT("d_side"), TEXT("Deputy Brandt"), TEXT("It's locked. ...Maybe I'll check around the side."), 0 },
+	{ TEXT("d_openup"), TEXT("Deputy Brandt"), TEXT("Mrs. Harrow, people are worried about you. We're just trying to see if you're okay. ...Can you please open up?"), 0 },
+
 	{ TEXT("d_call1"), TEXT("Deputy Brandt"), TEXT("Mrs. Harrow?"), 0 },
 	{ TEXT("d_call2"), TEXT("Deputy Brandt"), TEXT("Hello? ...Anybody home?"), 0 },
 	{ TEXT("d_call3"), TEXT("Deputy Brandt"), TEXT("Mrs. Harrow, it's the sheriff's office. Can you hear me?"), 0 },
-	{ TEXT("d_shedcall"), TEXT("Deputy Brandt"), TEXT("Mrs. Harrow? ...Is that you?"), 0 },
+	{ TEXT("d_shedcall"), TEXT("Deputy Brandt"), TEXT("Jesus Christ! ...Who's there?! Sheriff's department! ...Mrs. Harrow? ...Is that you?"), 0 },
 	{ TEXT("d_foyer"), TEXT("Deputy Brandt"), TEXT("God, that smell. ...Mrs. Harrow? Deputy Brandt, sheriff's office."), 0 },
 	{ TEXT("d_table"), TEXT("Deputy Brandt"), TEXT("Table's set for four. This food's been sitting here for months."), 0 },
 	{ TEXT("d_phonecord"), TEXT("Deputy Brandt"), TEXT("Cord's cut clean through. Nobody called anybody on this."), 0 },
@@ -46,7 +49,7 @@ static const FWCLine GLines[] = {
 	{ TEXT("d_peek"), TEXT("Deputy Brandt"), TEXT("Ma'am? It's alright. I'm here to help you."), 0 },
 	{ TEXT("d_masterempty"), TEXT("Deputy Brandt"), TEXT("She was right here. I saw her. There's nowhere to go in here."), 0 },
 	{ TEXT("d_radio1"), TEXT("Deputy Brandt"), TEXT("Dispatch, Fourteen. I've got movement in the house. No contact yet."), 0 },
-	{ TEXT("r_trace"), TEXT("Dispatch"), TEXT("Fourteen, be advised. We ran the number on that wellness call. It came from the Harrow landline. From inside that house."), 1 },
+	{ TEXT("r_trace"), TEXT("Dispatch"), TEXT("Fourteen, be advised. We ran the number on that welfare call. It came from Mrs. Harrow's own telephone. From inside that house."), 1 },
 	{ TEXT("d_trace"), TEXT("Deputy Brandt"), TEXT("...Say again? That phone's cut off at the wall."), 0 },
 	{ TEXT("r_static"), TEXT("Radio"), TEXT("[static] ...stay..."), 1 },
 	{ TEXT("d_radio2"), TEXT("Deputy Brandt"), TEXT("Dispatch? ...Dispatch. ...Dead."), 0 },
@@ -111,7 +114,7 @@ static const FWCLine GLines[] = {
 	{ TEXT("r_end1"), TEXT("Dispatch"), TEXT("Fourteen, dispatch! Where have you been? You've been off the air almost five hours."), 1 },
 	{ TEXT("d_end2"), TEXT("Deputy Brandt"), TEXT("I found her. She's been gone a long time. Send the coroner, and call the daughter."), 0 },
 	{ TEXT("r_end2"), TEXT("Dispatch"), TEXT("Copy, Fourteen. ...Stand by. I've got a call coming in on the emergency line."), 1 },
-	{ TEXT("r_end3"), TEXT("Dispatch"), TEXT("Fourteen... it's the Harrow landline again."), 1 },
+	{ TEXT("r_end3"), TEXT("Dispatch"), TEXT("Fourteen... it's the Harrow number again."), 1 },
 	{ TEXT("d_end3"), TEXT("Deputy Brandt"), TEXT("...That's not possible. I'm looking right at the house."), 0 },
 	{ TEXT("m_post"), TEXT("Radio"), TEXT("[static] ...come back and visit."), 1 },
 };
@@ -180,7 +183,7 @@ float AWCDirector::Say(FName LineId, float Delay)
 			else if (LineId == TEXT("m_fin3") || LineId == TEXT("m_whyleave")) Her()->SetMood(TEXT("rage"), Len + 1.f);
 		}
 
-		else Play2D(Asset, Line.Kind == 0 ? 0.9f : 1.f, EWCSnd::Voice);
+		else Play2D(Asset, 1.f, EWCSnd::Voice);
 		FWCSubtitle Sub;
 		Sub.Speaker = Line.Speaker;
 		Sub.Text = Line.Text;
@@ -358,12 +361,21 @@ void AWCDirector::StoryEvent(FName Id)
 		UE_LOG(LogWCStory, Display, TEXT("WCTAPE t=%.1f the shed tape is taken"), PlaySeconds);
 		After(1.2f, [this]()
 		{
-			ApplyWorldState();                                   // the can is on its side now, its trash across the ground
-			PlayAt(TEXT("trash_crash"), Pos(TEXT("TrashPoint")), 1.f, 1.f, 8000.f);
-			if (AWCCharacter* Pl = Player()) Pl->AddShake(0.35f);
-			Tension = FMath::Max(Tension, 0.5f);
-			const float T = Say(TEXT("d_shedcall"), 2.6f);
+			ApplyWorldState();                                   // the bin is over now, everything in it across the yard
+			// it is the first thing in the game that makes him jump: loud, everywhere, and it shakes him
+			Play2D(TEXT("trash_crash"), 1.f);
+			PlayAt(TEXT("trash_crash"), Pos(TEXT("TrashPoint")), 0.45f, 1.f, 9000.f);       // (the same sound twice at full would clip)
+			if (AWCCharacter* Pl = Player()) Pl->AddShake(1.f);
+			After(0.45f, [this]() { if (AWCCharacter* Pl = Player()) Pl->AddShake(0.6f); });
+			Tension = 1.f;
+			// and whatever did it goes: heavy feet, fast, away along the back of the house and gone
+			const FVector From = Pos(TEXT("TrashPoint")), To = Pos(TEXT("TrashRunTo"));
+			if (!From.IsNearlyZero() && !To.IsNearlyZero())
+				for (int32 k = 0; k < 9; ++k) After(1.9f + k * 0.21f, [this, From, To, k]() { PlayAt(TEXT("her_step"), FMath::Lerp(From, To, k / 8.f) + FVector(0, 0, 10), 1.f - 0.07f * k, Rng.FRandRange(0.82f, 0.92f), 7000.f); });
+			UE_LOG(LogWCStory, Display, TEXT("WCTRASH t=%.1f the bin goes over; something runs"), PlaySeconds);
+			const float T = Say(TEXT("d_shedcall"), 1.1f);
 			After(T + 1.2f, [this]() { OutsideProgress(); });
+
 		});
 		return;
 	}
@@ -404,10 +416,14 @@ void AWCDirector::StoryEvent(FName Id)
 			Set(TEXT("knocked_first"));
 			PlayAt(TEXT("knock"), Pos(TEXT("FrontDoorPoint")), 1.f);
 			After(2.4f, [this]() { ShowTagged(TEXT("L_Welcome"), false); });
-			const float T = Say(TEXT("d_knock"), 0.9f);
-			After(T + 2.5f, [this]() { OutsideProgress(); });
+			float T = Say(TEXT("d_knock"), 0.9f);
+			// nobody comes.  He tries the handle, says so, and says where he is going
+			After(T + 1.6f, [this]() { PlayAt(TEXT("door_locked"), Pos(TEXT("FrontDoorPoint")), 0.9f); });
+			T = Say(TEXT("d_side"), T + 2.4f);
+			After(T + 0.6f, [this]() { OutsideProgress(); });
 		}
 		else if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 5.0; PlayAt(TEXT("knock"), Pos(TEXT("FrontDoorPoint")), 0.9f); Feedback(TEXT("No answer.")); }
+
 		return;
 	}
 	if (Is(Id, TEXT("locked:front")))
@@ -417,9 +433,11 @@ void AWCDirector::StoryEvent(FName Id)
 			Set(TEXT("knocked"));
 			PlayAt(TEXT("knock"), Pos(TEXT("FrontDoorPoint")), 1.f);
 							After(2.4f, [this]() { ShowTagged(TEXT("L_Welcome"), false); });      // the one lit window goes dark
-				float T = Say(TEXT("d_knock"), 0.9f);
-			After(T + 1.6f, [this]()
+				// (Cheyenne: "when he says, can you please open up, the door will open")
+				float T = Say(TEXT("d_openup"), 0.9f);
+			After(T - 0.35f, [this]()
 			{
+
 				if (AWCDoor* D = Door(TEXT("front"))) { D->SetLocked(false); if (AWCCharacter* Pl = Player()) D->OpenAwayFrom(Pl->GetActorLocation(), 3.4f); D->SetAngle(D->OpenAngle * 0.32f, 3.4f); PlayAt(TEXT("door_creak_long"), D->GetActorLocation() + FVector(0, 0, 110), 1.f); }
 				Say(TEXT("d_dooropen"), 3.2f);
 				Set(TEXT("door_opened"));

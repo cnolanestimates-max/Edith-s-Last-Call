@@ -1,8 +1,42 @@
 # Edith's Last Call: production status
 
-(Working title "Wellness Check"; the project folder keeps that name.) Updated 2026-11-19 20:40 UTC, in progress.
+(Working title "Wellness Check"; the project folder keeps that name.) Updated 2026-11-19 22:00 UTC. Handoff to Codex below.
 Engine: UE 5.9.0. Project: `C:\GameDev\Unreal\WellnessCheck`. Git: local repo on `main`, remote
 `github.com/cnolanestimates-max/Edith-s-Last-Call` (private). Pushed; checkpoints are pushed as work lands.
+
+## HANDOFF 2026-11-19 22:00 UTC (Claude stopped at Cheyenne's request; Codex continues)
+
+**Everything below is committed and pushed.** Read `Docs/TIMELINE.md` before adding anything with a date on it.
+
+Done this evening (all in the build; details further down and in `Scripts/tools/fix_pass126.py` to `fix_pass130.py`):
+- Crash a second after the cruiser stops: fixed (dust and flies no longer rebuild their ISM proxy every frame).
+- Opening as Cheyenne laid it out: knock, "It's locked ... check around the side", shed tape (it can be taken now), the
+  big wheeled bin goes over with 44 pieces of rubbish, loud crash, steps running off, deputy terrified, back to the front,
+  "can you please open up?" and the door opens on those words. Check run: `wc.ps1 game yardN "-WCAuto -WCAutoForce -WCDrive
+  -WCOutside -WCSndLog -WCAutoStop=inside -WCShots=..."` (it quits on purpose six seconds after he is inside).
+- 1993 timeline on notes.json and looks.py; dispatch lines re-voiced ("welfare check", "her own telephone", seventy-two).
+- Twenty face keys on Edith, nine faces; drone opening shot; book scare on the stair wall.
+
+**Unverified by ear (nobody has listened): tell Cheyenne, do not claim.**
+- Engine (`Scripts/audio/make_engine.py`, third version): a synthesized V8 tone with its body between 150 Hz and 1.5 kHz,
+  because her laptop speakers play nothing below about 200 Hz. The Mustang recording before it came through as "snap,
+  crackle, pop" with no engine. In game: full over the drone shot, down to 0.30 in the cab (`TickDrive`), off on arrival.
+- Fly buzz: now loops, with its own attenuation (silent beyond about nine metres). Before that, sixteen swarms at the
+  shared attenuation's floor were audible as crackle over the opening.
+- Deputy lines re-levelled to -16 LUFS with a presence lift (`gen_vo.py`, the plain branch) and played at 1.0: his first
+  lines were "low as hell" on her speakers.
+- Trash crash is -9 LUFS (2D at 1.0 plus positional at 0.45).
+
+**Not done / open:**
+- Photographs in frames (Codex): give them dates from `Docs/TIMELINE.md`. The falling frame still uses kit pieces.
+- The Inspect photo check (`chain.ps1 -NoBuild -Inv Inv6`) has never been run. Desk pick-ups in the den unconfirmed by a person.
+- The second knock replays nothing now, but `d_knock` and `d_openup` both begin with a knock sound; fine unless she objects.
+- `m_whyleave` TTS (one attempt only), real-pace run, re-score, QA report, menu test, cruiser Ford badge, packaging (only when asked).
+- The upright bin is `SM_Item_BigBin`; if she wants more or nastier rubbish, add to `Scripts/art/trash_models.py` and the
+  `_spill` list in `exterior.py`, then `chain.ps1 -NoBuild -Steps items -Level`.
+
+**Rules that bit today:** her screen shows every test run (say so first; the bot's shortcut looked like cut content);
+never build or launch while `UnrealEditor*` is running; judge sound for laptop speakers; Blender needs absolute paths.
 
 ## State 2026-11-19 16:45 UTC (Cheyenne play-tested today and is directing live)
 
@@ -67,6 +101,24 @@ Built from her 19:33 to 20:12 list (in the level and compiled unless marked):
   -WCAirMoon= -WCAirSky= -WCAirWood=<n>` (extra instanced trees either side; off, it cost the frame rate). The forest is
   only planted along the road and is culled at 100 m (`forest_meshes.py`); the cull is lifted while the camera is in the air.
   Photo check: `wc.ps1 game air1 "-WCAuto -WCAutoForce -WCDrive -WCDriveOnly -WCAirOnly -WCShots=..."`.
+
+- **Crash after the drive (pass 126):** the dust motes (`WCCharacter::TickDust`) and the flies (`TickFlies`) called
+  `UpdateInstanceTransform(..., bMarkRenderStateDirty = true)`, which rebuilds the whole ISM proxy every frame; the engine
+  asserted (`InstanceDataSceneProxy.h:400`) when an instance update was still in flight. **Never pass that flag for
+  per-frame instance moves.** Stack recovered with `scratchpad/crash/sym.py`-style export lookup (no engine PDBs here).
+- **Pick-ups win over descriptions (pass 128):** a `AWCLook` box no longer blocks a pick-up or usable behind it (the shed
+  tape could not be taken). Check runs: `-WCOutside` (knock, shed, tape, bin, door), `-WCAutoStop=<flag>`.
+  **Her screen shows my check runs**: she took the bot's shortcut for cut content. Say so before running one.
+- **Opening as she laid it out (pass 129):** knock (`d_knock`), "It's locked ... check around the side" (`d_side`), shed
+  tape, the bin goes over (`trash_crash` at -9 LUFS, 2D and at `TrashPoint`, shake, `her_step` running to `TrashRunTo`,
+  `d_shedcall` terrified), back at the front `d_openup` and the door opens on its last words, then `d_dooropen`.
+- **The bin and the trash:** `Scripts/art/trash_models.py` (exec'd by `build_items_fine.py`): BigBin (full, lid thrown
+  back), BigBinDown, and twelve kinds of rubbish; 44 pieces fanned out in `exterior.py` plus kit props. Flies at the bin
+  and at every toilet and sink; `flies_buzz` now loops (it was silent after six seconds).
+- **Engine:** `Scripts/audio/make_engine.py`: a real V8 at low speed (SoundBits "Mad Mustang Mercury", Sonniss bundle 5,
+  royalty-free), -15 LUFS, 100 s loop; old file in `Audio_unused/amb_car_old.wav`.
+- **1990s:** the night is Tuesday, November 9, 1993. All dates are in `Docs/TIMELINE.md` (the single source: notes.json,
+  looks.py, and any dated photograph must fit it). Dispatch says "welfare check" and "her own telephone"; Edith is 72.
 
 **Seen in photo checks** (`Saved/spot2` to `spot6`): vent and doll, jewelry box and screwdriver, fuse, shed tape, tipped
 trash can, bookcase and prompt, TV cabinet, frame on the wall, Edith with skin D, the eye behind the book.

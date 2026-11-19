@@ -554,16 +554,39 @@ for _k in range(3):
     box(f"WallNail_{_k}", SX0 + 110 + _k * 60, SX0 + 111 + _k * 60, SY0 + 8, SY0 + 13, 150, 151, "Rust", SH, collide=False, shadow=False)
 # the first tape: on the bench, among the junk.  Taking it is what lets him into the house.
 pickup("pick_tape1", "tape1", "VHS tape", ("Tape1", CUBE, (0.187, 0.103, 0.025), {0: "BrassOld"}), SX1 - 46, _ridge - 52, 50.4, 25, grab=(20, 18, 9))
-# the trash can by the back of the house: standing until he takes the tape, then on its side with everything out of it
-_TX, _TY = XB + 105.0, -340.0
-if ITEM("TrashCan"):
-    place(ITEM("TrashCan"), _TX, _TY, -40, 0, EX + "/BackYard", name="TrashCanUp", tags=["Hide_trash"])
-if ITEM("TrashCanDown"):
-    place(ITEM("TrashCanDown"), _TX + 70, _TY - 30, -40, 250, EX + "/BackYard", name="TrashCanDown", tags=["Show_trash"], collide=False)
-for _k, (_m, _dx, _dy, _yw) in enumerate((("Tin_Cans_Rusty", 150, -70, 30), ("Bottles_Empty_Group", 205, -20, 110), ("Newspaper_Pile", 120, 25, 60), ("Paint_Can_Spilled", 250, -95, 200),
-                                          ("Tin_Cans_Rusty", 285, 10, 250), ("Newspaper_Pile", 215, -130, 10))):
-    place(_m, _TX + _dx, _TY + _dy, -40, _yw, EX + "/BackYard", name=f"Trash_{_k}", tags=["Show_trash"], collide=False)
-point("TrashPoint", _TX + 70, _TY - 30, 0)
+# The bin by the back of the house (Cheyenne, 2026-11-19: "a waste management type of trash can ... big"; "at first the bin
+# is upright next to the house ... full, almost overflowing, and flies all over it"; "when it gets knocked over it's the
+# same stuff that was in it ... a full bin strung all out ... rotting meat and fruit, newspapers, all manner of nasty").
+# Models: Scripts/art/trash_models.py.  Upright until he takes the tape; then over on its front, mouth to the yard.
+_TX, _TY = XB + 70.0, -340.0
+if ITEM("BigBin"):
+    place(ITEM("BigBin"), _TX, _TY, -40, 90, EX + "/BackYard", name="TrashCanUp", tags=["Hide_trash"])
+if ITEM("BigBinDown"):
+    place(ITEM("BigBinDown"), _TX + 110, _TY + 6, -40, 96, EX + "/BackYard", name="TrashCanDown", tags=["Show_trash"], collide=False)
+_bt = _random.Random(1993)
+_spill = (["TrashBagSplit", "TrashBag", "MeatJoint", "RottenFruit", "NewsFlat", "Cans", "Slop", "Bottles", "MeatRibs", "NewsBalls", "Cartons", "FishBones"] * 3
+          + ["RottenFruit", "NewsFlat", "Cans", "Slop", "NewsBalls", "FishBones", "Bottles", "TrashBag"])
+_n_trash = 0
+for _k, _nm in enumerate(_spill):
+    if not ITEM(_nm):
+        continue
+    # thrown out of the mouth in a fan: thick near the bin, thinning out four and five metres into the yard
+    _d = 150.0 + 430.0 * (_bt.random() ** 1.5)
+    _a = _bt.uniform(-0.62, 0.62)
+    _big = _nm.startswith("TrashBag")
+    if _big:
+        _d = 170.0 + 200.0 * _bt.random()
+    place(ITEM(_nm), _TX + 110 + _d * math.cos(_a), _TY + _d * math.sin(_a), -40 + (0.6 if _nm in ("Slop", "NewsFlat") else 0.0), _bt.uniform(0, 360), EX + "/BackYard",
+          name=f"Trash_{_k}_{_nm}", tags=["Show_trash"], collide=False, scale=_bt.uniform(0.9, 1.2), shadow=_big)
+    _n_trash += 1
+for _k, (_m, _dx, _dy, _yw) in enumerate((("Tin_Cans_Rusty", 250, -70, 30), ("Bottles_Empty_Group", 330, -20, 110), ("Newspaper_Pile", 220, 45, 60), ("Paint_Can_Spilled", 380, -110, 200),
+                                          ("Tin_Cans_Rusty", 460, 30, 250), ("Newspaper_Pile", 340, -160, 10), ("Bones_Pile", 300, 120, 70))):
+    place(_m, _TX + _dx, _TY + _dy, -40, _yw, EX + "/BackYard", name=f"TrashKit_{_k}", tags=["Show_trash"], collide=False, scale=0.6 if _m == "Bones_Pile" else 1.0)
+log(f"exterior: the bin and {_n_trash + 7} pieces of what was in it")
+point("Flies_bin", _TX + 10, _TY, 85, tags=["Flies"])                 # over the heap in its open top; and they are still there when it is on the ground
+point("Flies_bin2", _TX + 150, _TY, -5, tags=["Flies"])
+point("TrashPoint", _TX + 110, _TY, 0)
+point("TrashRunTo", _TX + 60, _TY + 900, 0)                           # whatever knocked it over goes off along the back of the house
 point("A_Shed", SX0 - 140, (_DY0 + _DY1) / 2, GZ, 0, folder="Auto")
 point("A_ShedIn", SX0 + 110, (_DY0 + _DY1) / 2, -33, 0, folder="Auto")
 point("A_BackStoop", XB + 190, 0, 0, 180, folder="Auto")

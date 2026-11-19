@@ -171,7 +171,22 @@ void AWCDirector::BeginPlay()
 				FlyData.Add(F);
 				Flies->AddInstance(FTransform(FQuat::Identity, F.Centre, FVector(0.0055f, 0.0035f, 0.0035f)), true);
 			}
-			PlayAt(TEXT("flies_buzz"), C, 0.5f, Rng.FRandRange(0.94f, 1.06f), 700.f);
+			// a loop, at the swarm: heard within about nine metres and not at all beyond.  (The shared attenuation never
+			// reaches silence, and sixteen swarms at its floor were a crackle over the whole opening.)
+			if (USoundBase* Buzz = Snd(TEXT("flies_buzz")))
+			{
+				if (!FliesAtten)
+				{
+					FliesAtten = NewObject<USoundAttenuation>(this);
+					FliesAtten->Attenuation.bAttenuate = true;
+					FliesAtten->Attenuation.bSpatialize = true;
+					FliesAtten->Attenuation.DistanceAlgorithm = EAttenuationDistanceModel::Linear;
+					FliesAtten->Attenuation.AttenuationShape = EAttenuationShape::Sphere;
+					FliesAtten->Attenuation.AttenuationShapeExtents = FVector(90.f);
+					FliesAtten->Attenuation.FalloffDistance = 800.f;
+				}
+				UGameplayStatics::SpawnSoundAtLocation(this, Buzz, C, FRotator::ZeroRotator, FMath::Max(0.8f * Vol(EWCSnd::SFX), 0.0001f), Rng.FRandRange(0.94f, 1.06f), 0.f, FliesAtten, nullptr, true);
+			}
 		}
 	}
 	for (TActorIterator<AActor> It(GetWorld()); It; ++It)
