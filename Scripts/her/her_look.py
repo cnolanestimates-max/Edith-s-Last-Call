@@ -38,6 +38,9 @@ LOOKS = {
     # look C taken further (a seventh number: how much of the extra layers)
     "darkwet2": ((0.012, 0.010, 0.009), (0.056, 0.042, 0.033), 0.55, 0.80, 0.25, 1.40, 0.6),
     "darkwet3": ((0.012, 0.010, 0.009), (0.060, 0.044, 0.034), 0.65, 0.90, 0.25, 1.70, 1.0),
+    # an eighth number: the middle-scale layers (deeper folds, traceable veins, scabs, wet streaks), with no fine grain added
+    "darkwet4": ((0.012, 0.010, 0.009), (0.062, 0.046, 0.037), 0.60, 0.80, 0.25, 1.30, 0.0, 1.0),
+    "darkwet5": ((0.012, 0.010, 0.009), (0.066, 0.049, 0.039), 0.70, 0.85, 0.25, 1.55, 0.0, 1.6),
 }
 
 
@@ -66,6 +69,7 @@ def material_now():
 def material_look(name):
     ca, cb, red, wet, sss, bump = LOOKS[name][:6]
     extra = LOOKS[name][6] if len(LOOKS[name]) > 6 else 0.0
+    mid = LOOKS[name][7] if len(LOOKS[name]) > 7 else 0.0
     m = bpy.data.materials.new("her_" + name); m.use_nodes = True
     nt = m.node_tree; N = nt.nodes; L = nt.links
     b = N["Principled BSDF"]
@@ -152,6 +156,11 @@ def material_look(name):
     scab = math_("MULTIPLY", ramp(scabn, 0.675, 0.715), ramp(noise(P, 0.12, 2.0).outputs["Fac"], 0.40, 0.60))  # crusted patches, in a few regions only
     peel = math_("SUBTRACT", ramp(scabn, 0.635, 0.655), ramp(scabn, 0.670, 0.690))                              # the skin lifting round them
     drip = math_("MULTIPLY", ramp(noise(mapped((7.0, 7.0, 0.22)), 1.0, 2.0).outputs["Fac"], 0.60, 0.70), ramp(noise(P, 0.07, 2.0).outputs["Fac"], 0.42, 0.62))
+    veinw = math_("MULTIPLY", math_("SUBTRACT", 1.0, ramp(edges(mapped_w((1, 1, 1)), 0.11), 0.0, 0.06)), ramp(noise(P, 0.045, 2.0).outputs["Fac"], 0.40, 0.58))
+    scabn2 = noise(Pw, 0.42, 4.0, 0.6).outputs["Fac"]
+    scabm = math_("MULTIPLY", ramp(scabn2, 0.66, 0.70), ramp(noise(P, 0.09, 2.0).outputs["Fac"], 0.45, 0.62))
+    peelm = math_("SUBTRACT", ramp(scabn2, 0.615, 0.635), ramp(scabn2, 0.655, 0.675))
+    streak = math_("MULTIPLY", ramp(noise(mapped((3.0, 3.0, 0.10)), 1.0, 2.0).outputs["Fac"], 0.55, 0.68), ramp(noise(P, 0.05, 2.0).outputs["Fac"], 0.40, 0.60))
     c_fold = math_("SUBTRACT", 1.0, ramp(fold, 0.15, 0.75))
     c_fine = math_("SUBTRACT", 1.0, ramp(fine, 0.0, 0.07))
     crease = math_("MAXIMUM", c_fold, math_("MULTIPLY", c_fine, 0.35))
@@ -183,6 +192,12 @@ def material_look(name):
         h = math_("ADD", h, math_("MULTIPLY", veinsoft, 0.22 * extra))
         h = math_("ADD", h, math_("MULTIPLY", scab, 0.38 * extra))
         h = math_("ADD", h, math_("MULTIPLY", peel, 0.50 * extra))
+    if mid > 0.0:
+        h = math_("ADD", h, math_("MULTIPLY", fold, 0.6 * mid))                    # the big folds cut deeper
+        h = math_("ADD", h, math_("MULTIPLY", fine2, 0.35 * mid))
+        h = math_("ADD", h, math_("MULTIPLY", veinw, 0.30 * mid))                  # veins stand up under the skin
+        h = math_("ADD", h, math_("MULTIPLY", scabm, 0.45 * mid))
+        h = math_("ADD", h, math_("MULTIPLY", peelm, 0.40 * mid))
     nm = N.new("ShaderNodeNormalMap"); nm.inputs["Strength"].default_value = 0.8
     nimg = tex_image(nt, "T_Her_Normal.png", True); L.new(nimg.outputs["Color"], nm.inputs["Color"])
     bp = N.new("ShaderNodeBump"); bp.inputs["Strength"].default_value = 0.75 * bump; bp.inputs["Distance"].default_value = (0.30 + 0.16 * extra) * K
@@ -207,6 +222,11 @@ def material_look(name):
         col = mix(col, (0.050, 0.008, 0.006), math_("MULTIPLY", scab, 0.85 * extra))                                  # old scabs
         col = mix(col, (cb[0] * 1.9, cb[1] * 1.8, cb[2] * 1.7), math_("MULTIPLY", peel, 0.75 * extra))                # dead skin lifting, paler
         col = mix(col, (ca[0] * 0.5, ca[1] * 0.5, ca[2] * 0.5), math_("MULTIPLY", drip, 0.45 * extra))                # wet runs darker
+    if mid > 0.0:
+        col = mix(col, (cb[0] * 0.28, cb[1] * 0.40, cb[2] * 0.85), math_("MULTIPLY", veinw, min(1.0, 0.55 * mid)))
+        col = mix(col, (0.035, 0.012, 0.030), math_("MULTIPLY", bruise, min(1.0, 0.22 * mid)))
+        col = mix(col, (0.045, 0.007, 0.005), math_("MULTIPLY", scabm, min(1.0, 0.9 * mid)))
+        col = mix(col, (cb[0] * 2.2, cb[1] * 2.0, cb[2] * 1.8), math_("MULTIPLY", peelm, min(1.0, 0.8 * mid)))
     col = mix(col, (0, 0, 0), math_("MULTIPLY", math_("SUBTRACT", 1.0, ao.outputs["AO"]), 0.75))
     hairc = mix(mix(old.outputs["Color"], (0.30, 0.26, 0.19), 1.0, "MULTIPLY"), (0.012, 0.010, 0.008), ramp(strand, 0.30, 0.70))
     dressc = mix(old.outputs["Color"], (0.42, 0.39, 0.34), 1.0, "MULTIPLY")
@@ -224,6 +244,9 @@ def material_look(name):
         rough = math_("ADD", rough, math_("MULTIPLY", math_("MAXIMUM", scab, peel), 0.45 * extra), clamp=True)       # crust and dead skin are dry
         rough = math_("SUBTRACT", rough, math_("MULTIPLY", drip, 0.40 * extra))                                      # the runs are slick
         rough = math_("MAXIMUM", rough, 0.06)
+    if mid > 0.0:
+        rough = math_("ADD", rough, math_("MULTIPLY", math_("MAXIMUM", scabm, peelm), min(1.0, 0.4 * mid)), clamp=True)
+        rough = math_("MAXIMUM", math_("SUBTRACT", rough, math_("MULTIPLY", streak, min(1.0, 0.38 * mid))), 0.07)
     rough = mix(mix(rough, 0.9, m_dress), 0.42, m_hair)
     rough = mix(rough, 0.12, m_dark)
     L.new(rough, b.inputs["Roughness"])
@@ -235,7 +258,7 @@ def material_look(name):
     if "Subsurface Radius" in b.inputs:
         b.inputs["Subsurface Radius"].default_value = (1.0, 0.35, 0.22)
     if "Coat Weight" in b.inputs:
-        L.new(math_("MULTIPLY", wetmask, 0.55 * wet), b.inputs["Coat Weight"])
+        L.new(math_("MAXIMUM", math_("MULTIPLY", wetmask, 0.55 * wet), math_("MULTIPLY", streak, min(1.0, 0.8 * mid))) if mid > 0.0 else math_("MULTIPLY", wetmask, 0.55 * wet), b.inputs["Coat Weight"])
     m["_out"] = name
     return m, {"color": col, "rough": rough, "normal": bp.outputs[0]}
 
