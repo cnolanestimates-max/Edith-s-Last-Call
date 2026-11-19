@@ -51,6 +51,9 @@ public:
 	void SetStutter(float Fps) {}
 	/** 0..1: how far her jaw is unhinged.  Set automatically from the clip (Run, Lunge, Rise, Crawl scream). */
 	void SetScream(float Amount) { ScreamTarget = FMath::Clamp(Amount, 0.f, 1.f); }
+	/** The face she makes: rest, watch, grin, snarl, rage, scream, wince, grief, hush.  Seconds > 0: for that long, then back to the clip's own face. */
+	void SetMood(FName NewMood, float Seconds = 0.f);
+
 	/** Faint cold light on her face (lumens; 0 = off). */
 	void SetGlow(float Lumens);
 	/** A faint cold light she carries while she is beyond the reach of his flashlight (0 = none: she is only found close to). */
@@ -85,6 +88,11 @@ private:
 	float ScreamTarget = 0.f;
 	float ScreamAlpha = 0.f;
 	float FaceT = 0.f, TalkLeft = 0.f, NextTwitch = 2.f, TwitchLeft = 0.f, StepAcc = 0.f;
+	FName Mood = TEXT("watch"), ClipMood = TEXT("watch");
+	float MoodLeft = 0.f;
+	int32 TwitchKey = 1;
+	float FaceNow[20] = {};
+
 public:
 	/** Her mouth works for this long (she is speaking). */
 	void Talk(float Seconds) { TalkLeft = FMath::Max(TalkLeft, Seconds); }

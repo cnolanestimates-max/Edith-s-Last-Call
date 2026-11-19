@@ -200,6 +200,28 @@
    "frames": 18
   }
  },
+ "face_keys": [
+  "Brow",
+  "BrowDown",
+  "BrowKnit",
+  "BrowUp",
+  "CheekL",
+  "CheekR",
+  "CheekRaise",
+  "CheekSuck",
+  "EyeWide",
+  "Frown",
+  "Grin",
+  "JawSide",
+  "Pucker",
+  "Scream",
+  "Snarl",
+  "Sneer",
+  "SneerR",
+  "Squint",
+  "Stretch",
+  "Unhinge"
+ ],
  "mouth": [
   0.3,
   -26.8,

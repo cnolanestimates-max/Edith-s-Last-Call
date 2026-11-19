@@ -175,7 +175,11 @@ float AWCDirector::Say(FName LineId, float Delay)
 		{
 			if (USoundBase* S = Snd(Asset)) UGameplayStatics::SpawnSoundAtLocation(this, S, Her()->HeadLocation(), FRotator::ZeroRotator, FMath::Max(Vol(EWCSnd::Voice) * 1.2f, 0.0001f), 1.f, 0.f, Atten);
 			Her()->Talk(Len);
+			// what she is saying is on her face
+			if (LineId == TEXT("m_fin1") || LineId == TEXT("m_fin2")) Her()->SetMood(TEXT("grief"), Len + 1.5f);
+			else if (LineId == TEXT("m_fin3") || LineId == TEXT("m_whyleave")) Her()->SetMood(TEXT("rage"), Len + 1.f);
 		}
+
 		else Play2D(Asset, Line.Kind == 0 ? 0.9f : 1.f, EWCSnd::Voice);
 		FWCSubtitle Sub;
 		Sub.Speaker = Line.Speaker;
@@ -1378,7 +1382,9 @@ void AWCDirector::FinaleStep(int32 Knot)
 			if (!E || !Pl) return;
 			const FVector Fwd = FRotator(0.f, Pl->GetControlRotation().Yaw, 0.f).Vector();
 			E->Appear(Pl->GetActorLocation() - FVector(0, 0, 88) + Fwd * 115.f, (-Fwd).Rotation().Yaw, TEXT("Tall"));
+			E->SetScream(1.f);                      // "STAY!": the whole of her mouth, down and wide
 			Pl->SetLightScale(1.f);
+
 			Pl->FlickerLight(1.5f, 0.6f);
 			Play2D(TEXT("her_scream"), 1.f);
 			Play2D(TEXT("VO/m_fin4"), 1.f, EWCSnd::Voice);

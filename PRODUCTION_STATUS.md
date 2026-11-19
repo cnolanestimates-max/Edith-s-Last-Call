@@ -53,6 +53,21 @@ Built from her 19:33 to 20:12 list (in the level and compiled unless marked):
 - **Edith's skin:** look D, crusted scabs (`SourceArt/Her/look_d`, baked by `Scripts/her/her_tex.py --bake d`); Codex's
   look C face is kept above the jaw line by `portrait_mask.png`.
 
+- **Edith's face (passes 119 to 120):** twenty shape keys built in `Scripts/her/build_her.py` (Scream, Sneer, Brow, BrowUp,
+  BrowKnit, BrowDown, EyeWide, Squint, Snarl, SneerR, Grin, Frown, JawSide, Pucker, CheekSuck, Stretch, Unhinge, CheekL,
+  CheekR, CheekRaise). The eye-side keys are measured from the game's eye (`WCEntity.h` EyeRef 6.0, 21.9, 246.6, radius 4.3);
+  `her_info.json`'s "eye_centre" is on her nose and must not be used. Nine faces in `WCEntity.cpp` (`FaceMoods`: rest, watch,
+  grin, snarl, rage, scream, wince, grief, hush), one per clip, `SetMood(name, seconds)`, random twitches, lip shapes when
+  she talks; the scream (Scream + Unhinge + Stretch) mixes in by `SetScream`. Previews: `blender ... build_her.py -- <glb>
+  <abs out dir> --faceshot` (sheets `Saved/_s/face_keys.jpg`, `face_moods.jpg`); in game `-WCHerLook -WCFaceOnly`.
+  Use absolute paths with Blender here: a relative out dir lands in `C:\SourceArt`.
+- **Opening shot from the air (passes 121 to 123):** for the first 18 s of the drive the camera is high over the forest
+  following the cruiser, then comes down a curve and into the seat (`TickDrive`, `bAir`, `AirIntoCar`). Moon, sky and
+  headlights are raised while it is high. Flags: `-WCNoAir`, `-WCAirOnly`, `-WCAirHi= -WCAirLo= -WCAirFov= -WCAirHead=
+  -WCAirMoon= -WCAirSky= -WCAirWood=<n>` (extra instanced trees either side; off, it cost the frame rate). The forest is
+  only planted along the road and is culled at 100 m (`forest_meshes.py`); the cull is lifted while the camera is in the air.
+  Photo check: `wc.ps1 game air1 "-WCAuto -WCAutoForce -WCDrive -WCDriveOnly -WCAirOnly -WCShots=..."`.
+
 **Seen in photo checks** (`Saved/spot2` to `spot6`): vent and doll, jewelry box and screwdriver, fuse, shed tape, tipped
 trash can, bookcase and prompt, TV cabinet, frame on the wall, Edith with skin D, the eye behind the book.
 **Not verified in game by anyone:** the trigger sounds by ear, the new drone, crickets, the frame-fall event firing, tape

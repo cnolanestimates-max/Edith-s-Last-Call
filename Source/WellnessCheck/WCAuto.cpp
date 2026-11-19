@@ -168,8 +168,26 @@ void AWCDirector::AutoBegin()
 			AutoSteps.Add({ A_Do, TEXT("at:-1500,60,144,0,8"), 0.f }); Wait(1.5f); Looks(TEXT("d_house"));
 			Wait(1.f);
 		}
+		else if (FParse::Param(FCommandLine::Get(), TEXT("WCFaceOnly")))
+		{
+			// every face she can make, close, by his own flashlight
+			Set(TEXT("inside")); Set(TEXT("locked_in")); Set(TEXT("tv_first"));
+			AutoSteps.Add({ A_Do, TEXT("at:1500,0,92,180,10"), 0.f }); Wait(0.8f);
+			AutoSteps.Add({ A_Her, TEXT("Idle"), 115.f }); Wait(0.5f); AutoSteps.Add({ A_LookHer, NAME_None, 0.8f });
+			static const TCHAR* Ms[] = { TEXT("rest"), TEXT("watch"), TEXT("grin"), TEXT("snarl"), TEXT("rage"), TEXT("wince"), TEXT("grief"), TEXT("hush"), TEXT("scream") };
+			for (const TCHAR* M : Ms)
+			{
+				AutoSteps.Add({ A_Do, FName(*FString::Printf(TEXT("mood:%s"), M)), 0.f }); Wait(0.9f); AutoSteps.Add({ A_LookHer, NAME_None, 0.2f }); Shot(*FString::Printf(TEXT("face_%s"), M));
+			}
+			AutoSteps.Add({ A_Do, TEXT("mood:watch"), 0.f }); Wait(0.6f);
+			AutoSteps.Add({ A_Her, TEXT("Idle"), 230.f }); Wait(0.6f); AutoSteps.Add({ A_LookHer, NAME_None, 0.6f });
+			AutoSteps.Add({ A_Do, TEXT("mood:scream"), 0.f }); Wait(0.9f); Shot(TEXT("face_scream_from_2m"));
+			AutoSteps.Add({ A_Do, TEXT("mood:grin"), 0.f }); Wait(0.9f); Shot(TEXT("face_grin_from_2m"));
+			Wait(1.f);
+		}
 		else if (FParse::Param(FCommandLine::Get(), TEXT("WCSpotOnly")))
 		{
+
 			Set(TEXT("inside")); Set(TEXT("locked_in")); Set(TEXT("tv_first"));
 			auto At = [this](const TCHAR* S) { AutoSteps.Add({ A_Do, S, 0.f }); };
 			At(TEXT("at:1400,335,92,-90,-4")); Wait(1.2f); Shot(TEXT("spot_1_vent_shut"));
@@ -661,6 +679,12 @@ void AWCDirector::AutoTick(float Dt)
 		else if (S.Arg == TEXT("inspectdoll")) Event(TEXT("inspect:doll"));
 		else if (S.Arg.ToString().StartsWith(TEXT("flag:"))) { Set(FName(*S.Arg.ToString().Mid(5))); ApplyWorldState(); }
 		else if (S.Arg == TEXT("book")) { bBusy = false; ScareBook(); }
+		else if (S.Arg.ToString().StartsWith(TEXT("mood:")))
+		{
+			const FName M(*S.Arg.ToString().Mid(5));
+			if (AWCEntity* E = Her()) { E->SetScream(M == TEXT("scream") ? 1.f : 0.f); E->SetMood(M == TEXT("scream") ? FName(TEXT("rage")) : M); }
+		}
+
 		else if (S.Arg == TEXT("tvon")) { bBusy = false; TVOn(); }
 		else if (S.Arg.ToString().StartsWith(TEXT("filter:"))) { SetFilter(FCString::Atoi(*S.Arg.ToString().Mid(7))); }
 		else if (S.Arg == TEXT("peek")) { bBusy = false; ScarePeek(); }

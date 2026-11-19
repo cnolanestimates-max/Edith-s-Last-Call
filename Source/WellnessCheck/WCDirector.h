@@ -311,6 +311,21 @@ private:
 	TWeakObjectPtr<AActor> Car;
 	TWeakObjectPtr<AActor> Seat;
 	TWeakObjectPtr<class ACameraActor> DriveCam;
+	// the opening shot from the air: seconds into it, whether the outside of the car has been swapped for the inside yet
+	bool bAir = false, bAirDip = false, bAirSwapped = true;
+	float AirT = 0.f, CabinFov = 66.f;
+	TWeakObjectPtr<class ADirectionalLight> AirMoon;
+	TWeakObjectPtr<class ASkyLight> AirSky;
+	float AirMoonBase = 0.f, AirSkyBase = 0.f;
+	TArray<TPair<TWeakObjectPtr<class ULightComponent>, float>> AirHeads;
+	TArray<TPair<TWeakObjectPtr<class UStaticMeshComponent>, float>> AirTrees;
+	TWeakObjectPtr<AActor> AirWood;
+
+
+
+
+	void AirIntoCar();
+
 	FVector CarHome = FVector::ZeroVector;
 	FRotator CarHomeRot = FRotator::ZeroRotator;
 	TArray<FVector> NavPts;

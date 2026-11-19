@@ -23,6 +23,14 @@
 #include "UnrealClient.h"
 #include "Misc/Paths.h"
 #include "Misc/CommandLine.h"
+#include "Engine/StaticMeshActor.h"
+#include "Components/InstancedStaticMeshComponent.h"
+#include "Engine/Light.h"
+#include "Engine/DirectionalLight.h"
+#include "Engine/SkyLight.h"
+#include "Components/LightComponent.h"
+#include "Components/SkyLightComponent.h"
+#include "EngineUtils.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogWCHouse, Log, All);
 
@@ -373,8 +381,35 @@ static FVector PathPoint(const TArray<FVector>& Pts, const TArray<float>& Len, f
 	return FMath::Lerp(Pts[i], Pts[i + 1], (D - Len[i]) / Seg);
 }
 
+static const float GAirDur = 18.f;            // how long the camera is outside the car at the start of the drive
+static float GAirMoon = 7.f, GAirSky = 5.f;   // the moon and the sky, while the camera is high: times the game's own night
+static float GAirHi = 12000.f, GAirLo = 7000.f, GAirFov = 28.f, GAirHead = 6.f;
+
+
+
+void AWCDirector::AirIntoCar()
+{
+	for (const auto& H : AirHeads) if (H.Key.IsValid()) H.Key->SetIntensity(H.Value);
+	for (const auto& T : AirTrees) if (T.Key.IsValid()) T.Key->SetCullDistance(T.Value);
+	AirTrees.Reset();
+	if (AirWood.IsValid()) AirWood->Destroy();
+
+
+
+	if (AirMoon.IsValid()) AirMoon->GetLightComponent()->SetIntensity(AirMoonBase);
+	if (AirSky.IsValid()) AirSky->GetLightComponent()->SetIntensity(AirSkyBase);
+
+	// the camera is through the roof: the outside of the car goes, the inside is there, the night is shut out
+	if (bAirSwapped) return;
+	bAirSwapped = true;
+	ShowTagged(TEXT("CabinOnly"), true);
+	if (Car.IsValid()) Car->SetActorHiddenInGame(true);
+	SetLoop(TEXT("amb"), TEXT(""), 0.f, 0.8f);
+}
+
 void AWCDirector::BeginDrive()
 {
+
 	ShowTagged(TEXT("CabinOnly"), true);          // the inside of the car exists only while he is in it
 	if (Car.IsValid()) Car->SetActorHiddenInGame(true);      // and the outside does not (its aerial stood in the windscreen like a black pole)
 	DrivePts.Reset(); DriveLen.Reset();
@@ -419,7 +454,9 @@ void AWCDirector::BeginDrive()
 	ACameraActor* Cam = GetWorld()->SpawnActor<ACameraActor>(Seat->GetActorLocation(), FRotator::ZeroRotator, SP);
 	if (Cam)
 	{
-		Cam->GetCameraComponent()->SetFieldOfView(FMath::Min(Settings.FOV - 8.f, 66.f));      // tighter, so the windscreen fills the picture
+		CabinFov = FMath::Min(Settings.FOV - 8.f, 66.f);
+			Cam->GetCameraComponent()->SetFieldOfView(CabinFov);      // tighter, so the windscreen fills the picture
+
 		Cam->GetCameraComponent()->bConstrainAspectRatio = false;
 		DriveCam = Cam;
 		PC->SetViewTargetWithBlend(Cam, 0.f);
@@ -429,8 +466,98 @@ void AWCDirector::BeginDrive()
 	ShowTagged(TEXT("CarRunning"), true);
 	SetLoop(TEXT("car"), TEXT("amb_car"), 0.9f, 1.5f);
 	SetLoop(TEXT("amb"), TEXT(""), 0.f, 1.f);              // windows up: the night is not heard until he gets out
+	// the opening shot: high over the forest, his headlights threading the road, then down and into the car
+	bAir = !FParse::Param(FCommandLine::Get(), TEXT("WCNoAir"));
+	AirT = 0.f; bAirDip = false; bAirSwapped = !bAir;
+	if (bAir)
+	{
+		ShowTagged(TEXT("CabinOnly"), false);
+		Car->SetActorHiddenInGame(false);
+		SetLoop(TEXT("amb"), TEXT("amb_night"), 0.5f, 1.5f);        // out here the night is all there is to hear
+		FParse::Value(FCommandLine::Get(), TEXT("WCAirMoon="), GAirMoon);
+		FParse::Value(FCommandLine::Get(), TEXT("WCAirSky="), GAirSky);
+		FParse::Value(FCommandLine::Get(), TEXT("WCAirHi="), GAirHi);
+		FParse::Value(FCommandLine::Get(), TEXT("WCAirLo="), GAirLo);
+		FParse::Value(FCommandLine::Get(), TEXT("WCAirFov="), GAirFov);
+		FParse::Value(FCommandLine::Get(), TEXT("WCAirHead="), GAirHead);
+		// the forest is culled at 100 m for the game's sake; from the air it has to be there as far as the eye goes
+		AirTrees.Reset();
+		for (TActorIterator<AStaticMeshActor> It(GetWorld()); It; ++It)
+		{
+			UStaticMeshComponent* C = It->GetStaticMeshComponent();
+			if (C && C->LDMaxDrawDistance >= 9000.f) { AirTrees.Add(TPair<TWeakObjectPtr<UStaticMeshComponent>, float>(C, C->LDMaxDrawDistance)); C->SetCullDistance(0.f); }
+		}
+		UE_LOG(LogWCHouse, Display, TEXT("WCDRIVE from the air: %d trees drawn at any distance"), AirTrees.Num());
+		// a road through a wood, not a hedge across a field: from the air the forest has to go on to the edge of the picture
+		{
+			TArray<UStaticMesh*> Kinds;
+			float TreeZ = -44.f;
+			for (const auto& T : AirTrees)
+			{
+				UStaticMesh* M = T.Key.IsValid() ? T.Key->GetStaticMesh() : nullptr;
+				if (!M || !M->GetName().Contains(TEXT("Pine")) || M->GetName().Contains(TEXT("Sapling")) || Kinds.Contains(M)) continue;
+				if (Kinds.Num() == 0) TreeZ = T.Key->GetComponentLocation().Z;
+				Kinds.Add(M);
+				if (Kinds.Num() >= 4) break;
+			}
+			// (off unless asked for with -WCAirWood=<trees>: 420 of them took the shot from 37 frames a second to 14, and
+			// what his headlights light is the road's own trees anyway; the rest is dark either way)
+			int32 WoodN = 0;
+			FParse::Value(FCommandLine::Get(), TEXT("WCAirWood="), WoodN);
+			AActor* Wood = Kinds.Num() > 0 && WoodN > 0 ? GetWorld()->SpawnActor<AActor>(AActor::StaticClass(), FTransform::Identity) : nullptr;
+			if (Wood)
+			{
+				USceneComponent* Root = NewObject<USceneComponent>(Wood);
+				Wood->SetRootComponent(Root);
+				Root->RegisterComponent();
+				TArray<UInstancedStaticMeshComponent*> Ism;
+				for (UStaticMesh* M : Kinds)
+				{
+					UInstancedStaticMeshComponent* C = NewObject<UInstancedStaticMeshComponent>(Wood);
+					C->SetStaticMesh(M);
+					C->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+					C->SetCastShadow(false);
+					C->SetupAttachment(Root);
+					C->RegisterComponent();
+					Ism.Add(C);
+				}
+				FRandomStream Rs(7741);
+				const FVector Gate = PathPoint(DrivePts, DriveLen, DriveTotal);
+				int32 N = 0;
+				for (int32 i = 0; i < WoodN * 8 && N < WoodN; ++i)
+				{
+					const float D = Rs.FRandRange(-4000.f, 20000.f);
+					const float Dc = FMath::Clamp(D, 0.f, DriveTotal);
+					const FVector Dir = (PathPoint(DrivePts, DriveLen, FMath::Min(Dc + 300.f, DriveTotal)) - PathPoint(DrivePts, DriveLen, FMath::Max(Dc - 300.f, 0.f))).GetSafeNormal2D();
+					FVector Q = PathPoint(DrivePts, DriveLen, Dc) + Dir * (D - Dc);
+					Q += FVector(-Dir.Y, Dir.X, 0.f) * Rs.FRandRange(1500.f, 7500.f) * (Rs.FRand() < 0.5f ? -1.f : 1.f);
+					if (FVector::Dist2D(Q, Gate) < 9000.f) continue;                    // not in her yard
+					bool bOnRoad = false;
+					for (float D0 = 0.f; D0 <= DriveTotal && !bOnRoad; D0 += 500.f) bOnRoad = FVector::Dist2D(PathPoint(DrivePts, DriveLen, D0), Q) < 1400.f;
+					if (bOnRoad) continue;
+					const float Sc = Rs.FRandRange(0.9f, 1.3f);
+					Ism[Rs.RandRange(0, Ism.Num() - 1)]->AddInstance(FTransform(FRotator(0.f, Rs.FRandRange(0.f, 360.f), 0.f), FVector(Q.X, Q.Y, TreeZ), FVector(Sc, Sc, Sc * Rs.FRandRange(0.92f, 1.1f))), true);
+					++N;
+				}
+				AirWood = Wood;
+				UE_LOG(LogWCHouse, Display, TEXT("WCDRIVE from the air: a wood of %d more trees either side of the road (%d kinds)"), N, Kinds.Num());
+			}
+		}
+
+		AirHeads.Reset();
+
+		for (TActorIterator<ALight> It(GetWorld()); It; ++It)
+			if (It->ActorHasTag(TEXT("Headlight")) && It->GetLightComponent()) AirHeads.Add(TPair<TWeakObjectPtr<ULightComponent>, float>(It->GetLightComponent(), It->GetLightComponent()->Intensity));
+		AirMoon = nullptr; AirSky = nullptr;
+
+		for (TActorIterator<ADirectionalLight> It(GetWorld()); It; ++It) if (It->ActorHasTag(TEXT("Hide_dawn"))) { AirMoon = *It; AirMoonBase = It->GetLightComponent()->Intensity; }
+		for (TActorIterator<ASkyLight> It(GetWorld()); It; ++It) { AirSky = *It; AirSkyBase = It->GetLightComponent()->Intensity; }
+		UE_LOG(LogWCHouse, Display, TEXT("WCDRIVE from the air: moon %.1f x%.1f, sky %.2f x%.1f"), AirMoonBase, GAirMoon, AirSkyBase, GAirSky);
+
+	}
 		TickDrive(0.f);
-	After(5.f, [this]() { if (bDriving) ShowHint(TEXT("Mouse: look around        Space: skip the drive"), 6.f); });
+	After(bAir ? GAirDur + 2.f : 5.f, [this]() { if (bDriving) ShowHint(TEXT("Mouse: look around        Space: skip the drive"), 6.f); });
+
 	UE_LOG(LogWCHouse, Display, TEXT("WCDRIVE begin: %.0f m of road"), DriveTotal / 100.f);
 }
 
@@ -447,7 +574,9 @@ void AWCDirector::TickDrive(float Dt)
 		HintUntil = 0.0;
 		FadeTo(0.f, 1.f);
 		DriveDist = DriveTotal - 3000.f;
+		if (bAir) { bAir = false; AirIntoCar(); if (DriveCam.IsValid()) DriveCam->GetCameraComponent()->SetFieldOfView(CabinFov); }
 		ShadowPhase = 3;
+
 		ShowTagged(TEXT("RoadShadow"), false);
 	}
 	const float Left = DriveTotal - DriveDist;
@@ -508,11 +637,63 @@ void AWCDirector::TickDrive(float Dt)
 	DriveHeading = Heading;
 	Car->SetActorLocationAndRotation(FVector(Pos0.X, Pos0.Y, CarHome.Z + Bump * 0.5f), FRotator(0.f, Heading + CarHomeRot.Yaw, Roll * 0.6f));
 	if (PC) PC->SetControlRotation(FRotator(Rel.Pitch, Heading + Rel.Yaw, 0.f));
+	float AirS = 1.f;
 	if (DriveCam.IsValid() && Seat.IsValid())
 	{
-		DriveCam->SetActorLocationAndRotation(Seat->GetActorLocation() + FVector(0, 0, Bump * 0.8f), FRotator(Rel.Pitch + Bump * 0.12f, Heading + Rel.Yaw, Roll));
+		const FVector SeatPos = Seat->GetActorLocation() + FVector(0, 0, Bump * 0.8f);
+		const FRotator SeatRot(Rel.Pitch + Bump * 0.12f, Heading + Rel.Yaw, Roll);
+		if (bAir)
+		{
+			AirT += Dt;
+			const float U = FMath::Clamp(AirT / GAirDur, 0.f, 1.f);
+			// the first half and a little more it stays up and follows; then it comes down a long curve to the seat
+			AirS = FMath::SmoothStep(0.f, 1.f, (U - 0.55f) / 0.45f);
+			const float Up = FMath::Clamp(U / 0.55f, 0.f, 1.f);
+			const FVector CarPos(Pos0.X, Pos0.Y, CarHome.Z);
+			const FVector Fwd = FRotator(0.f, Heading, 0.f).Vector();
+			const float Orbit = Heading + 180.f + 42.f * FMath::Sin(AirT * 0.21f + 0.6f);
+			const FVector High = CarPos + FRotator(0.f, Orbit, 0.f).Vector() * FMath::Lerp(GAirHi * 0.12f, GAirLo * 0.5f, Up) + FVector(0, 0, FMath::Lerp(GAirHi, GAirLo, Up));
+
+			const FVector Chase = CarPos - Fwd * 1000.f + FVector(0, 0, 420.f);
+			const FVector Cp = FMath::Square(1.f - AirS) * High + 2.f * AirS * (1.f - AirS) * Chase + AirS * AirS * SeatPos;
+			const FVector LookAt = CarPos + Fwd * FMath::Lerp(0.f, 2600.f, AirS) + FVector(0, 0, 90.f);
+			const FQuat Q = FQuat::Slerp((LookAt - Cp).Rotation().Quaternion(), SeatRot.Quaternion(), FMath::SmoothStep(0.f, 1.f, (AirS - 0.72f) / 0.28f));
+			DriveCam->SetActorLocationAndRotation(Cp, Q);
+			DriveCam->GetCameraComponent()->SetFieldOfView(FMath::Lerp(GAirFov, CabinFov, AirS));
+
+			// from up here there is only the moon to see by: it is let in while the camera is high, and gone again by the time it is in the trees
+			const float Night = FMath::SmoothStep(0.f, 1.f, (AirS - 0.2f) / 0.5f);
+			if (AirMoon.IsValid()) AirMoon->GetLightComponent()->SetIntensity(AirMoonBase * FMath::Lerp(GAirMoon, 1.f, Night));
+			if (AirSky.IsValid()) AirSky->GetLightComponent()->SetIntensity(AirSkyBase * FMath::Lerp(GAirSky, 1.f, Night));
+			for (const auto& H : AirHeads) if (H.Key.IsValid()) H.Key->SetIntensity(H.Value * FMath::Lerp(GAirHead, 1.f, Night));
+
+
+			if (!bAirDip && AirS > 0.80f) { bAirDip = true; FadeTo(0.85f, 0.3f); }
+			if (!bAirSwapped && AirS > 0.88f) { AirIntoCar(); After(0.12f, [this]() { FadeTo(0.f, 0.7f); }); }
+			if (bAuto && !AutoShotDir.IsEmpty())
+			{
+				static int32 AirShotN = -1;
+				const int32 N = (int32)(AirT / 1.5f);
+				if (N != AirShotN) { AirShotN = N; FScreenshotRequest::RequestScreenshot(AutoShotDir / FString::Printf(TEXT("air_%02d.png"), N), false, false); }
+			}
+			if (U >= 1.f)
+			{
+				bAir = false;
+				AirIntoCar();
+				DriveCam->GetCameraComponent()->SetFieldOfView(CabinFov);
+				UE_LOG(LogWCHouse, Display, TEXT("WCDRIVE t=%.1f the camera is in the car, %.0f m in"), PlaySeconds, DriveDist / 100.f);
+				if (FParse::Param(FCommandLine::Get(), TEXT("WCAirOnly")))
+				{
+					const FString Dir0 = AutoShotDir;
+					After(2.f, [Dir0]() { if (!Dir0.IsEmpty()) FScreenshotRequest::RequestScreenshot(Dir0 / TEXT("air_in_the_seat.png"), false, false); });
+					After(3.5f, [this]() { UKismetSystemLibrary::QuitGame(this, UGameplayStatics::GetPlayerController(this, 0), EQuitPreference::Quit, false); });
+				}
+			}
+		}
+		else DriveCam->SetActorLocationAndRotation(SeatPos, SeatRot);
 	}
-	if (FLoop* Eng = Loops.Find(TEXT("car"))) Eng->Target = 0.55f + 0.4f * Rough;
+	if (FLoop* Eng = Loops.Find(TEXT("car"))) Eng->Target = (0.55f + 0.4f * Rough) * (0.10f + 0.90f * AirS * AirS);      // from the air the engine is a long way down
+
 	if (Left < 4.f && DriveSpeed < 70.f) EndDrive();
 }
 
