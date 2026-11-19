@@ -32,6 +32,8 @@ play-test in the morning.
    her head is blocked by the door frame, and whether 360 cm is too short for where the hall lets him stand. Wanted: barely
    visible, only found when already close to the doorway, gone the instant the light is on her. Also look at `Saved/_s/peek2_sheet.jpg`
    to confirm she no longer shows against the hall window from the stairs (the window light is dimmed to 4% during the peek).
+   Cheyenne, 06:24 UTC: the peek must vanish FAST, instantly when lit. The cold glow is confirmed: keep it at long distances and
+   wherever she has to be seen for a scare to work.
 2. **Bot regression run** with the short reach and short flashlight: `chain.ps1 -NoBuild -Run auto13` (fast), then a real-pace
    run (`-Real`) to see S11, S12, S13 and S14 in order and to check that the far scares (long hall, ceiling, hunts) read.
    The 05:52 real-pace run (`auto12`) was stopped at about 15 minutes: it showed the TV as the first scare (now fixed) and
