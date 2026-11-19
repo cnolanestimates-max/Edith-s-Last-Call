@@ -88,6 +88,16 @@ AWCCharacter::AWCCharacter()
 	Muzzle->SetLightColor(FLinearColor(1.f, 0.72f, 0.4f));
 	Muzzle->SetCastShadows(false);
 
+	FaceLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("FaceLight"));
+	FaceLight->SetupAttachment(Cam);
+	FaceLight->SetRelativeLocation(FVector(4.f, -6.f, -4.f));
+	FaceLight->SetIntensityUnits(ELightUnits::Lumens);
+	FaceLight->SetIntensity(0.f);
+	FaceLight->SetAttenuationRadius(260.f);
+	FaceLight->SetLightColor(FLinearColor(1.f, 0.9f, 0.76f));
+	FaceLight->SetCastShadows(false);
+	FaceLight->SetVolumetricScatteringIntensity(0.f);
+
 	Fill = CreateDefaultSubobject<UPointLightComponent>(TEXT("Fill"));
 	Fill->SetupAttachment(Cam);
 	Fill->SetIntensityUnits(ELightUnits::Lumens);
@@ -211,6 +221,7 @@ FVector AWCCharacter::EyeForward() const { return Cam->GetForwardVector(); }
 
 void AWCCharacter::TeleportToCheckpoint(const FVector& Loc, float Yaw)
 {
+	FaceLumens = 0.f;
 	SetActorLocation(Loc, false, nullptr, ETeleportType::TeleportPhysics);
 	if (AController* C = GetController()) C->SetControlRotation(FRotator(0.f, Yaw, 0.f));
 	LastLoc = Loc;
@@ -571,6 +582,7 @@ void AWCCharacter::Tick(float Dt)
 	}
 	Flash->SetIntensity(FlashLumens * Level);
 	Spill->SetIntensity(FlashLumens * 0.11f * Level);
+	FaceLight->SetIntensity(FaceLumens * FMath::Clamp(Level, 0.25f, 1.f));
 
 	// ---- pistol
 	const bool bWantGun = bAiming && bGunAllowed && !bBlocked;

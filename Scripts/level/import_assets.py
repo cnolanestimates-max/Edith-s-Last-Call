@@ -258,7 +258,7 @@ def step_mats():
     flat_material("M_GlowBulb", (1.0, 0.62, 0.22), 0.5, emissive=14.0)
     flat_material("M_BulbOff", (0.09, 0.08, 0.06), 0.3)
     flat_material("M_Dash", (0.012, 0.012, 0.013), 0.55)
-    flat_material("M_DashGlow", (0.25, 0.85, 0.55), 0.5, emissive=3.0)
+    flat_material("M_DashGlow", (0.25, 0.85, 0.55), 0.5, emissive=0.9)
     log("mats done")
 
 

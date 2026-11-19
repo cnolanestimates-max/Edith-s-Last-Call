@@ -209,7 +209,7 @@ place("Cradle_Rocking", 2700, -540, UZ, 0, SW)
 place("Rocking_Chair", 2720, -300, UZ, 215, SW, tags=["SewRocker"])
 point("Her_Sewing", 2720, -300, UZ, 215)
 place(ow("Work_Table_01a", "Desk_Writing"), 2446, -470, UZ, 90 + OW_YAW, SW, name="SewingTable")
-place("Chair_Dining_HighBack", 2525, -470, UZ, 270, SW)
+place("Chair_Dining_HighBack", 2530, -335, UZ, 205, SW)
 place("Wardrobe_Open_Clothes", 2560, -560, UZ, 0, SW)
 place("Hatbox_Round", 2440, -250, UZ, 0, SW, collide=False)
 place("Box_Cardboard_Open", 2470, -300, UZ, 30, SW)
@@ -218,7 +218,8 @@ put("Hatbox_Round", 2445, -525, UZ + 74, 0, SW)
 for i, (m, s) in enumerate((("Rag_Doll_Sitting", 1.0), ("Rag_Doll_Sitting", 0.8), ("Rag_Doll_Sitting", 0.92), ("Effigy_Twig_Standing", 0.5))):
     put(m, 2440, -450 + i * 22, UZ + 74, 90, SW, name=f"FamilyDoll_{i}", scale=s)
 put_pickup("pick_shears", "shears", "Sewing shears", ("Shears", CUBE, (0.21, 0.035, 0.008), {0: "Iron"}), 2456, -492, UZ + 74, 35, grab=(14, 14, 9))
-put(CUBE, 2456, -492, UZ + 74.6, 62, SW, name="ShearsBlade2", scale=(0.21, 0.03, 0.007), mats={0: "Iron"}, tags=["Hide_shears"])
+if not ITEM("Shears"):
+    put(CUBE, 2456, -492, UZ + 74.6, 62, SW, name="ShearsBlade2", scale=(0.21, 0.03, 0.007), mats={0: "Iron"}, tags=["Hide_shears"])
 place("Curtains_Torn_Window", 2600, -578, UZ + 20, 0, SW, collide=False)
 place("Teddy_Bear_Old", 2700, -520, UZ + 40, 30, SW, collide=False)
 place("Rug_Persian_Worn", 2600, -400, UZ, 90, SW, collide=False, scale=0.7)
@@ -243,14 +244,26 @@ put_note("note_aide3", "Letters_Scattered", 1650, 380, UZ + 119, 60, scale=0.6)
 
 # ================================================================== UPSTAIRS: second bath (the floor has gone through into the sickroom)
 B2 = E + "Bath2"
-fab("Urban_Australian_Desolation_Bathtub_Metal_Rusty", 2700, 300, UZ, 90, "Bath2", scale=1.15)
-place("Sink_Hospital", 2600, 572, UZ, 180, B2)
+_tub2 = fab("Urban_Australian_Desolation_Bathtub_Metal_Rusty", 2700, 300, UZ, 90, "Bath2", scale=1.15)
+TUB2 = None
+if _tub2:
+    _to, _te = _tub2.get_actor_bounds(False)
+    if _te.x > _te.y:                      # it must lie along the east wall, not across the doorway
+        _tub2.set_actor_rotation(R(0.0), False)
+        _to, _te = _tub2.get_actor_bounds(False)
+        if abs(_to.x - 2700) > 2 or abs(_to.y - 300) > 2:
+            _tub2.set_actor_location(V(2700 - (_to.x - 2700), 300 - (_to.y - 300), UZ), False, False)
+            _to, _te = _tub2.get_actor_bounds(False)
+    TUB2 = (_to.x, _to.y, _te.x, _te.y)
+    log(f"Tub2 centre ({_to.x:.0f},{_to.y:.0f}) half ({_te.x:.0f},{_te.y:.0f},{_te.z:.0f})")
+place("Sink_Hospital", 2738, 572, UZ, 180, B2)
 if TOILET:
     place(TOILET, 2470, 550, UZ, float(os.environ.get("WC_TOILET_YAW", "90")) + 180, B2, name="Toilet2")
-place("Mirror_Wall_Oval", 2600, 582, UZ + 150, 180, B2, collide=False)
-place("Medicine_Cabinet_Wall_Open", 2720, 582, UZ + 140, 180, B2, collide=False)
-place("Laundry_Cart", 2740, 540, UZ, 20, B2)
-box("TubWater", 2664, 2738, 232, 372, UZ + 46, UZ + 47.5, "WC:M_Black", B2, collide=False, shadow=False)
+place("Mirror_Wall_Oval", 2738, 582, UZ + 150, 180, B2, collide=False)
+place("Medicine_Cabinet_Wall_Open", 2462, 582, UZ + 150, 180, B2, collide=False)
+place("Laundry_Cart", 2596, 540, UZ, 8, B2)
+if TUB2:
+    box("TubWater", TUB2[0] - TUB2[2] * 0.74, TUB2[0] + TUB2[2] * 0.74, TUB2[1] - TUB2[3] * 0.80, TUB2[1] + TUB2[3] * 0.80, UZ + 44, UZ + 45.5, "WC:M_Black", B2, collide=False, shadow=False)
 point("Flies_bath2", 2700, 300, UZ + 80, tags=["Flies"])
 for (n, x, y, face, sz) in (("filth_03", 2784, 300, "x-", 280), ("mold_03", 2600, 584, "y-", 300), ("rust_01", 2500, 584, "y-", 200), ("mold_01", 2416, 400, "x+", 260)):
     wall_decal(n, x, y, UZ + 150, face, sz)

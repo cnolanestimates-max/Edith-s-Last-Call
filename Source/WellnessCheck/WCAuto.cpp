@@ -127,6 +127,8 @@ void AWCDirector::AutoBegin()
 			AutoSteps.Add({ A_Tele, TEXT("A_Kids"), 0.f }); Wait(1.0f); AutoSteps.Add({ A_Do, TEXT("s7"), 0.f });
 			Wait(3.6f); Shot(TEXT("hand_1_coming")); Wait(1.7f); Shot(TEXT("hand_2_on_box")); Wait(1.6f); Shot(TEXT("hand_3_taking")); Wait(3.6f);
 			AutoSteps.Add({ A_Crouch, NAME_None, 1.f }); AutoSteps.Add({ A_Look, TEXT("pick_keep_ruth"), -1.f }); Wait(0.3f); Shot(TEXT("hand_4_box_under_bed")); AutoSteps.Add({ A_Crouch, NAME_None, 0.f });
+			AutoSteps.Add({ A_Tele, TEXT("A_Foyer"), 0.f }); Wait(1.0f); AutoSteps.Add({ A_Her, TEXT("Idle"), 400.f }); Wait(0.5f);
+			AutoSteps.Add({ A_Do, TEXT("grab"), 0.f }); Wait(0.75f); Shot(TEXT("grab_face_1")); Wait(0.45f); Shot(TEXT("grab_face_2")); Wait(3.f);
 			AutoSteps.Add({ A_Do, TEXT("mem1"), 0.f }); Wait(10.5f);
 			AutoSteps.Add({ A_Do, TEXT("mem2"), 0.f }); Wait(10.5f);
 			AutoSteps.Add({ A_Do, TEXT("mem3"), 0.f }); Wait(10.5f);
@@ -414,6 +416,11 @@ void AWCDirector::AutoTick(float Dt)
 			if (AController* C = P->GetController()) C->SetControlRotation((FVector(818.f, -430.f, P->GetActorLocation().Z + 72.f) - P->EyeLocation()).Rotation());
 		}
 		else if (S.Arg == TEXT("s7")) { bBusy = false; ScareUnderBed(); }
+		else if (S.Arg == TEXT("grab"))
+		{
+			Set(TEXT("mem1")); Set(TEXT("mem2")); Set(TEXT("mem3"));
+			Grab(1.35f, [this]() { if (AWCEntity* E = Her()) E->Vanish(); Flags.Remove(TEXT("mem1")); Flags.Remove(TEXT("mem2")); Flags.Remove(TEXT("mem3")); bBusy = true; });
+		}
 		else if (S.Arg == TEXT("mem1")) PlayMemory(1, [this]() { bBusy = true; });
 		else if (S.Arg == TEXT("mem2")) PlayMemory(2, [this]() { bBusy = true; });
 		else if (S.Arg == TEXT("mem3")) PlayMemory(3, [this]() { bBusy = true; });
@@ -498,7 +505,14 @@ void AWCDirector::AutoTick(float Dt)
 		const FVector Loc = P->GetActorLocation();
 		const float Reach = bToUse ? 150.f : 70.f;
 		const float D2 = FVector::Dist2D(Loc, Goal);
-		if (bToUse && FVector::Dist(P->EyeLocation(), Goal) < P->InteractRange - 45.f) { Next(); return; }
+		if (bToUse && FVector::Dist(P->EyeLocation(), Goal) < P->InteractRange - 45.f)
+		{
+			FHitResult Hit;
+			FCollisionQueryParams Q(SCENE_QUERY_STAT(WCAutoSee), false, P);
+			const FVector Eye = P->EyeLocation();
+			const bool bBlocked = GetWorld()->LineTraceSingleByChannel(Hit, Eye, Goal, ECC_Visibility, Q) && Hit.GetActor() != T && Hit.Distance < FVector::Dist(Eye, Goal) - 14.f;
+			if (!bBlocked || D2 < 55.f || In > 22.0) { Next(); return; }
+		}
 		if (!bToUse && D2 < Reach && FMath::Abs(Loc.Z - 88.f - Goal.Z) < 160.f) { Next(); return; }
 
 		if (AutoPath.Num() == 0)

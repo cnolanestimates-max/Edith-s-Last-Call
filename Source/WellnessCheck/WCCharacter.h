@@ -55,6 +55,8 @@ public:
 	void DoReload();
 	void ToggleFlashlight();
 	void SetAiming(bool bAim) { bAiming = bAim; }
+	/** Light at his own eye, for when something is closer than the torch in his hand. Lumens; 0 = off. */
+	void SetFaceLight(float Lumens) { FaceLumens = Lumens; }
 
 	// inventory: one thing held up in front of the camera, lit by its own lamps, against black
 	void ShowInspect(UStaticMesh* InMesh, const TArray<UMaterialInterface*>& Mats, const FVector& PartScale);
@@ -79,6 +81,7 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = "WC") TObjectPtr<USpotLightComponent> Spill;
 	UPROPERTY(VisibleAnywhere, Category = "WC") TObjectPtr<UPointLightComponent> Muzzle;
 	UPROPERTY(VisibleAnywhere, Category = "WC") TObjectPtr<UPointLightComponent> Fill;
+	UPROPERTY(VisibleAnywhere, Category = "WC") TObjectPtr<UPointLightComponent> FaceLight;
 	UPROPERTY(VisibleAnywhere, Category = "WC") TObjectPtr<USceneComponent> GunPivot;
 	UPROPERTY(VisibleAnywhere, Category = "WC") TObjectPtr<UStaticMeshComponent> Gun;
 	UPROPERTY(VisibleAnywhere, Category = "WC") TObjectPtr<UStaticMeshComponent> FlashHand;
@@ -118,6 +121,7 @@ private:
 	TWeakObjectPtr<AWCInteractable> Focus;
 	bool bLightOn = false;
 	float AimDist = 600.f;
+	float FaceLumens = 0.f;
 	float FaceAim = 0.f;
 	FVector FacePoint = FVector::ZeroVector;
 	FVector InspectPart = FVector::OneVector;

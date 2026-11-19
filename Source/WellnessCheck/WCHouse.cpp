@@ -843,6 +843,7 @@ void AWCDirector::Grab(float Hold, TFunction<void()> Then)
 	P->AddShake(1.f);
 	P->SetLightScale(1.f);
 	P->FlickerLight(Hold, 0.45f);
+	P->SetFaceLight(260.f);
 	P->SetInputLocked(true);
 	GrabHoldUntil = Clock + Hold;
 	if (bAuto && !AutoShotDir.IsEmpty())
@@ -855,6 +856,7 @@ void AWCDirector::Grab(float Hold, TFunction<void()> Then)
 	{
 		// the first three times she has him, he sees what made her
 		const int32 N = !Has(TEXT("mem1")) ? 1 : (!Has(TEXT("mem2")) ? 2 : (!Has(TEXT("mem3")) ? 3 : 0));
+		if (AWCCharacter* Pl0 = Player()) Pl0->SetFaceLight(0.f);
 		if (N > 0 && !Has(TEXT("placed")) && Find(FName(*FString::Printf(TEXT("Cam_Mem%d"), N)))) { PlayMemory(N, Then); return; }
 		if (AWCCharacter* Pl = Player()) Pl->SetInputLocked(false);
 		if (Then) Then();

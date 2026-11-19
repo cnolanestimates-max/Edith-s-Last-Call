@@ -219,6 +219,8 @@ def cpart(a):
 # lights (the bar stays dark: this is a quiet welfare check, not a traffic stop)
 for i, dy in enumerate((-62, 62)):
     cpart(light_spot(f"Headlight_{i}", CRX + 245, CRY + dy, 28, 0, -2.5, 6500, (1.0, 0.95, 0.84), 5200, 14, 34, "Cruiser", tags=["Hide_dawn", "Headlight"], shadows=(i == 0), vol=3.2))
+# what the headlights do to the road itself: a wide wash from above the bumper, falling on the dirt and the verges
+cpart(light_spot("RoadWash", CRX + 230, CRY, 120, 0, -17, 5200, (1.0, 0.93, 0.8), 3600, 34, 62, "Cruiser", tags=["Hide_dawn", "Headlight"], shadows=False, vol=0.5))
 cpart(light_point("TailGlow", CRX - 262, CRY, 50, 30, (1.0, 0.05, 0.03), 500, "Cruiser", tags=["Hide_dawn", "CarRunning"], shadows=False, vol=1.0, source=10))
 cpart(light_point("DashGlow", CRX + 44, CRY - 37, -40 + 92, 0.035, (0.55, 1.0, 0.7), 60, "Cruiser", tags=["CarRunning"], shadows=False, vol=0.0, source=1))
 cpart(light_point("CabinFill", CRX - 10, CRY - 10, -40 + 138, 0.10, (0.55, 0.66, 1.0), 170, "Cruiser", tags=["CarRunning"], shadows=False, vol=0.0, source=6))
@@ -237,9 +239,10 @@ def cab(name, f0, f1, l0, l1, u0, u1, mat=DASH):
 cab("DashTop", 62, 108, -80, 80, 92, 104)
 cab("DashFace", 56, 64, -80, 80, 60, 100)
 cab("Binnacle", 50, 64, 18, 58, 100, 112)
-cab("Gauges", 49.4, 50.2, 22, 54, 102, 110, "WC:M_DashGlow")
+for _g, (_l0, _l1) in enumerate(((27, 33), (35.5, 40.5), (43, 49))):
+    cab(f"Gauge{_g}", 49.4, 50.2, _l0, _l1, 105.2, 106.6, "WC:M_DashGlow")
 cab("RadioBox", 49, 58, -18, 12, 78, 94)
-cab("RadioGlow", 48.4, 49.2, -14, 8, 84, 90, "WC:M_DashGlow")
+cab("RadioGlow", 48.4, 49.2, -9, 3, 86.4, 87.6, "WC:M_DashGlow")
 cab("Console", -40, 56, -14, 14, 40, 66)
 cab("RoofLiner", -160, 46, -70, 70, 148, 153)
 cab("WindHeader", 30, 50, -72, 72, 141, 150)

@@ -34,6 +34,33 @@ Failures the bot was forced past (each is a thing to fix or explain):
 | Could not focus `up_attic`, `cellar` doors | The bot stood on the wrong side of a wall (`Wall_Plain_Simple` at 62 cm) | No: bot route only |
 | `A_Foyer` unreachable at dawn | Bot route | Unknown |
 
+## Run 8 (2026-11-19 00:48 to 01:12 UTC), full play-through, accelerated pacing
+
+Same command with `auto8`. Built with the fixes from run 7 plus the inventory.
+
+| Check | Result |
+|---|---|
+| Reaches the ending and credits | Yes: `WCENDING t=1125.8` |
+| Scares | All ten, in order; three memories |
+| Hand under the bed | Now waits until the box is in plain sight. Photographed by the run itself (`S7_auto_1..3.png`): the arm comes out from under the foot of the bed and takes the box, seen from about 4 m |
+| Music box afterwards | The bot walked to it and took it (the run-7 failure is gone) |
+| Grabs | Her face is still dark in `grab_01..05.png`: the flashlight in his outstretched hand is further away than her face. A light at his own eye during the grab is written; not yet photographed |
+| Frame time | Mean 12.4 ms (81 fps) over 27 windows; worst 99th-percentile window 46 ms |
+
+Still forced: `note_diary2`, `pick_key_prayer` (desk in the way), `A_Bath2` (the tub lay across the doorway side of the room),
+`A_Sewing` (follows from the bathroom), `pick_shears` (chair in the way), `up_attic` and `cellar` doors (the bot stopped on
+the wrong side of a wall), `A_Foyer` at dawn. Written after the run and not yet re-tested: the bot only counts itself "close
+enough" when nothing is in the way; the tub is turned to lie along the wall; the sewing chair is moved; the bathroom mirror,
+which hung across the boarded window, is moved to the wall beside it.
+
+## Other tests on 2026-11-19
+
+| Test | Result |
+|---|---|
+| Inventory (`-WCInvTest`, `Saved/Inv2/`) | Opens, pauses, lists things and papers; each thing shows as a lit model on black; inspect view works; Drop is greyed for needed things. Not yet tried by hand: Use on a door, re-reading a paper, dropping a used key |
+| Every interactable photographed (`-WCItems`, `Saved/Items2/`, 126 pictures) | Notes, the phone and pick-ups sit on tables, desks and floors; none seen floating at this size |
+| Forest drive (`Saved/Drive2/`) | Trees in the headlights and the house with its one lit window read well. The road and verges were black and the gauge glow was a flat green slab. Fix written, recapture pending |
+
 ## Look tests (still images of specific things)
 
 `wc.ps1 game Her5|Her6 "-WCHerLook -WCShots=..."`, screenshots in `Saved/Her5/`, `Saved/Her6/`.
