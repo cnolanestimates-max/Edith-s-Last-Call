@@ -70,7 +70,7 @@ public:
 	FQuat InspectBase() const;
 
 	UPROPERTY(EditAnywhere, Category = "WC") float WalkSpeed = 100.f;
-	UPROPERTY(EditAnywhere, Category = "WC") float SprintSpeed = 190.f;
+
 	UPROPERTY(EditAnywhere, Category = "WC") float CrouchSpeed = 62.f;
 	UPROPERTY(EditAnywhere, Category = "WC") float InteractRange = 190.f;        // along the line of sight: long enough to reach the floor at his feet
 	/** ... but the thing itself has to be this close to him on the floor plan (arm's length). */

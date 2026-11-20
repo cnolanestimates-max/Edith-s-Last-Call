@@ -218,9 +218,11 @@ void AWCDirector::ApplyWorldState()
 		if (!bTaken) Box->SetActorLocation(Pos(TEXT("Her_Under")) + FVector(0, Has(TEXT("underbed_done")) ? -15.f : 150.f, 1.f));
 	}
 	ShowTagged(TEXT("Show_drawer"), Has(TEXT("phone_done")));
+	UpdateFurniture(0.f, Furniture.IsEmpty());
+	RefreshFurnitureLoot();
 	ShowTagged(TEXT("Hide_shears"), !HasItem(TEXT("shears")));
 	ShowTagged(TEXT("Show_bookkey"), Has(TEXT("book_done")) && !HasItem(TEXT("key_desk")) && !Has(TEXT("desk_open")));
-	ShowTagged(TEXT("Show_desk"), Has(TEXT("desk_open")) && !HasItem(TEXT("key_ell")));
+	// The moving desk drawer exposes its keys only once it has cleared the apron.
 	ShowTagged(TEXT("Show_jewel"), Has(TEXT("box_open")));
 	ShowTagged(TEXT("Show_vent"), Has(TEXT("vent_open")));
 	ShowTagged(TEXT("Show_trash"), Has(TEXT("tape1_taken")));
@@ -279,6 +281,10 @@ void AWCDirector::StoryBegin(bool bFromSave)
 	Fade = 1.f;
 	if (bFromSave)
 	{
+		RestoreHarrowHints();
+		if (Has(TEXT("tape2_played")) && !Has(TEXT("tv_scare"))) Items.Add(TEXT("tape2"));
+		UpdateFurniture(0.f,true);
+		if (Has(TEXT("phone_ringing")) && !Has(TEXT("phone_done"))) Flags.Remove(TEXT("phone_ringing"));
 		if (Has(TEXT("heard_upstairs")) && !Has(TEXT("peek_done")))
 		{
 			Flags.Remove(TEXT("peek_started"));
@@ -420,9 +426,11 @@ void AWCDirector::StoryEvent(FName Id)
 				bStepToShedDoor = GetWorld()->LineTraceSingleByChannel(Hit, Deputy->EyeLocation(), Bin, ECC_Visibility, Query) &&
 				                   Hit.Distance + 115.f < FVector::Dist(Deputy->EyeLocation(), Bin);
 				BinTurnStarted = Clock;
+				BinViewStart = Deputy->GetControlRotation();
+				BinStartPos = Deputy->GetActorLocation();
+				BinTargetYaw = BinViewStart.Yaw;
 			}
-			if (AWCCharacter* Pl = Player()) Pl->AddShake(1.f);
-			After(0.45f, [this]() { if (AWCCharacter* Pl = Player()) Pl->AddShake(0.6f); });
+			if (AWCCharacter* Pl = Player()) Pl->AddShake(.48f);
 			Tension = 1.f;
 			// and whatever did it goes: heavy feet, fast, away along the back of the house and gone
 			const FVector From = Pos(TEXT("TrashPoint")), To = Pos(TEXT("TrashRunTo"));
@@ -639,7 +647,7 @@ void AWCDirector::StoryEvent(FName Id)
 	// ================================================================= act 2: the peek, the empty room, locked in
 	if (Is(Id, TEXT("trig:t_up_landing")))
 	{
-		if (HasItem(TEXT("key_prayer")) && Has(TEXT("peek_done")) && !Has(TEXT("ceiling_started")) && Gate()) ScareCeiling();
+		if (HasItem(TEXT("key_prayer")) && Has(TEXT("peek_done")) && !Has(TEXT("ceiling_started")) && !HasActiveEncounter()) ScareCeiling();
 		return;
 	}
 	if (Is(Id, TEXT("trig:t_master")) && Has(TEXT("peek_done")) && !Has(TEXT("master_seen")) &&
@@ -658,7 +666,7 @@ void AWCDirector::StoryEvent(FName Id)
 	}
 		if (Is(Id, TEXT("shot_her"))) { ++ShotsAtHer; return; }
 	if (Is(Id, TEXT("shot"))) { if (bLockInActive) ++LockInShots; return; }
-	if (Is(Id, TEXT("trig:t_backhall")) && Has(TEXT("want_leave")) && !Has(TEXT("lockin_started")) && Gate()) { ScareLockIn(); return; }
+	if (Is(Id, TEXT("trig:t_backhall")) && Has(TEXT("want_leave")) && !Has(TEXT("lockin_started")) && !bBusy && !bEventBusy && StalkState == 0) { ScareLockIn(); return; }
 	if (Is(Id, TEXT("gotup")))
 	{
 		bBusy = false;
@@ -673,8 +681,7 @@ void AWCDirector::StoryEvent(FName Id)
 					After(T + 0.6f, [this]() { Think(TEXT("But she flinched. Every shot, she flinched.")); });
 					T += 3.f;
 				}
-				After(T + 0.8f, [this]() { SetObjective(TEXT("Find another way out")); Checkpoint(TEXT("lockin_done")); });
-				After(250.f * TestPace, [this]() { Set(TEXT("backdoor_tried")); });
+				After(T + 0.8f, [this]() { if (!Has(TEXT("phone_done")) && !Has(TEXT("phone_ringing"))) SetObjective(TEXT("Check the back hall downstairs")); Checkpoint(TEXT("lockin_done")); });
 			Tension = 0.45f;
 		}
 		else if (Has(TEXT("ceiling_started")) && !Has(TEXT("ceiling_done")))
@@ -697,15 +704,15 @@ void AWCDirector::StoryEvent(FName Id)
 		if (Is(Id, TEXT("locked:back")))
 	{
 		if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 4.0; Feedback(TEXT("Nailed shut.")); }
-		if (Has(TEXT("want_leave")) && !Has(TEXT("lockin_started")) && Gate()) { After(1.5f, [this]() { ScareLockIn(); }); return; }
+		if (Has(TEXT("want_leave")) && !Has(TEXT("lockin_started")) && !bBusy && !bEventBusy && StalkState == 0) { After(1.5f, [this]() { ScareLockIn(); }); return; }
 		if (Has(TEXT("lockin_done"))) Set(TEXT("backdoor_tried"));      // the phone rings later, when things have gone quiet (StoryTick)
 		return;
 	}
 	if (Is(Id, TEXT("use:phone")) && Has(TEXT("phone_ringing")) && !Has(TEXT("phone_done"))) { ScarePhone(); return; }
-	if (Is(Id, TEXT("take:key_sitting"))) { SetObjective(TEXT("Find what the key opens")); return; }
+	if (Is(Id, TEXT("take:key_sitting"))) { SetObjective(TEXT("Unlock the downstairs sitting room across the hall from the kitchen")); Checkpoint(TEXT("sitting_key")); return; }
 	if (Is(Id, TEXT("take:keep_daniel"))) { AtticTagsTaken(); return; }
 	if (Is(Id, TEXT("unlock:sitting"))) { Set(TEXT("sitting_open")); Say(TEXT("d_sitting"), 3.f); Checkpoint(TEXT("sitting")); return; }
-		if (Is(Id, TEXT("take:key_prayer"))) { SetObjective(TEXT("Find what the iron key opens")); return; }
+		if (Is(Id, TEXT("take:key_prayer"))) { SetObjective(TEXT("Take the piano drawer's iron key to the upstairs prayer room")); Checkpoint(TEXT("prayer_key")); return; }
 	if (Is(Id, TEXT("unlock:up_ell"))) { Checkpoint(TEXT("ell")); return; }
 	if (Is(Id, TEXT("closed:note_prayer")) && !Has(TEXT("placed"))) { SetObjective(TEXT("Find what was theirs, and something to cut with")); return; }
 
@@ -873,14 +880,14 @@ void AWCDirector::StoryTick(float Dt)
 		if (Deferred[i].Valid && !Deferred[i].Valid()) { FDeferred D = Deferred[i]; Deferred.RemoveAt(i); if (D.Skip) D.Skip(); }
 		else if (!bBusy && (Gate() || Clock >= Deferred[i].Deadline)) { FDeferred D = Deferred[i]; Deferred.RemoveAt(i); if (D.Go) D.Go(); }
 	}
-	if (Has(TEXT("kids_pending")) && !Has(TEXT("kids_open")) && Gate())
+	if (Has(TEXT("kids_pending")) && !Has(TEXT("kids_open")) && !HasActiveEncounter())
 	{
 		// a quiet while after the hallway, a door that was locked creaks open and a music box starts
 		Set(TEXT("kids_open"));
 		if (AWCDoor* D = Door(TEXT("up_kids"))) { D->SetLocked(false); D->SetOpen(true, 4.5f, true); PlayAt(TEXT("door_creak_long"), D->GetActorLocation() + FVector(0, 0, 110), 1.f); }
 		PlayAt(TEXT("musicbox"), Pos(TEXT("MusicBoxPoint")), 1.f);
 	}
-	if (Has(TEXT("kids_open")) && !Has(TEXT("underbed_done")) && !bBusy && Gate())
+	if (Has(TEXT("kids_open")) && !Has(TEXT("underbed_done")) && !HasActiveEncounter())
 	{
 		// he has to be looking into the room, with the box in plain sight
 		AWCCharacter* Pl = Player();
@@ -894,29 +901,52 @@ void AWCDirector::StoryTick(float Dt)
 			if (FVector::Dist(Eye, At) < 420.f && FMath::Abs(Eye.Z - At.Z) < 220.f && !GetWorld()->LineTraceSingleByChannel(Hit, Eye, At, ECC_Visibility, Q)) ScareUnderBed();
 		}
 	}
-	if (Has(TEXT("backdoor_tried")) && !Has(TEXT("phone_ringing")) && !Has(TEXT("phone_done")) && Gate() && P->GetActorLocation().Z < 200.f && P->GetActorLocation().Z > -50.f)
+	if (Has(TEXT("lockin_done")) && !Has(TEXT("phone_ringing")) && !Has(TEXT("phone_done")) && !bBusy && !bEventBusy && StalkState == 0 && !P->IsDown() && Clock > DialogueUntil + 0.5 && IsInsideHouse(P->GetActorLocation()) && P->GetActorLocation().Z < 200.f && P->GetActorLocation().Z > -50.f)
 	{
 		Set(TEXT("phone_ringing"));
-		if (UAudioComponent* A = PlayAt(TEXT("phone_ring"), Pos(TEXT("PhonePoint")), 1.f)) { A->ComponentTags.Add(TEXT("ring")); }
+		PhoneRingAgainAt = Clock;
 		if (AWCInteractable* Ph = Thing(TEXT("phone"))) { Ph->Prompt = TEXT("Answer"); Ph->bEnabled = true; }
 		After(3.f, [this]() { Think(TEXT("That phone has no line.")); });
-		SetObjective(TEXT("Answer the phone"));
+		SetObjective(TEXT("Answer the phone in the kitchen"));
+	}
+	if (Has(TEXT("phone_ringing")) && !Has(TEXT("phone_done")) && Clock >= PhoneRingAgainAt)
+	{
+		PhoneRingAgainAt = Clock + 7.;
+		if (UAudioComponent* A = PlayAt(TEXT("phone_ring"), Pos(TEXT("PhonePoint")), .87f))
+		{
+			A->ComponentTags.Add(TEXT("ring"));
+			if (A->Sound && A->Sound->IsLooping()) PhoneRingAgainAt = TNumericLimits<double>::Max();
+		}
 	}
 	if (!H) return;
 
 	// Wait in darkness until the deputy rounds the corner with a real sightline.
 	const FVector Doorway = Pos(TEXT("Her_Peek"));
 	if (Has(TEXT("heard_upstairs")) && !Has(TEXT("peek_started")) && !bBusy &&
-		FMath::Abs(P->GetActorLocation().Z - Doorway.Z - 88.f) < 95.f &&
-		FVector::Dist2D(P->GetActorLocation(), Doorway) <= 300.f &&
-		PlayerSees(Doorway + FVector(0,0,146), .58f, 335.f))
+		P->GetActorLocation().Z >= Doorway.Z - 100.f && FVector::Dist2D(P->GetActorLocation(), Doorway) <= 730.f)
 	{
 		ScarePeek();
 	}
 	// ---- S1: the peek is watching you back
 	if (Has(TEXT("peek_started")) && !Has(TEXT("peek_done")) && H->IsShown() && !Has(TEXT("peek_leaving")))
 	{
-		if (Clock - UpstairsAt >= .24 && (PlayerSees(H->GetActorLocation()+FVector(0,0,145), .52f, 355.f) || H->DistToPlayer() < 145.f))
+		const bool bInView = PlayerSees(H->GetActorLocation()+FVector(0,0,145), .64f, 355.f);
+		if (bInView && PeekLightAt < 0.)
+		{
+			PeekLightAt = Clock;
+			P->SetFlashlight(false, false);
+			P->SetLightScale(0.f);
+			Play2D(TEXT("flashlight_click"), .5f);
+		}
+		if (PeekLightAt >= 0. && Clock - PeekLightAt >= .85 && !bPeekRelit)
+		{
+			P->SetLightScale(1.f);
+			P->SetFlashlight(true, false);
+			H->SetActorHiddenInGame(false);
+			bPeekRelit = true;
+		}
+		if (bPeekRelit && PeekSeenAt < 0. && bInView && P->IsFlashlightOn()) PeekSeenAt = Clock;
+		if (PeekSeenAt >= 0. && Clock - PeekSeenAt >= 1.0)
 		{
 			Set(TEXT("peek_leaving"));
 			PlayAt(TEXT("step_wood"), H->GetActorLocation(), .50f, .9f);
@@ -1037,12 +1067,16 @@ void AWCDirector::ScarePeek()
 {
 	Set(TEXT("peek_started"));
 	UpstairsAt = Clock;
+	PeekLightAt = PeekSeenAt = -1.;
+	bPeekRelit = false;
 	AWCEntity* H = Her();
 	if (!H) { Set(TEXT("peek_done")); SetReturnBlackout(false); return; }
 	if (AWCDoor* D = Door(TEXT("up_master"))) D->SetOpen(true, 0.01f, true);
 	H->Appear(Pos(TEXT("Her_Peek")), YawOf(TEXT("Her_Peek")), TEXT("Peek"));
 	H->SetGlow(0.f);
-	H->SetFarGlow(0.f);                 // barely there: only his own light, close to, finds her
+	H->SetFarGlow(0.f);
+	H->SetActorHiddenInGame(true); // Already posed in the doorway; let the returning beam reveal her.
+	if (AWCCharacter* Deputy = Player()) Deputy->FlickerLight(.36f,.85f);
 	SetReturnBlackout(true);
 	PlayAt(TEXT("creak"), H->GetActorLocation(), .50f, .8f);
 	UE_LOG(LogWCStory, Display, TEXT("WCSCARE t=%.1f S1_peek"), PlaySeconds);
@@ -1157,7 +1191,7 @@ void AWCDirector::ScarePhone()
 								{
 									// somewhere above him a drawer is pulled open (its key is no longer in the kitchen)
 									PlayAt(TEXT("drag_floor"), Pos(TEXT("DrawerPoint")), 1.f, 1.5f, 4500.f);
-									SetObjective(TEXT("Something slid open upstairs"));
+									SetObjective(TEXT("Search the open dresser drawer in the front upstairs bathroom"));
 									Checkpoint(TEXT("phone_done"));
 								});
 								Tension = 0.55f;

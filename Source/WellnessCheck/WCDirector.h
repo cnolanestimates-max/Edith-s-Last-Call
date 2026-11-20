@@ -199,6 +199,9 @@ public:
 	/** Every house light out, and the switches dead for a while. */
 	void KillLights(float DeadSeconds, bool bPop = false);
 	bool IsInsideHouse(const FVector& At) const { return SpaceAt(At) != EListeningSpace::Exterior; }
+	bool HasActiveEncounter() const { return bBusy || bEventBusy || StalkState != 0; }
+	bool IsPeekFlashOut() const { return PeekLightAt >= 0. && Clock - PeekLightAt < .85 && Has(TEXT("peek_started")) && !Has(TEXT("peek_done")); }
+	FVector BinFocusPoint() const;
 	bool IsBinTurnActive() const { return BinTurnStarted >= 0.; }
 	bool IsDriving() const { return bDriving; }
 	bool bPowerOut = false;
@@ -217,6 +220,16 @@ private:
 	void StoryEvent(FName Id);
 	void StoryTick(float Dt);
 	void ApplyWorldState();
+	bool FurnitureEvent(FName Id);
+	void UpdateFurniture(float Dt, bool bSnap = false);
+	void RefreshFurnitureLoot();
+	void RestoreHarrowHints();
+	struct FMovingProp { FTransform Closed; float Alpha = 0; TWeakObjectPtr<AWCInteractable> Actor; };
+	TMap<FName,FMovingProp> Furniture;
+	TWeakObjectPtr<class UPointLightComponent> FridgeBulb;
+	double PhoneRingAgainAt = 0.;
+	double PeekSeenAt = -1., PeekLightAt = -1.;
+	bool bPeekRelit = false;
 	void BeginEnding();
 	// scares
 	void ScarePeek();
@@ -241,6 +254,9 @@ private:
 	double GrabHoldUntil = 0.0;
 	double BinTurnStarted = -1.;
 	bool bStepToShedDoor = false;
+	FRotator BinViewStart;
+	FVector BinStartPos;
+	float BinTargetYaw = 0.f;
 	void TickBinTurn(float Dt);
 	void SetReturnBlackout(bool bActive);
 	TWeakObjectPtr<class UStaticMeshComponent> VentTool;

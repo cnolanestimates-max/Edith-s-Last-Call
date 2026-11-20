@@ -394,6 +394,7 @@ void AWCCharacter::SetFlashlight(bool bOn, bool bClick)
 void AWCCharacter::ToggleFlashlight()
 {
 	if (Blocked()) return;
+	if (AWCDirector* D = AWCDirector::Get(this); D && D->IsPeekFlashOut()) return;
 	SetFlashlight(!bLightOn);
 	if (AWCDirector* D = AWCDirector::Get(this)) D->Event(TEXT("flashlight"));
 }
@@ -507,7 +508,7 @@ void AWCCharacter::Tick(float Dt)
 	UCharacterMovementComponent* M = GetCharacterMovement();
 	const bool bBlocked = Blocked();
 
-	M->MaxWalkSpeed = (bSprinting && !bIsCrouched && !bAiming) ? SprintSpeed : (bAiming ? WalkSpeed * 0.65f : WalkSpeed);
+	M->MaxWalkSpeed = (bSprinting && !bIsCrouched && !bAiming) ? WalkSpeed * 1.30f : (bAiming ? WalkSpeed * 0.65f : WalkSpeed);
 	M->MaxWalkSpeedCrouched = CrouchSpeed;
 
 	// ---- footsteps
@@ -593,7 +594,7 @@ void AWCCharacter::Tick(float Dt)
 		if (AWCDirector* DD = AWCDirector::Get(this))
 		{
 			AWCEntity* E = DD->Her();
-			if (E && E->IsShown())
+			if (E && E->IsShown() && !E->IsHidden())
 			{
 				const FVector Head = E->HeadLocation();
 				const float T = FVector::DotProduct(Head - CS, CFwd);
@@ -606,7 +607,13 @@ void AWCCharacter::Tick(float Dt)
 		AimDist = FMath::FInterpTo(AimDist, Want, Dt, 7.f);
 		FaceAim = FMath::FInterpTo(FaceAim, FaceWant, Dt, 6.f);
 	}
-	const FVector AimPoint = FMath::Lerp(Cam->GetComponentLocation() + Cam->GetForwardVector() * AimDist, FacePoint, FaceAim * 0.9f);
+	FVector AimPoint = FMath::Lerp(Cam->GetComponentLocation() + Cam->GetForwardVector() * AimDist, FacePoint, FaceAim * 0.9f);
+	if (D && D->IsBinTurnActive())
+	{
+		const FVector Bin = D->BinFocusPoint();
+		const float Facing = FVector::DotProduct(Cam->GetForwardVector(), (Bin-Cam->GetComponentLocation()).GetSafeNormal());
+		AimPoint = FMath::Lerp(AimPoint, Bin, FMath::SmoothStep(.96f,.998f,Facing));
+	}
 	const FQuat Target = (AimPoint - Flash->GetComponentLocation()).ToOrientationQuat();
 	AimQuat = FQuat::Slerp(AimQuat, Target, 1.f - FMath::Exp(-13.f * Dt)).GetNormalized();
 	const float Walk = FMath::Clamp(Speed / WalkSpeed, 0.f, 1.7f);
@@ -621,7 +628,7 @@ void AWCCharacter::Tick(float Dt)
 	Flash->SetIntensity(FlashLumens * FlashFluxScale * Level);
 	Spill->SetIntensity(FlashLumens * 0.11f * SpillFluxScale * Level);
 	const bool bLookingAtBin = D && D->IsBinTurnActive();
-	BinBeam = FMath::FInterpTo(BinBeam, bLookingAtBin ? 1.f : 0.f, Dt, bLookingAtBin ? 7.5f : 2.f);
+	BinBeam = FMath::FInterpTo(BinBeam, bLookingAtBin ? FMath::SmoothStep(.86f,.995f,float(FVector::DotProduct(Cam->GetForwardVector(),(D->BinFocusPoint()-Cam->GetComponentLocation()).GetSafeNormal()))) : 0.f, Dt, bLookingAtBin ? 7.5f : 2.f);
 	Throw->SetIntensity(FlashLumens * (0.24f + 2.3f * BinBeam) * ThrowFluxScale * Level);
 	Throw->SetAttenuationRadius(1000.f + 500.f * BinBeam);
 	FaceLight->SetIntensity(FaceLumens * FMath::Clamp(Level, 0.25f, 1.f));

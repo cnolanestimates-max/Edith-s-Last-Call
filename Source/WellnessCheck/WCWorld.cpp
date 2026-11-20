@@ -7,6 +7,7 @@
 #include "Engine/StaticMesh.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/SkeletalMesh.h"
+#include "Components/PointLightComponent.h"
 #include "Animation/AnimSequence.h"
 #include "Materials/MaterialInterface.h"
 
@@ -67,7 +68,13 @@ void AWCDoor::Snap()
 
 FString AWCDoor::GetPrompt() const
 {
-	if (bLocked) return TEXT("Try the door");
+	if (bLocked)
+	{
+		if (WCId == TEXT("sitting")) return TEXT("Try the sitting-room door");
+		if (WCId == TEXT("up_prayer")) return TEXT("Try the prayer-room door");
+		if (WCId == TEXT("up_ell")) return TEXT("Try the rear upstairs hall");
+		return TEXT("Try the door");
+	}
 	return bOpen ? TEXT("Close") : TEXT("Open");
 }
 
@@ -259,6 +266,15 @@ void AWCWatcher::BeginPlay()
 		C->SetCastShadow(false);
 		C->RegisterComponent();
 		AWCSmokeMan::Build(C, 300.f * (Radius / 5.2f), GetTypeHash(WCId));
+		if (WCId == TEXT("company_foyer") || WCId == TEXT("company_landing"))
+		{
+			// A cold patch on the wall beyond him outlines the smoke even on a dark monitor.
+			auto* Bounce = NewObject<UPointLightComponent>(this);
+			Bounce->SetupAttachment(Turn); Bounce->SetRelativeLocation(FVector(-96,60,145));
+			Bounce->SetIntensityUnits(ELightUnits::Lumens); Bounce->SetIntensity(360.f);
+			Bounce->SetLightColor(FLinearColor(.57f,.68f,.78f)); Bounce->SetSourceRadius(10.f);
+			Bounce->SetAttenuationRadius(340.f); Bounce->SetCastShadows(true); Bounce->RegisterComponent();
+		}
 	}
 	else if (Kind == 0)
 	{
@@ -312,7 +328,10 @@ void AWCWatcher::Tick(float Dt)
 	if (Kind == 2 && !bOut && !bGone && !bScripted)
 	{
 		AWCDirector* Dir = AWCDirector::Get(this);
-		if (Dir && Dir->Has(TEXT("peek_done")) && Dir->Player() && FVector::Dist(Dir->Player()->GetActorLocation(), Home) > 900.f) Reveal();
+		if (!Dir || !Dir->Player() || !Dir->IsPlaying() || Dir->Has(WCId)) return;
+		const bool bFoyer = WCId == TEXT("company_foyer");
+		const bool bReady = bFoyer ? Dir->Has(TEXT("inside")) : Dir->Has(TEXT("peek_done"));
+		if (bReady && !Dir->HasActiveEncounter()) Reveal();
 		return;
 	}
 	if (!bOut) return;
@@ -335,16 +354,17 @@ void AWCWatcher::Tick(float Dt)
 	const float Dist = FVector::Dist(Eye, Home);
 	if (Kind == 2)
 	{
-		if (bScripted || !D->Has(TEXT("inside"))) return;
+		if (bScripted || !D->Has(TEXT("inside")) || D->HasActiveEncounter() || P->IsDown()) return;
 		const FVector Chest = Home + FVector(0, 0, 170.f);
-		const bool bLit = Dist < 1500.f && D->PlayerSees(Chest, 0.93f, 1500.f);
+		const bool bLit = Dist < 1500.f && D->PlayerSees(Chest, 0.84f, 1500.f);
 		Seen = bLit ? Seen + Dt : FMath::Max(0.f, Seen - Dt);
-		if (Seen > 0.45f || Dist < 420.f)
+		if (Seen >= 1.15f)
 		{
 			// the light stutters, and the corner is empty
 			P->FlickerLight(0.5f, 0.95f);
 			D->Play2D(TEXT("sting_soft"), 0.7f, EWCSnd::Music);
 			Withdraw(true);
+			D->Set(WCId);
 			D->Event(FName(*FString::Printf(TEXT("company:%s"), *WCId.ToString())));
 		}
 		return;

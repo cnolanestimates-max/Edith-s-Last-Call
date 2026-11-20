@@ -217,6 +217,13 @@ bool AWCDirector::EventsEvent(FName Id)
 				Feedback(Has(TEXT("tape_played")) ? TEXT("The slot is empty. There were more tapes than this.") : TEXT("An old console set with a tape slot under the screen. Nothing in it."));
 				return true;
 			}
+			if (TVWant != 0) return true;
+			if (Have == 2 && (StalkState != 0 || bBusy || bEventBusy))
+			{
+				Feedback(TEXT("Something is here. Hold on to the tape."));
+				return true;
+			}
+			if (Have == 2) bEventBusy = true;
 			Items.Remove(TapeId[Have - 1]);
 			Set(TEXT("tape_played"));
 			Set(FName(*FString::Printf(TEXT("tape%d_played"), Have)));
@@ -292,7 +299,7 @@ void AWCDirector::TVOn()
 	if (TVAudio.IsValid()) TVAudio->Stop();
 	TVTapeNow = N;
 	TVLoop = -1;                                    // the sound is started (and restarted each time round) in TickTV
-	Tv->Prompt = TEXT("Switch the television off");
+	Tv->Prompt = TEXT("Crouch close and switch the television off");
 	TVPhase = 1;
 	TVAt = Clock;
 	Tension = FMath::Max(Tension, 0.6f);
@@ -312,9 +319,10 @@ void AWCDirector::TVOff(bool bByHim, bool bForceScare)
 	PlayAt(TEXT("bulb_die"), At, 0.5f, 1.3f, 1200.f);
 	if (TVGlow) TVGlow->SetIntensity(0.f);
 	Tv->Prompt = TEXT("Look at the television");
-	const bool bScare = P && (bForceScare || (bByHim && TVTape >= 2 && !Has(TEXT("tv_scare")) && Clock >= NextScareAt && StalkState == 0 && !bEventBusy && !bBusy));
+	const bool bScare = P && (bForceScare || (bByHim && TVTapeNow == 2 && !Has(TEXT("tv_scare"))));
 	if (!bScare)
 	{
+		if (TVTapeNow == 2) bEventBusy = false;
 		TVScreen->SetScalarParameterValue(TEXT("Mode"), 0.f);
 		TVPhase = 0;
 		TVNextAt = Clock + 420.0 * FMath::Max(TestPace, 0.25f);

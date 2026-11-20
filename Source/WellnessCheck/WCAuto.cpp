@@ -46,6 +46,62 @@ void AWCDirector::AutoBegin()
 	auto WaitHer = [this](float Timeout) { AutoSteps.Add({ A_WaitHer, NAME_None, Timeout }); };
 	auto Fire = [this](int32 N) { AutoSteps.Add({ A_Fire, NAME_None, (float)N }); };
 
+	if (FParse::Param(FCommandLine::Get(), TEXT("WCHarrowCheck")))
+	{
+		Steps.Reset();
+		Player()->SetInputLocked(false); Player()->SetFlashlight(true,false); Fade = FadeTarget = 0.f;
+		auto Do = [this](const TCHAR* Cmd) { AutoSteps.Add({A_Do,Cmd,0.f}); };
+		auto Touch = [this](const TCHAR* Id) { AutoSteps.Add({A_Use,Id,0.f}); };
+		if (FParse::Param(FCommandLine::Get(),TEXT("WCBinAngles")))
+		{
+			for (const TCHAR* Start : {TEXT("at:3770,-743,59,0,-27"),TEXT("at:3730,-783,59,90,-8"),TEXT("at:3440,-740,60,-165,10")})
+			{
+				Do(Start); Wait(.55f); Do(TEXT("replay_bin"));
+				Wait(2.32f); Shot(*FString::Printf(TEXT("turn_%d_mid"),AutoSteps.Num()));
+				Wait(1.55f); Shot(*FString::Printf(TEXT("turn_%d_end"),AutoSteps.Num())); Wait(1.7f);
+			}
+		}
+		else if (FParse::Param(FCommandLine::Get(),TEXT("WCHarrowArt")))
+		{
+			Do(TEXT("flag:inside")); Do(TEXT("lit_review")); Wait(.5f);
+			Do(TEXT("at:305,500,442,180,-11")); Wait(1.1f); Shot(TEXT("01_Edith_wardrobe"));
+			Do(TEXT("at:195,563,442,-155,-20")); Wait(1.f); Shot(TEXT("02_work_dress_and_gown"));
+			Do(TEXT("at:197,458,442,164,-17")); Wait(1.f); Shot(TEXT("03_church_and_tea_dresses"));
+			Do(TEXT("at:1302,498,92,6,-14")); Wait(1.f); Shot(TEXT("04_icebox_closed"));
+			Do(TEXT("at:1429,528,92,0,-22")); Touch(TEXT("fridge_door")); Wait(1.1f);
+			Do(TEXT("at:1295,522,92,-1,-16")); Wait(1.f); Shot(TEXT("05_icebox_open"));
+			Do(TEXT("at:1445,531,92,-4,-31")); Wait(1.f); Shot(TEXT("06_spoiled_food"));
+			Do(TEXT("at:1448,500,92,15,-48")); Wait(1.f); Shot(TEXT("07_lower_shelf"));
+		}
+		else if (FParse::Param(FCommandLine::Get(),TEXT("WCHarrowScares")))
+		{
+			Do(TEXT("flag:inside")); Do(TEXT("at:820,64,92,0,0")); Wait(.65f); Shot(TEXT("01_company")); Flag(TEXT("company_foyer"),4.f);
+			Do(TEXT("flag:heard_upstairs")); Do(TEXT("at:700,80,442,0,0")); Wait(.45f);
+			Do(TEXT("at:475,114,442,163,-1")); Wait(.35f); Shot(TEXT("02_dead_light")); Wait(.75f); Shot(TEXT("03_doorway")); Flag(TEXT("peek_done"),5.f);
+			Do(TEXT("at:150,56,442,0,0")); Wait(.45f); Shot(TEXT("04_company_upstairs")); Flag(TEXT("company_landing"),4.f);
+			Do(TEXT("at:2120,457,442,-10,-32")); Touch(TEXT("pick_tape2"));
+			Do(TEXT("at:361,-600,92,-90,-30")); Touch(TEXT("tv")); Wait(2.2f);
+			AutoSteps.Add({A_Crouch,NAME_None,1.f}); Wait(.5f); Touch(TEXT("tv")); Flag(TEXT("tv_scare"),3.f); Wait(5.f); AutoSteps.Add({A_Crouch,NAME_None,0.f});
+			Do(TEXT("at:871,414,92,90,-20")); Do(TEXT("flag:lockin_done")); Flag(TEXT("phone_ringing"),12.f);
+			Touch(TEXT("phone")); Flag(TEXT("phone_done"),4.f); Wait(4.f);
+		}
+		else
+		{
+			Do(TEXT("flag:inside")); Do(TEXT("at:820,64,92,0,0")); Wait(2.2f);
+			Do(TEXT("at:1425,523,93,0,-14")); Touch(TEXT("fridge_door")); Wait(.94f); Shot(TEXT("01_fridge")); Touch(TEXT("fridge_door")); Wait(.9f);
+			Do(TEXT("lit_review")); Do(TEXT("at:1825,-342,92,180,-9")); Wait(.7f); Shot(TEXT("02_books"));
+			Do(TEXT("at:256,499,442,180,-12")); Wait(1.f); Shot(TEXT("03_dresses"));
+			Do(TEXT("flag:phone_done")); Do(TEXT("at:1010,-406,442,-90,-42")); Touch(TEXT("look_upbath_tub")); Wait(3.f);
+			Touch(TEXT("pick_key_sitting")); Shot(TEXT("04_drained_bath"));
+			Do(TEXT("at:1380,-420,92,0,-25")); Touch(TEXT("sitting_drawer")); Wait(.8f); Touch(TEXT("pick_ivory"));
+			Do(TEXT("at:231,-420,92,180,-28")); Touch(TEXT("look_piano")); Wait(1.f); Shot(TEXT("05_piano")); Touch(TEXT("pick_key_prayer"));
+			Do(TEXT("at:552,-319,92,90,-5")); Touch(TEXT("book_settlers")); Wait(4.f); Touch(TEXT("pick_key_desk"));
+			Do(TEXT("at:2190,-330,92,0,-19")); Touch(TEXT("walter_drawer")); Wait(1.f); Shot(TEXT("06_desk")); Touch(TEXT("pick_key_ell"));
+			Do(TEXT("at:150,56,442,0,0")); Do(TEXT("flag:peek_done")); Wait(2.f);
+			Do(TEXT("check_harrow_loot"));
+		}
+		AutoIndex=0; AutoStepStart=Clock; return;
+	}
 	if (FParse::Param(FCommandLine::Get(), TEXT("WCListeningCheck")))
 	{
 		Steps.Reset();
@@ -549,10 +605,10 @@ void AWCDirector::AutoBegin()
 	Use(TEXT("back")); Flag(TEXT("phone_ringing"), 30.f * Slow); Wait(3.f);
 	Use(TEXT("phone")); Flag(TEXT("phone_seat"), 40.f); LookHer(1.2f); Shot(TEXT("14_S2_table")); LookHer(6.f);
 	Wait(10.f); Shot(TEXT("15_after_S2"));
-	Go(TEXT("A_StairsTop")); Go(TEXT("A_UpBath")); Wait(1.f); Shot(TEXT("15b_drawer_open_upstairs")); Use(TEXT("pick_key_sitting"));
+	Go(TEXT("A_StairsTop")); Go(TEXT("A_UpBath")); Wait(1.f); Shot(TEXT("15b_drawer_open_upstairs")); Use(TEXT("bath_dresser")); Use(TEXT("look_upbath_tub")); Wait(3.f); Use(TEXT("pick_key_sitting"));
 	Go(TEXT("A_StairsTop")); Go(TEXT("A_HallSit")); Use(TEXT("sitting")); Wait(3.f);
 	Go(TEXT("A_Sitting")); Wait(3.f); Shot(TEXT("16_sitting")); Use(TEXT("note_diary2")); Wait(1.f); Close();
-	Use(TEXT("pick_key_prayer")); Use(TEXT("note_deskkey")); Wait(1.f); Close(); Use(TEXT("pick_fuse"));
+	Use(TEXT("sitting_drawer")); Wait(.8f); Use(TEXT("pick_ivory")); Go(TEXT("A_Book")); Use(TEXT("look_piano")); Wait(1.f); Use(TEXT("pick_key_prayer")); Go(TEXT("A_Sitting")); Use(TEXT("note_deskkey")); Wait(1.f); Close(); Use(TEXT("pick_fuse"));
 	Go(TEXT("A_Pantry")); Use(TEXT("fusebox")); Flag(TEXT("fuse_done"), 4.f); Wait(2.f); Shot(TEXT("16a_fuse_in"));
 	Go(TEXT("A_Book")); Use(TEXT("book_settlers")); Flag(TEXT("book_done"), 6.f); Wait(0.9f); Shot(TEXT("16b_S10_book_eye")); Wait(3.f); Shot(TEXT("16c_S10_after"));
 	Use(TEXT("pick_key_desk")); Go(TEXT("A_Den")); Use(TEXT("desk")); Flag(TEXT("desk_open"), 6.f); Wait(2.f); Shot(TEXT("16b_desk_open_keys")); Use(TEXT("pick_key_ell")); Use(TEXT("pick_ammo_desk")); Wait(1.f);
@@ -938,6 +994,13 @@ void AWCDirector::AutoTick(float Dt)
 		}
 		else if (S.Arg == TEXT("record_mix")) UAudioMixerBlueprintLibrary::StartRecordingOutput(this, 30.f);
 		else if (S.Arg == TEXT("finish_mix")) UAudioMixerBlueprintLibrary::StopRecordingOutputToAnyPath(this, EAudioRecordingExportType::WavFile, TEXT("arrival_mix"), AutoShotDir);
+		else if (S.Arg == TEXT("lit_review")) { SwitchRoom(TEXT("den"),true,false); SwitchRoom(TEXT("master"),true,false); }
+		else if (S.Arg == TEXT("replay_bin")) { Flags.Remove(TEXT("tape1_taken")); Event(TEXT("take:tape1")); }
+		else if (S.Arg == TEXT("check_harrow_loot"))
+		{
+			for (FName Id : {FName(TEXT("key_sitting")),FName(TEXT("key_prayer")),FName(TEXT("key_desk")),FName(TEXT("key_ell"))})
+				if (!HasItem(Id)) UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL missing earned item %s"),*Id.ToString());
+		}
 		else if (S.Arg == TEXT("take_tape")) Event(TEXT("take:tape1"));
 		else if (S.Arg == TEXT("mix_check"))
 		{

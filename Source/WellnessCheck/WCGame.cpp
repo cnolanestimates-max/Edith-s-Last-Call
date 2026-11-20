@@ -345,7 +345,7 @@ void AWCHUD::DrawHUD()
 static FString ItemName(FName Id)
 {
 	static const TMap<FName, FString> Names = {
-		{ TEXT("key_sitting"), TEXT("Small brass key") }, { TEXT("key_prayer"), TEXT("Iron key on a ribbon") },
+		{ TEXT("piano_ivory"), TEXT("Loose ivory piano key") }, { TEXT("key_sitting"), TEXT("Downstairs sitting-room key") }, { TEXT("key_prayer"), TEXT("Upstairs prayer-room key") },
 		{ TEXT("key_attic"), TEXT("Long key") }, { TEXT("key_cellar"), TEXT("Padlock key") },
 		{ TEXT("keep_ruth"), TEXT("Ruth's music box") }, { TEXT("keep_walter"), TEXT("Walter's wedding ring") },
 		{ TEXT("keep_daniel"), TEXT("Daniel's dog tags") }, { TEXT("key_desk"), TEXT("Small desk key") },
@@ -723,9 +723,10 @@ namespace
 		{ TEXT("doll"), TEXT("Rag doll"), TEXT("A child's rag doll, pushed deep into the duct. One button eye is gone. There is something hard inside her."), TEXT("/Game/WC/Props/SM_Item_Doll.SM_Item_Doll") },
 		{ TEXT("doll_empty"), TEXT("Rag doll"), TEXT("Ruth's, I would guess. The seam down her back has been cut and sewn up again more than once."), TEXT("/Game/WC/Props/SM_Item_DollEmpty.SM_Item_DollEmpty") },
 		{ TEXT("key_box"), TEXT("Small key"), TEXT("Small and fancy, with a heart worked into the bow. Too small for any door in this house."), TEXT("/Game/WC/Props/SM_Item_KeyHeart.SM_Item_KeyHeart") },
-		{ TEXT("key_sitting"), TEXT("Small brass key"), TEXT("Worn smooth, two little scrolls in the bow. It was lying in a drawer that had been shut."), TEXT("/Game/WC/Props/SM_Item_Key.SM_Item_Key") },
-		{ TEXT("key_prayer"), TEXT("Iron key on a ribbon"), TEXT("Heavy and old, on a faded red ribbon gone grey where it was held."), TEXT("/Game/WC/Props/SM_Item_KeyIron.SM_Item_KeyIron") },
-		{ TEXT("key_desk"), TEXT("Small desk key"), TEXT("It was inside a hollow book. A barrel key, too small for a door."), TEXT("/Game/WC/Props/SM_Item_KeyDesk.SM_Item_KeyDesk") },
+		{ TEXT("piano_ivory"), TEXT("Loose ivory piano key"), TEXT("Ivory over wood. One end bears the same dent as the empty slot in the living-room piano."), TEXT("/Game/WC/Props/HouseDetails/SM_LoosePianoKey.SM_LoosePianoKey") },
+		{ TEXT("key_sitting"), TEXT("Downstairs sitting-room key"), TEXT("Two little scrolls in the bow. SITTING ROOM is stamped on its brass tag."), TEXT("/Game/WC/Props/SM_Item_Key.SM_Item_Key") },
+		{ TEXT("key_prayer"), TEXT("Iron key on a ribbon"), TEXT("Heavy and old. The ribbon is stitched with the words UPSTAIRS PRAYER ROOM."), TEXT("/Game/WC/Props/SM_Item_KeyIron.SM_Item_KeyIron") },
+		{ TEXT("key_desk"), TEXT("Small desk key"), TEXT("A little barrel key from the hollow settlers' book. It fits Walter's writing desk in the downstairs den."), TEXT("/Game/WC/Props/SM_Item_KeyDesk.SM_Item_KeyDesk") },
 		{ TEXT("key_ell"), TEXT("Walter's keys"), TEXT("Three that do not match, on a split ring with a leather fob. W.H. From his desk."), TEXT("/Game/WC/Props/SM_Item_Keyring.SM_Item_Keyring") },
 		{ TEXT("key_attic"), TEXT("Long key"), TEXT("It was in Daniel's room, kept where a boy keeps things. Long, with a paper tag too worn to read."), TEXT("/Game/WC/Props/SM_Item_KeyLong.SM_Item_KeyLong") },
 		{ TEXT("key_cellar"), TEXT("Padlock key"), TEXT("Flat brass, stamped 27. From the bottom of Daniel's footlocker."), TEXT("/Game/WC/Props/SM_Item_KeyPadlock.SM_Item_KeyPadlock") },

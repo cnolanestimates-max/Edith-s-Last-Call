@@ -88,7 +88,7 @@ void AWCDirector::HouseBegin()
 		if (It->ActorHasTag(TEXT("DriverSeat"))) Seat = *It;
 	}
 	bPowerOut = Has(TEXT("power_out")) && !Has(TEXT("fuse_done"));
-	NextStalkAt = Clock + 300.0;
+	NextStalkAt = Clock + 300.0 / 1.15;
 	UE_LOG(LogWCHouse, Display, TEXT("WCHOUSE %d lit rooms, %d nav points, car %d"), Rooms.Num(), NavPts.Num(), Car.IsValid() ? 1 : 0);
 }
 
@@ -187,7 +187,7 @@ bool AWCDirector::HouseEvent(FName Id)
 {
 	AWCCharacter* P = Player();
 	if (!P) return false;
-	if (EventsEvent(Id)) return true;
+	if (EventsEvent(Id) || FurnitureEvent(Id)) return true;
 	const FString S = Id.ToString();
 
 	if (S.StartsWith(TEXT("use:sw_")))
@@ -226,7 +226,7 @@ bool AWCDirector::HouseEvent(FName Id)
 	if (S.StartsWith(TEXT("look:"))) { LooksSeen.Add(Id); return true; }
 	if (Id == TEXT("take:key_ell"))
 	{
-		if (!Has(TEXT("placed"))) SetObjective(TEXT("Find what Walter's keys open"));
+		if (!Has(TEXT("placed"))) SetObjective(TEXT("Unlock the rear upstairs hall. Check the aide's room for her videotape."));
 		Checkpoint(TEXT("desk"));
 		return true;
 	}
@@ -291,7 +291,8 @@ bool AWCDirector::HouseEvent(FName Id)
 		if (!HasItem(TEXT("key_desk")))
 		{
 			PlayAt(TEXT("door_locked"), P->GetActorLocation() + P->GetActorForwardVector() * 80.f, 0.6f);
-			if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 4.0; Feedback(TEXT("Locked.")); }
+			if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 4.0; Feedback(TEXT("Locked. A tag under the handle reads: W. Harrow. Desk key in First Settlers, living-room shelf by the stairs."));
+				SetObjective(TEXT("Find the settlers' book on the living-room shelf beside the stairs")); }
 			return true;
 		}
 		Set(TEXT("desk_open"));
@@ -301,7 +302,7 @@ bool AWCDirector::HouseEvent(FName Id)
 		After(0.5f, [this]() { ApplyWorldState(); });
 		return true;
 	}
-	if (Id == TEXT("take:key_desk")) { Think(TEXT("The key was in the book. Walter's desk.")); return true; }
+	if (Id == TEXT("take:key_desk")) { SetObjective(TEXT("Use the book's small key on Walter's desk in the downstairs den")); Checkpoint(TEXT("desk_key")); return true; }
 	if (Id == TEXT("use:book_settlers"))
 	{
 		if (Has(TEXT("book_done"))) return true;
@@ -310,7 +311,7 @@ bool AWCDirector::HouseEvent(FName Id)
 		{
 			const FVector Rel = P->GetActorLocation() - Bk->GetActorLocation();
 			const float Back = -Rel.Y, Aside = FMath::Abs(Rel.X);                 // the bookcase is on the hall-side wall: the room is toward -Y
-			if (Aside > 30.f || Back < 35.f || Back > 115.f)
+			if (Aside > 74.f || Back < 12.f || Back > 185.f)
 			{
 				if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 2.5; Feedback(TEXT("Stand right in front of it.")); }
 				return true;
@@ -337,7 +338,7 @@ bool AWCDirector::HouseEvent(FName Id)
 	if (Id == TEXT("take:fuse")) { if (!bPowerOut) Think(TEXT("A spare fuse. Might want that.")); return true; }
 	if (Id == TEXT("take:key_attic"))
 	{
-		SetObjective(TEXT("Find what the long key opens"));
+		SetObjective(TEXT("Take the long key to the attic door upstairs"));
 		// his radio comes on by itself, and something answers to his name
 		After(1.6f, [this]()
 		{
@@ -835,7 +836,7 @@ void AWCDirector::TickStalk(float Dt)
 			const bool bClose = Dist < 420.f;
 			// she comes fast: quicker than he can run, and faster again for the last few steps
 			if (bAmbush || bClose) H->MoveAlong(Route, bAmbush ? 2000.f : 1725.f, TEXT("Run"));      // half as fast again (Cheyenne, 03:54)
-			else H->MoveAlong(Route, 165.f, TEXT("Walk"));          // as fast as her walk plays without her feet sliding; he hears every step
+			else H->MoveAlong(Route, 185.f, TEXT("Walk"));          // as fast as her walk plays without her feet sliding; he hears every step
 			if (bClose && !Has(TEXT("stalk_rushing"))) { Set(TEXT("stalk_rushing")); Play2D(TEXT("her_scream"), 0.9f); }
 		}
 		if (Dist < 165.f)
@@ -864,7 +865,7 @@ void AWCDirector::TickStalk(float Dt)
 				}
 			});
 			Rest(170.f);
-			NextStalkAt = Clock + Rng.FRandRange(360.f, 540.f) * FMath::Max(TestPace, 0.3f);
+			NextStalkAt = Clock + (Rng.FRandRange(360.f, 540.f) / 1.15f) * FMath::Max(TestPace, 0.3f);
 			return;
 		}
 		// she gives up if he gets right away from her
@@ -916,35 +917,48 @@ void AWCDirector::EndStalk(bool bDriven)
 		else H->Vanish();
 	}
 	Rest(bDriven ? 150.f : 90.f);
-	NextStalkAt = Clock + Rng.FRandRange(360.f, 540.f) * FMath::Max(TestPace, 0.3f);
+	NextStalkAt = Clock + (Rng.FRandRange(360.f, 540.f) / 1.15f) * FMath::Max(TestPace, 0.3f);
 	Tension = 0.5f;
 	UE_LOG(LogWCHouse, Display, TEXT("WCSTALK t=%.1f end driven=%d"), PlaySeconds, bDriven ? 1 : 0);
 }
 
 // ================================================================================================ per-frame
+FVector AWCDirector::BinFocusPoint() const
+{
+	if (const AActor* Body = Find(TEXT("BinBody")))
+	{
+		FVector Center, Extent;
+		Body->GetActorBounds(false, Center, Extent);
+		return Center;
+	}
+	return Pos(TEXT("TrashPoint")) + FVector(0, 0, -5);
+}
+
 void AWCDirector::TickBinTurn(float Dt)
 {
 	if (!IsBinTurnActive()) return;
 	AWCCharacter* Deputy = Player();
 	if (!Deputy || !Deputy->GetController()) { BinTurnStarted = -1.; return; }
 	const double Age = Clock - BinTurnStarted;
-	const FVector Target = Pos(TEXT("TrashPoint")) + FVector(0,0,24);
+	const FVector Target = BinFocusPoint();
 	const FVector From = Deputy->GetActorLocation();
 	if (bStepToShedDoor && Age > .12)
 	{
 		const FVector Exit = Pos(TEXT("A_Shed"));
-		const FVector Inside = Pos(TEXT("A_ShedIn"));
-		const bool Align = From.X > Inside.X - 35.f && FMath::Abs(From.Y - Exit.Y) > 8.f;
-		const FVector Waypoint(Align ? From.X : Exit.X, Exit.Y, From.Z);
-		Deputy->SetActorLocation(FMath::VInterpConstantTo(From, Waypoint, Dt, 280.f), true);
+		// Ease across the threshold on a swept path. Align with the opening first
+		// when starting beside the door jamb, and keep the capsule on its floor.
+		const float Side = FMath::SmoothStep(.12f,.85f,float(Age));
+		const float Delay = FMath::Abs(BinStartPos.Y-Exit.Y) > 48.f ? .48f : .12f;
+		const float Step = FMath::SmoothStep(Delay,2.12f,float(Age));
+		Deputy->SetActorLocation(FVector(FMath::Lerp(BinStartPos.X,Exit.X,Step),
+			FMath::Lerp(BinStartPos.Y,Exit.Y,Side),From.Z),true);
 	}
-	if (Age >= .07)
-	{
-		AController* C = Deputy->GetController();
-		const FRotator Want = (Target - Deputy->EyeLocation()).Rotation();
-		C->SetControlRotation(FMath::RInterpTo(C->GetControlRotation(), Want, Dt, 14.f));
-	}
-	if (Age >= 2.35)
+	const FRotator Want = (Target - Deputy->EyeLocation()).Rotation();
+	BinTargetYaw += FMath::FindDeltaAngleDegrees(BinTargetYaw, float(Want.Yaw));
+	const float Turn = FMath::SmoothStep(.09f,.94f,float(Age));
+	Deputy->GetController()->SetControlRotation(FRotator(FMath::Lerp(BinViewStart.Pitch,Want.Pitch,Turn),
+		FMath::Lerp(BinViewStart.Yaw,double(BinTargetYaw),double(Turn)),0.));
+	if (Age >= 2.44)
 	{
 		BinTurnStarted = -1.;
 		UE_LOG(LogWCHouse, Display, TEXT("WCBIN camera finished alignment=%.3f sight=%d"),
@@ -969,6 +983,7 @@ void AWCDirector::HouseTick(float Dt)
 	}
 	if (bDriving) { TickDrive(Dt); return; }
 	TickBinTurn(Dt);
+	UpdateFurniture(Dt);
 	TickVentTool();
 	if (Clock < GrabHoldUntil && Her() && Her()->IsShown())
 	{
@@ -1139,6 +1154,7 @@ void AWCDirector::ScareBook()
 		{
 			PlayAt(TEXT("thump_far"), FVector(Start.X, Start.Y, FloorZ), 1.f, 1.5f, 900.f);
 			ShowTagged(TEXT("Show_bookkey"), true);
+			SetObjective(TEXT("Pick up Walter's desk key from the floor below the settlers' book"));
 		});
 		// she holds his eye for two seconds; then she is gone from the hole and running up the stairs behind the wall
 		After(2.1f, [this, EyeW, Glim]()
