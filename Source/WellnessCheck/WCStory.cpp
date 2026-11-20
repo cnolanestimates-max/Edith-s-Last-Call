@@ -210,6 +210,7 @@ float AWCDirector::Say(FName LineId, float Delay)
 // ---------------------------------------------------------------------------------------------- begin / world state
 void AWCDirector::ApplyWorldState()
 {
+	RefreshBathLetter();
 	// Restore the box to the correct side of the bed edge on Continue as well.
 	if (AWCInteractable* Box = Thing(TEXT("pick_keep_ruth")); Box && !BedCamera.IsValid())
 	{

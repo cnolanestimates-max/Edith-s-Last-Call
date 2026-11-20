@@ -727,6 +727,31 @@ def clip_sit(t):
     hand("Right", (-24.0, -66.0, 82.0), elbow=(-1, 0.6, -0.3), rot=(-78.0, 0, 0))
 
 
+def clip_wheelchair(t):
+    breath = wob(t, .18)
+    hips(dz=-(HIP0.z - 59.) + .25*breath, rx=-3.)
+    spine(8. + .7*breath)
+    head(-6. + .25*breath, roll=3.)
+    upd()
+    foot("Left", (FOOT_X, -46., ANK_Z), knee=(0,-1,1.))
+    foot("Right", (-FOOT_X, -43., ANK_Z), knee=(0,-1,1.))
+    hand("Left", (25., -22., 66.), elbow=(1,.6,-.4), rot=(-68,0,0))
+    hand("Right", (-24., -25., 66.), elbow=(-1,.6,-.4), rot=(-68,0,0))
+
+
+def clip_threshold(t):
+    # She folds her knees under the lintel so her face meets the deputy at eye level.
+    breath = wob(t, .22)
+    hips(dy=7.,dz=-57.+.65*breath,rx=8.)
+    spine(30.+breath)
+    head(-33.,roll=-7.)
+    upd()
+    foot("Left",(FOOT_X+5.,FOOT_Y0-15.,ANK_Z),knee=(.2,-1,.5))
+    foot("Right",(-FOOT_X-3.,FOOT_Y0+8.,ANK_Z),knee=(-.22,-1,.5))
+    dangle("Left",t,1.,reach=.83)
+    dangle("Right",t,-1.,reach=.84)
+
+
 def clip_under(t):
     # lying on her front, chin near the floor, one arm reaching toward the viewer
     br = wob(t, 0.25)
@@ -765,6 +790,8 @@ CLIPS = {
     "Tall": (clip_tall, 9.0, True, 0.0),
     "Crawl": (clip_crawl, CRAWL_T, True, CRAWL_S / (CRAWL_ST * CRAWL_T)),
     "Sit": (clip_sit, 10.0, True, 0.0),
+    "Wheelchair": (clip_wheelchair, 5.5, True, 0.0),
+    "Threshold": (clip_threshold, 4., True, 0.0),
     "Under": (clip_under, 8.0, True, 0.0),
     "Lunge": (clip_lunge, 0.6, False, 0.0),
 }

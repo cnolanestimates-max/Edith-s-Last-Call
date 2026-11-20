@@ -200,6 +200,7 @@ void AWCEntity::Appear(const FVector& Loc, float Yaw, FName Anim, bool bLoop, fl
 
 void AWCEntity::Vanish()
 {
+	GazeTarget.Reset();
 	StopMoving();
 	SetActorHiddenInGame(true);
 	bShown = false;
@@ -409,7 +410,7 @@ void AWCEntity::Tick(float Dt)
 		FQuat Want = HeadFwd;
 		if (const AWCCharacter* P = Cast<AWCCharacter>(UGameplayStatics::GetPlayerPawn(this, 0)))
 		{
-			const FVector To = (P->EyeLocation() - Eye->GetComponentLocation()).GetSafeNormal();
+			const FVector To = (GazeTarget.Get(P->EyeLocation()) - Eye->GetComponentLocation()).GetSafeNormal();
 			const FVector F = HeadFwd.GetForwardVector();
 			const float Ang = FMath::RadiansToDegrees(FMath::Acos(FMath::Clamp(FVector::DotProduct(To, F), -1.f, 1.f)));
 			const FVector Aim = Ang > 42.f ? FMath::VInterpNormalRotationTo(F, To, 1.f, 42.f) : To;

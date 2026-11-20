@@ -281,6 +281,9 @@ void AWCDirector::Tick(float Dt)
 	{
 					if (Clock >= NextTrigPoll) { NextTrigPoll = Clock + 0.1; TickTriggers(); }
 			HouseTick(Dt);
+			TickBathMirror(Dt);
+			TickBathChair(Dt);
+			TickHallPendant();
 			StoryTick(Dt);
 			if (BedCamera.IsValid()) TickUnderBed(Dt);
 		if (ListeningSnicker.IsValid()) TickListeningSnicker();
@@ -481,6 +484,11 @@ void AWCDirector::OpenNote(AWCNote* Note)
 	ActiveNote = Note;
 	Play2D(TEXT("paper"), 0.7f);
 	if (!NotesRead.Contains(Note->WCId)) NotesRead.Add(Note->WCId);
+	if (Note->WCId == TEXT("note_bath_mirror"))
+	{
+		RefreshBathLetter();
+		Checkpoint(TEXT("bath_letter_collected"));
+	}
 	Event(FName(*FString::Printf(TEXT("read:%s"), *Note->WCId.ToString())));
 }
 

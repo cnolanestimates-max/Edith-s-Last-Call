@@ -11,6 +11,8 @@
 #include "Components/AudioComponent.h"
 #include "Components/LightComponent.h"
 #include "Components/PointLightComponent.h"
+#include "Components/SpotLightComponent.h"
+#include "Materials/MaterialInterface.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Animation/SkeletalMeshActor.h"
 #include "Engine/SkeletalMesh.h"
@@ -88,6 +90,16 @@ void AWCDirector::HouseBegin()
 		if (It->ActorHasTag(TEXT("DriverSeat"))) Seat = *It;
 	}
 	bPowerOut = Has(TEXT("power_out")) && !Has(TEXT("fuse_done"));
+	BathChair = Find(TEXT("BathWheelchair"));
+	if (BathChair.IsValid()) BathChairHome = BathChair->GetActorTransform();
+	if (AActor* Fixture = Find(TEXT("HallPendant"))) HallPendant = Fixture->FindComponentByClass<UStaticMeshComponent>();
+	if (AActor* Beam = Find(TEXT("HallPendantBeam"))) PendantBeam = Beam->FindComponentByClass<USpotLightComponent>();
+	if (HallPendant.IsValid())
+	{
+		PendantBulbSlot = HallPendant->GetMaterialIndex(TEXT("M_GlowBulb"));
+		if (PendantBulbSlot != INDEX_NONE) PendantLit = HallPendant->GetMaterial(PendantBulbSlot);
+		PendantDark = LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/WC/Materials/M_BulbOff.M_BulbOff"));
+	}
 	NextStalkAt = Clock + 300.0 / 1.15;
 	UE_LOG(LogWCHouse, Display, TEXT("WCHOUSE %d lit rooms, %d nav points, car %d"), Rooms.Num(), NavPts.Num(), Car.IsValid() ? 1 : 0);
 }

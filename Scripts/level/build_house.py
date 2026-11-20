@@ -980,5 +980,7 @@ runpy.run_path(os.path.join(HERE, "yard_access.py"))["build"]()
 runpy.run_path(os.path.join(HERE, "playtest_props.py"))["dress"]()
 runpy.run_path(os.path.join(HERE, "review_rooms.py"))["dress"]()
 runpy.run_path(os.path.join(HERE, "harrow_progression.py"))["dress"]()
+runpy.run_path(os.path.join(HERE, "bath_mirror.py"))["dress"]()
+runpy.run_path(os.path.join(HERE, "hall_pendant.py"))["dress"]()
 if not level_editor.save_current_level():
     raise RuntimeError("Could not save yard routes and bedroom pickup")

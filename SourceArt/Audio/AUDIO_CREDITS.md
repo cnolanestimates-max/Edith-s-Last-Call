@@ -43,6 +43,8 @@ Dialogue generated with Google Gemini TTS (see VO/_manifest.json). Radio and pho
 
 ## From Cheyenne's Sonniss GDC 2026 Game Audio Bundle and Night Shift package (royalty-free, no attribution required)
 
+- `deputy_pant` uses SoundBits, *Vox Hominis – Human Effort Voices*, “Panting Male 02 04” from volume 5 of the Sonniss GDC 2026 bundle. Edited to a 5.4-second close-mic breathing cue under the included Game Audio GDC Bundle license.
+
 - amb_car: InMotionAudio - Car Interior Driving Ambience/VEHCar_TownDrivingAmbience06_InMotionAudio_CarInteriorDrivingAmbience.wav
 - car_stop: SoundBits - Cars - Mad Mustang Mercury/VEHSkid_Tire Skids on Gravel 15 06_SNDBTS_CRS-MMM.wav
 - car_door: SoundBits - Cars - Mad Mustang Mercury/VEHDoor_Car Foley Car Door Open and Close Exterior 04 Perspective A_SNDBTS_CRS-MMM.wav

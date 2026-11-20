@@ -47,6 +47,7 @@ public:
 	bool IsMoving() const { return Path.Num() > 0 || SlideT >= 0.f; }
 	void FacePlayer(bool bFace) { bFacePlayer = bFace; }
 	void SetYaw(float Yaw);
+	void LookAtReflection(const FVector& VirtualEye) { GazeTarget = VirtualEye; }
 	/** Kept for the story script; playback is always smooth now. */
 	void SetStutter(float Fps) {}
 	/** 0..1: how far her jaw is unhinged.  Set automatically from the clip (Run, Lunge, Rise, Crawl scream). */
@@ -99,4 +100,5 @@ public:
 	FVector BoneWorld(FName Bone) const;
 private:
 	FQuat EyeQuat = FQuat::Identity;
+	TOptional<FVector> GazeTarget;
 };

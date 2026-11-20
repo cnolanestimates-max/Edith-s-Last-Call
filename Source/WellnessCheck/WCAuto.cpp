@@ -52,7 +52,31 @@ void AWCDirector::AutoBegin()
 		Player()->SetInputLocked(false); Player()->SetFlashlight(true,false); Fade = FadeTarget = 0.f;
 		auto Do = [this](const TCHAR* Cmd) { AutoSteps.Add({A_Do,Cmd,0.f}); };
 		auto Touch = [this](const TCHAR* Id) { AutoSteps.Add({A_Use,Id,0.f}); };
-		if (FParse::Param(FCommandLine::Get(),TEXT("WCBinAngles")))
+		if (FParse::Param(FCommandLine::Get(),TEXT("WCBathMirror")))
+		{
+			Do(TEXT("record_mix")); Do(TEXT("flag:inside")); Do(TEXT("at:2564,-392,92,173,3")); Wait(2.f);
+			Shot(TEXT("01_mirror_from_sink")); Do(TEXT("at:2517,-382,92,172,-4")); Wait(1.6f);
+			Shot(TEXT("02_edith_in_glass")); Do(TEXT("at:2540,-371,92,14,-29")); Wait(.8f);
+			Flag(TEXT("bath_mirror_seen"),3.f); Shot(TEXT("03_empty_bath_and_note"));
+			Do(TEXT("at:2517,-382,92,172,-4")); Wait(.7f); Shot(TEXT("04_same_mirror_empty"));
+			Do(TEXT("at:2540,-371,92,18,-48")); Wait(.3f); Touch(TEXT("note_bath_mirror"));
+			Wait(.6f); Shot(TEXT("05_note"));
+			Touch(TEXT("__close")); Do(TEXT("check_bath_note_reload"));
+			Do(TEXT("turn_to_bath_exit")); Wait(1.1f); Shot(TEXT("06_chair_fallen"));
+			Wait(.8f); Do(TEXT("check_bath_release")); Wait(.2f);
+			Do(TEXT("look_at_bath_door")); Wait(.08f); Shot(TEXT("07_doorway"));
+			Wait(.52f); Shot(TEXT("08_doorway_lunge"));
+			Flag(TEXT("bath_chair_done"),4.f); Do(TEXT("check_bath_finished"));
+			Do(TEXT("finish_bath_mix"));
+		}
+		else if (FParse::Param(FCommandLine::Get(),TEXT("WCHallPendant")))
+		{
+			Do(TEXT("flag:inside")); Do(TEXT("at:852,68,92,-13,-3")); Do(TEXT("flag:book_done"));
+			Flag(TEXT("pendant_seen"),17.f); Wait(.53f); Shot(TEXT("01_lamp_finds_edith"));
+			Wait(4.55f); Shot(TEXT("02_same_swing_empty")); Do(TEXT("check_pendant_gone"));
+			Do(TEXT("pendant_switch")); Do(TEXT("at:1110,60,92,-18,37")); Wait(.5f); Shot(TEXT("03_brass_lantern"));
+		}
+		else if (FParse::Param(FCommandLine::Get(),TEXT("WCBinAngles")))
 		{
 			for (const TCHAR* Start : {TEXT("at:3770,-743,59,0,-27"),TEXT("at:3730,-783,59,90,-8"),TEXT("at:3440,-740,60,-165,10")})
 			{
@@ -876,7 +900,47 @@ void AWCDirector::AutoTick(float Dt)
 	case A_Aim: P->SetAiming(S.F > 0.5f); Next(); return;
 	case A_Crouch: if (S.F > 0.5f) P->Crouch(); else P->UnCrouch(); Next(); return;
 	case A_Do:
-		if (S.Arg == TEXT("beam"))
+		if (S.Arg == TEXT("turn_to_bath_exit"))
+		{
+			if (ChairBeat==EBathChairBeat::Waiting && In<3.)
+			{
+				AimAt(P,FVector(2588,-204,148),Dt,4.f);
+				return;
+			}
+		}
+		else if (S.Arg == TEXT("look_at_bath_door"))
+		{
+			if (ChairBeat==EBathChairBeat::AtDoor && Her() && In<3.)
+			{
+				const FVector Face=Her()->EyeLocation();
+				AimAt(P,Face,Dt,5.5f);
+				if (FVector::DotProduct(P->EyeForward(),(Face-P->EyeLocation()).GetSafeNormal())<.985) return;
+			}
+		}
+		else if (S.Arg==TEXT("finish_bath_mix"))
+			UAudioMixerBlueprintLibrary::StopRecordingOutputToAnyPath(this,EAudioRecordingExportType::WavFile,TEXT("bath_encounter"),AutoShotDir);
+		else if (S.Arg == TEXT("check_bath_note_reload"))
+		{
+			AWCInteractable* Note=Thing(TEXT("note_bath_mirror"));
+			if (!DoLoad() || !Has(TEXT("bath_mirror_seen")) || !NotesRead.Contains(TEXT("note_bath_mirror")) || !Note || Note->CanInteract())
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL bath note did not survive reload"));
+		}
+		else if (S.Arg == TEXT("check_bath_release"))
+		{
+			if (P->IsInputLocked() || ChairBeat!=EBathChairBeat::AtDoor || !Her() || !Her()->IsShown())
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL chair did not release to waiting doorway"));
+		}
+		else if (S.Arg == TEXT("check_bath_finished"))
+		{
+			if (!DoLoad() || !Has(TEXT("bath_chair_done")) || P->IsInputLocked() || (Her() && Her()->IsShown()))
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL bath exit or persistent completion"));
+		}
+		else if (S.Arg == TEXT("pendant_switch")) SwitchRoom(TEXT("hall"),true,false);
+		else if (S.Arg == TEXT("check_pendant_gone"))
+		{
+			if (bPendantReveal || (Her() && Her()->IsShown())) UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL pendant second swing occupied"));
+		}
+		else if (S.Arg == TEXT("beam"))
 		{
 			Settings.BeamChoice = FMath::RoundToInt(S.F);
 			P->ApplyBeamWidth();
