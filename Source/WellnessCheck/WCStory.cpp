@@ -580,7 +580,7 @@ void AWCDirector::StoryEvent(FName Id)
 	}
 	if (Id.ToString().StartsWith(TEXT("use:window")))
 	{
-		if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 4.0; Feedback(TEXT("Nailed shut. From the inside.")); }
+		if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 4.0; Feedback(TEXT("Nailed shut.")); }
 		return;
 	}
 	if (Is(Id, TEXT("trig:t_kitchen"))) Set(TEXT("seen_kitchen"));
@@ -796,7 +796,7 @@ void AWCDirector::StoryEvent(FName Id)
 	{
 		if (!(HasItem(TEXT("keep_ruth")) && HasItem(TEXT("keep_walter")) && HasItem(TEXT("keep_daniel")) && HasItem(TEXT("keep_eye"))))
 		{
-			if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 5.0; Feedback(TEXT("Not yet. She needs what was theirs. All three.")); }
+			if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 5.0; Feedback(TEXT("Not yet. What was theirs, and what was hers.")); }
 			// he has come down without everything: the door at the top of the stairs lets go, so he can fetch it
 			if (AWCDoor* Cd = Door(TEXT("cellar"))) if (Cd->bLocked) { Cd->SetLocked(false); PlayAt(TEXT("door_unlock"), Cd->GetActorLocation() + FVector(0, 0, 100), 1.f, 0.8f, 3000.f); }
 			return;

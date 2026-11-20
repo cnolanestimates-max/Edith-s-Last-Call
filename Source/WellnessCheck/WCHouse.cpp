@@ -282,7 +282,7 @@ bool AWCDirector::HouseEvent(FName Id)
 	if (Id == TEXT("closed:note_mail") && Has(TEXT("lights_tried")) && !Has(TEXT("power_puzzled")))
 	{
 		Set(TEXT("power_puzzled"));
-		Feedback(TEXT("Cut off last September. ...Then what's running the lights?"));
+		Feedback(TEXT("Cut off over a year ago. ...Then what's running the lights?"));
 		return true;
 	}
 	if (Id == TEXT("closed:note_prayer") && !HasItem(TEXT("shears")))
