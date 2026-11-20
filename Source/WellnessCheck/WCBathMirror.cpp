@@ -115,9 +115,10 @@ void AWCDirector::InitializeBathMirror()
 
 	// The same moon blue as the upstairs doorway, grazing the good eye and the jaw below it.
 	BathEyeFill = NewObject<UPointLightComponent>(this);
+	BathEyeFill->SetWorldLocation(FVector(2581.2, -340.0, 153.2));
 	BathEyeFill->SetLightingChannels(false,false,true);
 	BathEyeFill->SetIntensityUnits(ELightUnits::Candelas);
-	BathEyeFill->SetIntensity(3.15f);
+	BathEyeFill->SetIntensity(9.45f);
 	BathEyeFill->SetAttenuationRadius(38.f);
 	BathEyeFill->SetLightColor(EdithMoonlight());
 	BathEyeFill->SetSpecularScale(.16f);
@@ -215,6 +216,7 @@ void AWCDirector::TickBathMirror(float Dt)
 				Part->MarkRenderStateDirty();
 			}
 			H->Appear(ChairSeat, 183.f, TEXT("Wheelchair"));
+			BathEyeFill->SetVisibility(true);
 			BathRim->SetLightingChannels(true,true,true);
 			BathRim->SetIntensity(Has(TEXT("bath_mirror_first_turn")) ? 175.f : 145.f);
 			H->SetFarGlow(0.f);
@@ -229,13 +231,7 @@ void AWCDirector::TickBathMirror(float Dt)
 	}
 	else MirrorDwell = 0.f;
 	if (MirrorShownAt>=0. && Her())
-	{
 		Her()->LookAtReflection(FVector(GlassCentre.X-Depth,Eye.Y,Eye.Z));
-		const AWCEntity* H = Her();
-		BathEyeFill->SetWorldLocation(H->EyeLocation() + H->GetActorForwardVector()*16. -
-			H->GetActorRightVector()*17. - FVector(0,0,9));
-		BathEyeFill->SetVisibility(true);
-	}
 	if (Clock < NextMirrorCapture) return;
 	NextMirrorCapture = Clock + 1./16.;
 	CaptureBathMirror(Eye);
