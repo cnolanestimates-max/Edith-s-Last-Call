@@ -117,7 +117,7 @@ void AWCDirector::InitializeBathMirror()
 	BathEyeFill = NewObject<UPointLightComponent>(this);
 	BathEyeFill->SetLightingChannels(false,false,true);
 	BathEyeFill->SetIntensityUnits(ELightUnits::Candelas);
-	BathEyeFill->SetIntensity(2.8f);
+	BathEyeFill->SetIntensity(3.15f);
 	BathEyeFill->SetAttenuationRadius(38.f);
 	BathEyeFill->SetLightColor(EdithMoonlight());
 	BathEyeFill->SetSpecularScale(.16f);
@@ -219,7 +219,7 @@ void AWCDirector::TickBathMirror(float Dt)
 			BathRim->SetIntensity(Has(TEXT("bath_mirror_first_turn")) ? 175.f : 145.f);
 			H->SetFarGlow(0.f);
 			H->SetGlow(0.f);
-			H->SetEyeShine(.018f);
+			H->SetEyeShine(.021f);
 			H->SetMood(TEXT("watch"));
 			MirrorShownAt = Clock;
 			NextMirrorCapture = 0.;
