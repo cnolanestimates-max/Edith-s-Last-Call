@@ -27,7 +27,9 @@ amb_cellar, amb_house, amb_night, body_fall, bulb_die, bullet_impact_01, car_doo
 
 ## Music (credit required)
 
-- music_drone: "Long Note Four" Kevin MacLeod (incompetech.com), CC BY 4.0
+- `music_house` crossfades edited excerpts of “Apprehension” by Kevin MacLeod and “She's Watching Me” by Darren Curtis. [Apprehension](https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100327) · [Creative Commons Attribution 4.0](https://creativecommons.org/licenses/by/4.0/) · [Darren Curtis](https://www.darrencurtismusic.com/) · [Composer's permission](https://www.darrencurtismusic.com/faqs)
+- `scare_bump` uses a trimmed, level-adjusted excerpt of “Bump in the Night” by Kevin MacLeod. [Track](https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100789) · [Creative Commons Attribution 4.0](https://creativecommons.org/licenses/by/4.0/)
+- The legacy `music_drone` is synthesized. An archived earlier version used “Long Note Four” by Kevin MacLeod (CC BY 4.0).
 - music_menu: "Ossuary 6 - Air" Kevin MacLeod (incompetech.com), CC BY 4.0
 - music_finale: "Gathering Darkness" Kevin MacLeod (incompetech.com), CC BY 4.0
 - music_dawn: "Sanctuary" Scott Buckley (scottbuckley.com.au), CC BY 4.0

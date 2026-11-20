@@ -175,6 +175,13 @@
   "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. Very soft and careful, as if to a frightened animal."
  },
  {
+  "id": "d_getout",
+  "who": "deputy",
+  "text": "Screw this. I'm getting out of here.",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics."
+ },
+ {
   "id": "d_masterempty",
   "who": "deputy",
   "text": "She was right here. I saw her. There's nowhere to go in here.",

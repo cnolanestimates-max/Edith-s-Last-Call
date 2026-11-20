@@ -178,6 +178,8 @@ void AWCHUD::Open(EWCScreen S)
 void AWCHUD::DrawHUD()
 {
 	Super::DrawHUD();
+	static const bool bPropReview = FParse::Param(FCommandLine::Get(), TEXT("WCPropReview"));
+	if (bPropReview) return;
 	AWCDirector* D = AWCDirector::Get(this);
 	APlayerController* PC = GetOwningPlayerController();
 	if (!D || !Canvas || !PC) return;
@@ -198,7 +200,7 @@ void AWCHUD::DrawHUD()
 	{
 		AWCCharacter* Pl = D->Player();
 		if (Screen == EWCScreen::Inventory) CloseInventory(D);
-		else if (Screen == EWCScreen::None && !D->ActiveNote.IsValid() && D->Fade < 0.5f && !D->bBusy && !D->IsDriving() && Pl && !Pl->IsDown() && !Pl->IsInputLocked()) OpenInventory(D);
+		else if (Screen == EWCScreen::None && !D->ActiveNote.IsValid() && D->Fade < 0.5f && !D->bBusy && !D->IsDriving() && !D->IsBinTurnActive() && Pl && !Pl->IsDown() && !Pl->IsInputLocked()) OpenInventory(D);
 	}
 	if (D->Mode != EWCMode::Playing && Screen == EWCScreen::Inventory) CloseInventory(D);
 	if (D->Mode == EWCMode::Playing && bEsc && Screen == EWCScreen::Inventory)
@@ -459,7 +461,9 @@ void AWCHUD::DrawCredits(AWCDirector* D)
 		TEXT("#Created by"), TEXT("Cheyenne"), TEXT(""),
 		TEXT("#Design, writing, code, animation"), TEXT("Built with Claude"), TEXT(""),
 		TEXT("#Voices"), TEXT("Deputy Cole Brandt"), TEXT("Dispatch"), TEXT("Edith Harrow"), TEXT("Synthesised with Google Gemini text-to-speech"), TEXT(""),
-		TEXT("#Music"), TEXT("Kevin MacLeod (incompetech.com)"), TEXT("Darren Curtis (darrencurtismusic.com)"), TEXT("Licensed under Creative Commons: By Attribution 4.0"), TEXT(""),
+		TEXT("#Music"), TEXT("Apprehension / Bump in the Night"), TEXT("Kevin MacLeod (incompetech.com)"),
+		TEXT("Creative Commons Attribution 4.0"), TEXT("creativecommons.org/licenses/by/4.0/"), TEXT(""),
+		TEXT("She's Watching Me"), TEXT("Darren Curtis (darrencurtismusic.com)"), TEXT("Used with artist permission. Music edited for the game."), TEXT(""),
 		TEXT("#Sound"), TEXT("Sonniss GDC Game Audio Bundle"), TEXT("Kenney (CC0)"), TEXT(""),
 		TEXT("#Environment and props"), TEXT("Assets from Fab, used under the Fab Standard License"), TEXT("Megascans and Megaplants by Quixel"), TEXT(""),
 		TEXT("#Made with"), TEXT("Unreal Engine"), TEXT(""), TEXT(""),
@@ -734,7 +738,7 @@ namespace
 	// Some things have something hidden on them: turn that side toward him in Inspect and it can be taken.
 	struct FWCHidden { const TCHAR* Item; FVector Side; const TCHAR* Hint; const TCHAR* Prompt; const TCHAR* Found; const TCHAR* Event; };
 	const FWCHidden GWCHidden[] = {
-		{ TEXT("doll"), FVector(0.f, 0.f, -1.f), TEXT("Something hard is sewn inside her. Turn her over."), TEXT("[E]  Work it out through the seam"), TEXT("A small key, sewn into the stuffing."), TEXT("inspect:doll") },
+		{ TEXT("doll"), FVector(0.f, 0.f, -1.f), TEXT("Something hard is sewn inside her. Turn her over."), TEXT("[E]  Pull the key from the seam"), TEXT("Taken from the doll: heart-shaped jewelry box key"), TEXT("inspect:doll") },
 	};
 	const FWCItemInfo* FindWCItemInfo(FName Id)
 	{
@@ -962,13 +966,13 @@ void AWCHUD::DrawInventory(AWCDirector* D)
 			Text(bSide ? Hd.Prompt : Hd.Hint, W * 0.5f, H - Px(262.f), Px(25.f), bSide ? Hot : Dim, 1);
 			if (bSide && bGo)
 			{
-				const float Y0 = InvYaw, P0 = InvPitch, Z0 = InvZoom;
 				D->Event(Hd.Event);
 				TArray<FInvItem> Now;
 				BuildInventory(D, Now);
-				for (int32 i = 0; i < Now.Num(); ++i) if (Now[i].Id == TEXT("doll_empty")) InvSel = i;
-				if (Now.IsValidIndex(InvSel)) { ShowInvItem(D, Now[InvSel].Id); InvYaw = Y0; InvPitch = P0; InvZoom = Z0; }
+				for (int32 i = 0; i < Now.Num(); ++i) if (Now[i].Id == TEXT("key_box")) { InvSel = i; break; }
+				if (Now.IsValidIndex(InvSel)) { ShowInvItem(D, Now[InvSel].Id); InvYaw = 18.f; InvPitch = 0.f; InvZoom = 1.22f; InvTouchedAt = RealNow; }
 				InvSay(Hd.Found);
+				InvMsgUntil = RealNow + 5.;
 				return;
 			}
 		}

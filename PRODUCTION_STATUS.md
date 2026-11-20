@@ -30,10 +30,12 @@ Done this evening (all in the build; details further down and in `Scripts/tools/
   has only car foley; the other zips have nothing but a siren. The Fab inventory lists no vehicle audio: look on Fab for a
   free car or truck engine pack (she asked), or ask her to pick one. In game the engine is full over the drone shot and
   0.30 in the cab (`TickDrive`), off on arrival.
-- The aerial and cabin still use their original mix. From the car door onward, the yard uses the bird-free `amb_yard` insect and wind bed. Room tone and the sustained indoor score follow the listener across the threshold in either direction. Swarms are visual only.
+- The aerial and cabin retain their original mix. The yard uses the bird-free insect and wind bed. Indoor room tone and music follow the listener across the threshold. Fly swarms have short positional buzzes up close, and indoor dust catches the beam.
+- The 162-second house score crossfades Apprehension with She's Watching Me. Bump in the Night leads into the shed crash, the thump after the doll key and the ceiling rush. Impact shakes respect the player's camera-shake setting.
 - Deputy lines re-levelled to -16 LUFS with a presence lift (`gen_vo.py`, the plain branch) and played at 1.0: his first
   lines were "low as hell" on her speakers.
-- The bin plays one 0.88-second positional metal impact with a softer lid strike (-2.7 dBTP).
+- The bin crash is a 1.21-second positional metal impact and lid rebound (-0.9 dBTP). The deputy swings the flashlight to the overturned bin and hears retreating footsteps.
+- Taking the doll key cuts the upstairs hall and bedroom lights. Edith retreats only after a nearby sighting. The upstairs switches recover after the encounter, and the front exit stays locked. Wet steps, voices and switch outages use separate intermittent timers.
 
 **Not done / open:**
 - Photographs in frames (Codex): give them dates from `Docs/TIMELINE.md`. The falling frame still uses kit pieces.

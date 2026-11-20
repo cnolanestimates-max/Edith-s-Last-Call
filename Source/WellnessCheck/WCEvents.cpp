@@ -802,28 +802,53 @@ void AWCDirector::CueEvent(FName Id)
 
 void AWCDirector::TickCues(float Dt)
 {
-	// the whispers, as they were: seldom, hers, only once the door has locked behind him (Cheyenne: "I like the whisper")
 	AWCCharacter* P = Player();
-	if (!P || SpaceAt(P->GetActorLocation()) == EListeningSpace::Exterior || !Has(TEXT("locked_in")) || Has(TEXT("dawn")) || Has(TEXT("placed"))) return;
-	if (WhisperAt < 0.0) WhisperAt = Clock + Rng.FRandRange(300.f, 600.f);
-	if (Clock < WhisperAt || bBusy || bEventBusy || StalkState != 0 || Clock < CueFreeAt) return;
-	WhisperAt = Clock + Rng.FRandRange(420.f, 840.f);
-	CueFreeAt = Clock + 22.0;
-	const float Pick = Rng.FRand();
-	if (Pick < 0.6f)
+	if (!P || !IsInsideHouse(P->GetActorLocation()) || !Has(TEXT("inside")) || Has(TEXT("dawn")) || Has(TEXT("placed")))
 	{
-		const FVector Off = FRotator(0.f, Rng.FRandRange(0.f, 360.f), 0.f).Vector() * Rng.FRandRange(400.f, 900.f) + FVector(0, 0, Rng.FRandRange(-80.f, 200.f));
-		UE_LOG(LogWCEvents, Display, TEXT("WCCUE t=%.1f whisper_far (the whispers)"), PlaySeconds);
-		PlayAt(TEXT("whisper_far"), P->GetActorLocation() + Off, 0.64f * Rng.FRandRange(0.75f, 1.f), Rng.FRandRange(0.92f, 1.07f));
+		WhisperAt = -1.;
+		return;
 	}
+	if (WhisperAt < 0.) WhisperAt = Clock + Rng.FRandRange(28.f, 64.f);
+	if (Clock < WhisperAt || Clock < CueFreeAt || Clock < DialogueUntil || bBusy || bEventBusy ||
+		StalkState != 0 || ActiveNote.IsValid() || Mode != EWCMode::Playing || (Has(TEXT("heard_upstairs")) && !Has(TEXT("peek_done")))) return;
+	WhisperAt = Clock + Rng.FRandRange(43.f, 102.f);
+	CueFreeAt = Clock + 14.;
+	const int32 Pick = (LastHaunt + 1 + Rng.RandRange(0, 5)) % 7;
+	LastHaunt = Pick;
+	const FVector Eye = P->EyeLocation();
+	const FRotator Yaw(0.f, P->GetControlRotation().Yaw, 0.f);
+	const FVector Side = FRotationMatrix(Yaw).GetUnitAxis(EAxis::Y) * (Rng.RandBool() ? 1.f : -1.f);
+	FVector At = Eye - Yaw.Vector() * Rng.FRandRange(110.f, 210.f) + Side * 58.f;
+	if (!IsInsideHouse(At)) At = Eye - Yaw.Vector() * 23.f;
+	if (!IsInsideHouse(At)) At = Eye;
+	const float Pitch = Rng.FRandRange(.93f, 1.04f);
+	if (Pick == 0)
+	{
+		const FVector Ear = Eye - Yaw.Vector() * 24.f + Side * 19.f;
+		PlayAt(FString::Printf(TEXT("VO/m_ear%d"),Rng.RandRange(1,3)), IsInsideHouse(Ear) ? Ear : Eye, .77f, Pitch);
+	}
+	else if (Pick < 4)
+	{
+		const TCHAR* Voice[] = {TEXT(""),TEXT("laugh"),TEXT("cry"),TEXT("moan")};
+		PlayAt(FString::Printf(TEXT("VO/m_%s%d"), Voice[Pick], Rng.RandRange(1,2)), At, .74f, Pitch);
+	}
+	else if (Pick == 4) PlayAt(TEXT("whisper_far"), At, .86f, Pitch);
 	else
 	{
-		// at his ear: just behind him, to one side.  He turns, and there is nothing there.
-		static const TCHAR* Ear[3] = { TEXT("VO/m_ear1"), TEXT("VO/m_ear2"), TEXT("VO/m_ear3") };
-		const FRotator Yaw(0.f, P->GetControlRotation().Yaw, 0.f);
-		const FVector Off = -Yaw.Vector() * 28.f + FRotationMatrix(Yaw).GetUnitAxis(EAxis::Y) * (Rng.FRand() < 0.5f ? -24.f : 24.f) + FVector(0, 0, 58.f);
-		const int32 Which = Rng.RandRange(0, 2);
-		UE_LOG(LogWCEvents, Display, TEXT("WCCUE t=%.1f %s (the whispers)"), PlaySeconds, Ear[Which]);
-		PlayAt(Ear[Which], P->GetActorLocation() + Off, 0.4f * Rng.FRandRange(0.75f, 1.f), Rng.FRandRange(0.92f, 1.07f));
+		const bool Upstairs = Pick == 5 && Eye.Z < 340.f;
+		At.Z = Upstairs ? (Eye.Z < 0 ? 8.f : 358.f) : P->GetActorLocation().Z - 80.f;
+		const int32 Count = Rng.RandRange(2,4);
+		float Delay = 0.f;
+		for (int32 i=0; i<Count; ++i)
+		{
+			const FVector Foot = At + Side * (37.f * i);
+			if (IsInsideHouse(Foot)) After(Delay, [this, Foot, Upstairs, Pitch]()
+			{
+				if (Player() && IsInsideHouse(Player()->GetActorLocation()) && !bBusy && !bEventBusy && Clock >= DialogueUntil)
+					PlayAt(Upstairs ? TEXT("step_stairs") : TEXT("her_step"), Foot, .91f, Pitch);
+			});
+			Delay += Rng.FRandRange(.38f,.72f);
+		}
 	}
+	UE_LOG(LogWCEvents, Display, TEXT("WCHAUNT one-shot group=%d next=%.1f"),Pick,WhisperAt-Clock);
 }

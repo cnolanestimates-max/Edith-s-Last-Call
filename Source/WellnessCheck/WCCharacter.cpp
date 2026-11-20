@@ -151,6 +151,7 @@ AWCCharacter::AWCCharacter()
 
 	Dust = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("Dust"));
 	Dust->SetupAttachment(GetCapsuleComponent());
+	Dust->SetHiddenInGame(true);
 	Dust->SetUsingAbsoluteLocation(true);
 	Dust->SetUsingAbsoluteRotation(true);
 	Dust->SetUsingAbsoluteScale(true);
@@ -213,7 +214,7 @@ void AWCCharacter::BeginPlay()
 			const FVector P = C + FVector(R.FRandRange(-DustBox, DustBox), R.FRandRange(-DustBox, DustBox), R.FRandRange(-120.f, 150.f));
 			DustPos.Add(P);
 			DustVel.Add(FVector(R.FRandRange(-2.f, 2.f), R.FRandRange(-2.f, 2.f), R.FRandRange(-1.6f, 0.6f)));
-			const float S = R.FRandRange(.010f, .026f);
+			const float S = R.FRandRange(.024f, .056f);
 			Dust->AddInstance(FTransform(FQuat::Identity, P, FVector(S)), true);
 		}
 	}
@@ -271,7 +272,7 @@ void AWCCharacter::Relocate(const FVector& Loc, float Yaw)
 bool AWCCharacter::Blocked() const
 {
 	const AWCDirector* D = AWCDirector::Get(this);
-	return bInputLocked || KDTime >= 0.f || !D || !D->IsPlaying() || D->ActiveNote.IsValid();
+	return bInputLocked || KDTime >= 0.f || !D || !D->IsPlaying() || D->IsBinTurnActive() || D->ActiveNote.IsValid();
 }
 
 void AWCCharacter::BuildInput()
@@ -366,7 +367,7 @@ void AWCCharacter::Move(const FInputActionValue& Value)
 void AWCCharacter::Look(const FInputActionValue& Value)
 {
 	const AWCDirector* D = AWCDirector::Get(this);
-	if (KDTime >= 0.f || !D || !D->IsPlaying() || D->ActiveNote.IsValid()) return;
+	if (KDTime >= 0.f || !D || !D->IsPlaying() || D->IsBinTurnActive() || D->ActiveNote.IsValid()) return;
 	const FVector2D Axis = Value.Get<FVector2D>();
 	const FWCSettings& S = AWCDirector::Settings;
 	const float K = 1.0f * S.Sensitivity * (bAiming ? 0.7f : 1.f);
@@ -408,7 +409,7 @@ void AWCCharacter::DoInteract()
 	AWCDirector* D = AWCDirector::Get(this);
 	if (!D || !D->IsPlaying()) return;
 	if (D->ActiveNote.IsValid()) { D->CloseNote(); return; }
-	if (bInputLocked || KDTime >= 0.f) return;
+	if (bInputLocked || KDTime >= 0.f || D->IsBinTurnActive()) return;
 	if (AWCInteractable* T = Focus.Get()) T->Interact(this);
 }
 
@@ -619,7 +620,10 @@ void AWCCharacter::Tick(float Dt)
 	}
 	Flash->SetIntensity(FlashLumens * FlashFluxScale * Level);
 	Spill->SetIntensity(FlashLumens * 0.11f * SpillFluxScale * Level);
-	Throw->SetIntensity(FlashLumens * 0.24f * ThrowFluxScale * Level);
+	const bool bLookingAtBin = D && D->IsBinTurnActive();
+	BinBeam = FMath::FInterpTo(BinBeam, bLookingAtBin ? 1.f : 0.f, Dt, bLookingAtBin ? 7.5f : 2.f);
+	Throw->SetIntensity(FlashLumens * (0.24f + 2.3f * BinBeam) * ThrowFluxScale * Level);
+	Throw->SetAttenuationRadius(1000.f + 500.f * BinBeam);
 	FaceLight->SetIntensity(FaceLumens * FMath::Clamp(Level, 0.25f, 1.f));
 
 	// ---- pistol
@@ -664,7 +668,9 @@ void AWCCharacter::Tick(float Dt)
 
 		}
 	}
-	TickDust(Dt);
+	const bool bDust = D && D->IsPlaying() && D->IsInsideHouse(GetActorLocation()) && InspectBack->bHiddenInGame;
+	if (Dust->bHiddenInGame == bDust) Dust->SetHiddenInGame(!bDust);
+	if (bDust) TickDust(Dt);
 }
 
 // ---------------------------------------------------------------------------------------------- inventory: the thing held up

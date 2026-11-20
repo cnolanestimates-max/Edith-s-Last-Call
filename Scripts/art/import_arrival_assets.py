@@ -43,6 +43,27 @@ def custom(m, sources, code, output):
 def finish(m):
     edit.recompile_material(m)
     assert assets.save_loaded_asset(m,False)
+def build_dust():
+    m=new_material('M_DriftingDust')
+    m.set_editor_property('blend_mode',u.BlendMode.BLEND_TRANSLUCENT)
+    m.set_editor_property('two_sided',True)
+    edit.set_material_usage(m,u.MaterialUsage.MATUSAGE_INSTANCED_STATIC_MESHES)
+    color(m,(.68,.59,.43))
+    glow=node(m,u.MaterialExpressionConstant3Vector,-380,-290)
+    glow.set_editor_property('constant',u.LinearColor(.075,.064,.047,1))
+    assert edit.connect_material_property(glow,'',prop.MP_EMISSIVE_COLOR)
+    uv=node(m,u.MaterialExpressionTextureCoordinate,-620,60)
+    rand=node(m,u.MaterialExpressionPerInstanceRandom,-620,160)
+    depth=node(m,u.MaterialExpressionPixelDepth,-620,270)
+    opacity=custom(m,[('UV',uv),('Seed',rand),('Dist',depth)],"""
+float2 p=UV*2-1;
+p.x += 0.16*sin(4.1*p.y + Seed*6.28);
+float shape=length(p*float2(1.1+Seed*1.4,1.15));
+return (1-smoothstep(.03,.94,shape))*(.35+.48*Seed)*smoothstep(22.,55.,Dist);
+""",u.CustomMaterialOutputType.CMOT_FLOAT1)
+    assert edit.connect_material_property(opacity,'',prop.MP_OPACITY)
+    finish(m)
+
 def build():
     for name in ['amb_yard','amb_dawn','trash_crash']:
         s=imported(root/'SourceArt/Audio'/(name+'.wav'),'/Game/WC/Audio')
@@ -66,22 +87,7 @@ def build():
         finish(m); fly.set_material(idx,m)
     assert len(fly.static_materials)==3
     assert assets.save_loaded_asset(fly,False)
-    m=new_material('M_DriftingDust')
-    m.set_editor_property('blend_mode',u.BlendMode.BLEND_TRANSLUCENT)
-    m.set_editor_property('two_sided',True)
-    edit.set_material_usage(m,u.MaterialUsage.MATUSAGE_INSTANCED_STATIC_MESHES)
-    color(m,(.47,.42,.34))
-    uv=node(m,u.MaterialExpressionTextureCoordinate,-620,60)
-    rand=node(m,u.MaterialExpressionPerInstanceRandom,-620,160)
-    depth=node(m,u.MaterialExpressionPixelDepth,-620,270)
-    opacity=custom(m,[('UV',uv),('Seed',rand),('Dist',depth)],"""
-float2 p=UV*2-1;
-p.x += 0.16*sin(4.1*p.y + Seed*6.28);
-float shape=length(p*float2(1.1+Seed*1.4,1.15));
-return (1-smoothstep(.03,.94,shape))*(.15+.30*Seed)*smoothstep(22.,55.,Dist);
-""",u.CustomMaterialOutputType.CMOT_FLOAT1)
-    assert edit.connect_material_property(opacity,'',prop.MP_OPACITY)
-    finish(m)
+    build_dust()
     m=new_material('M_YardFootpath')
     m.set_editor_property('blend_mode',u.BlendMode.BLEND_MASKED)
     uv=node(m,u.MaterialExpressionTextureCoordinate,-670,0)

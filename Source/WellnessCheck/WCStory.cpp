@@ -6,6 +6,8 @@
 #include "WCWorld.h"
 
 #include "Components/AudioComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "Engine/StaticMesh.h"
 #include "EngineUtils.h"
 #include "Engine/PostProcessVolume.h"
 #include "Kismet/GameplayStatics.h"
@@ -47,6 +49,7 @@ static const FWCLine GLines[] = {
 	{ TEXT("d_thump"), TEXT("Deputy Brandt"), TEXT("Mrs. Harrow? ...I'm coming upstairs. Stay where you are."), 0 },
 	{ TEXT("m_whisper1"), TEXT(""), TEXT("[a whisper] ...who's there?"), 3 },
 	{ TEXT("d_peek"), TEXT("Deputy Brandt"), TEXT("Ma'am? It's alright. I'm here to help you."), 0 },
+	{ TEXT("d_getout"), TEXT("Deputy Brandt"), TEXT("Screw this. I'm getting out of here."), 0 },
 	{ TEXT("d_masterempty"), TEXT("Deputy Brandt"), TEXT("She was right here. I saw her. There's nowhere to go in here."), 0 },
 	{ TEXT("d_radio1"), TEXT("Deputy Brandt"), TEXT("Dispatch, Fourteen. I've got movement in the house. No contact yet."), 0 },
 	{ TEXT("r_trace"), TEXT("Dispatch"), TEXT("Fourteen, be advised. We ran the number on that welfare call. It came from Mrs. Harrow's own telephone. From inside that house."), 1 },
@@ -145,7 +148,7 @@ static bool IsMuted(FName Id)
 	static const TSet<FName> Muted = { TEXT("d_locked"), TEXT("d_cellar_locked"), TEXT("d_window"), TEXT("d_backdoor"), TEXT("d_table"),
 		TEXT("d_wayout"), TEXT("d_drawer"), TEXT("d_sitting"), TEXT("d_kidsdoor"), TEXT("d_musicbox"), TEXT("d_prayer"), TEXT("d_ring"),
 		TEXT("d_attic"), TEXT("d_after_attic"), TEXT("d_cellar"), TEXT("d_shelf"), TEXT("d_dawn"), TEXT("d_need"), TEXT("d_leave_early"), TEXT("d_phone_ring"),
-		TEXT("d_phonecord"), TEXT("d_masterempty"), TEXT("d_doorstuck"), TEXT("d_getup1b"), TEXT("d_getup2"), TEXT("d_tags") };
+		TEXT("d_phonecord"), TEXT("d_masterempty"), TEXT("d_getup1b"), TEXT("d_getup2"), TEXT("d_tags") };
 	return Muted.Contains(Id);
 }
 
@@ -172,6 +175,7 @@ float AWCDirector::Say(FName LineId, float Delay)
 	const FWCLine Line = *L;
 	After(Delay, [this, Line, Len, LineId]()
 	{
+		DialogueUntil = FMath::Max(DialogueUntil, Clock + Len + .6);
 		const FString Asset = FString::Printf(TEXT("VO/%s"), *LineId.ToString());
 		if (Line.Kind == 1) Play2D(TEXT("radio_click"), 0.5f);
 		if (Line.Kind == 3 && Her() && Her()->IsShown())
@@ -260,6 +264,12 @@ void AWCDirector::StoryBegin(bool bFromSave)
 	Fade = 1.f;
 	if (bFromSave)
 	{
+		if (Has(TEXT("heard_upstairs")) && !Has(TEXT("peek_done")))
+		{
+			Flags.Remove(TEXT("peek_started"));
+			Flags.Remove(TEXT("peek_leaving"));
+			SetReturnBlackout(true);
+		}
 		FadeTo(0.f, 1.5f);
 		return;
 	}
@@ -308,20 +318,45 @@ void AWCDirector::DriveDone()
 // ---------------------------------------------------------------------------------------------- events
 static bool Is(FName Id, const TCHAR* S) { return Id == S; }
 
+void AWCDirector::TickVentTool()
+{
+	UStaticMeshComponent* Driver = VentTool.Get();
+	if (!Driver) return;
+	const float Strokes = FMath::Clamp(float(Clock - VentToolAt) / .42f, 0.f, 3.99f);
+	const int32 Screw = FMath::FloorToInt(Strokes);
+	const float Phase = FMath::Frac(Strokes);
+	const FVector Screws[] = {FVector(-16,3.8,24), FVector(16,3.8,24), FVector(16,3.8,2), FVector(-16,3.8,2)};
+	const FVector Current = Screws[Screw];
+	const FVector Next = Screws[FMath::Min(Screw+1,3)];
+	const FVector Tip = FMath::Lerp(Current, Next, FMath::SmoothStep(.72f, 1.f, Phase));
+	const float Lift = Phase > .7f ? 3.f * FMath::Sin(PI*(Phase-.7f)/.3f) : 0.f;
+	Driver->SetRelativeLocationAndRotation(Tip + FVector(0,13.f+Lift,0), FRotator(0,-90,360.f*FMath::Min(Phase/.70f,1.f)));
+}
+
 /** Something heavy goes over upstairs, a few seconds after he pockets the key. */
 void AWCDirector::UpstairsThump()
 {
 	if (Has(TEXT("heard_upstairs"))) return;
 	Set(TEXT("heard_upstairs"));
+	SetReturnBlackout(true);
 	UE_LOG(LogWCStory, Display, TEXT("WCTHUMP t=%.1f (%.0f s after coming in)"), PlaySeconds, PlaySeconds - InsideAt);
-	After(6.f, [this]()
+	// Inspect pauses the world. Start the buildup on the first gameplay tick after the key.
+	After(0.f, [this]() { PlayScareLead(3.2f); });
+	After(3.2f, [this]()
 	{
 		const FVector Up = Pos(TEXT("Snd_UpstairsThump"));
 		PlayAt(TEXT("thump_heavy"), Up, 1.f, 1.f);
-		if (AWCCharacter* Pl = Player()) Pl->AddShake(0.25f);
-		After(1.6f, [this, Up]() { PlayAt(TEXT("drag_floor"), Up, 1.f); });
-		float T = Say(TEXT("d_thump"), 4.2f);
-		After(T, [this]() { SetObjective(TEXT("Check upstairs")); });
+		if (AWCCharacter* Pl = Player()) Pl->AddShake(0.53f);
+		After(1.25f, [this, Up]()
+		{
+			if (Has(TEXT("peek_started"))) return;
+			PlayAt(TEXT("drag_floor"), Up, .85f);
+			if (Player() && Player()->GetActorLocation().Z < 320.f)
+			{
+				Say(TEXT("d_thump"));
+				SetObjective(TEXT("Check upstairs"));
+			}
+		});
 		Tension = 0.3f;
 	});
 }
@@ -355,11 +390,22 @@ void AWCDirector::StoryEvent(FName Id)
 		Set(TEXT("tape1_taken"));
 		Set(TEXT("shed_seen"));
 		UE_LOG(LogWCStory, Display, TEXT("WCTAPE t=%.1f the shed tape is taken"), PlaySeconds);
-		After(1.2f, [this]()
+		PlayScareLead(1.85f);
+		After(1.85f, [this]()
 		{
 			ApplyWorldState();                                   // the bin is over now, everything in it across the yard
 			// One hollow impact at the bin, followed by retreating footsteps on the yard gravel.
-			PlayAt(TEXT("trash_crash"), Pos(TEXT("TrashPoint")), 0.95f);
+			const FVector Bin = Pos(TEXT("TrashPoint")) + FVector(0, 0, 24);
+			PlayAt(TEXT("trash_crash"), Bin, 1.f, 1.f, 2400.f, true);
+			if (AWCCharacter* Deputy = Player())
+			{
+				Deputy->SetFlashlight(true, false);
+				FCollisionQueryParams Query(SCENE_QUERY_STAT(WCBinSight), false, Deputy);
+				FHitResult Hit;
+				bStepToShedDoor = GetWorld()->LineTraceSingleByChannel(Hit, Deputy->EyeLocation(), Bin, ECC_Visibility, Query) &&
+				                   Hit.Distance + 115.f < FVector::Dist(Deputy->EyeLocation(), Bin);
+				BinTurnStarted = Clock;
+			}
 			if (AWCCharacter* Pl = Player()) Pl->AddShake(1.f);
 			After(0.45f, [this]() { if (AWCCharacter* Pl = Player()) Pl->AddShake(0.6f); });
 			Tension = 1.f;
@@ -367,15 +413,15 @@ void AWCDirector::StoryEvent(FName Id)
 			const FVector From = Pos(TEXT("TrashPoint")), To = Pos(TEXT("TrashRunTo"));
 			if (!From.IsNearlyZero() && !To.IsNearlyZero())
 			{
-				const float Footfalls[] = {1.03f, 1.33f, 1.58f, 1.95f, 2.24f};
+				const float Footfalls[] = {1.30f, 1.56f, 1.80f, 2.08f, 2.42f};
 				for (int32 k = 0; k < UE_ARRAY_COUNT(Footfalls); ++k)
 				{
 					const FVector At = FMath::Lerp(From, To, k / 4.f) + FVector(0, 0, 10);
-					After(Footfalls[k], [this, At, k]() { PlayAt(TEXT("step_gravel"), At, .78f - .11f * k, .86f, 2400.f); });
+					After(Footfalls[k], [this, At, k]() { PlayAt(TEXT("step_gravel"), At, 1.f - .105f * k, .94f + .035f * k, 2400.f, true); });
 				}
 			}
 			UE_LOG(LogWCStory, Display, TEXT("WCTRASH t=%.1f the bin goes over; something runs"), PlaySeconds);
-			const float T = Say(TEXT("d_shedcall"), 2.6f);
+			const float T = Say(TEXT("d_shedcall"), 2.9f);
 			After(T + 1.2f, [this]() { OutsideProgress(); });
 
 		});
@@ -520,12 +566,24 @@ void AWCDirector::StoryEvent(FName Id)
 			if (!Has(TEXT("vent_seen"))) { Set(TEXT("vent_seen")); if (!Has(TEXT("heard_upstairs"))) SetObjective(TEXT("Search the house. Something is behind the kitchen vent.")); }
 			return;
 		}
+		AWCInteractable* Vent = Thing(TEXT("vent"));
+		if (Vent)
+		{
+			UStaticMeshComponent* Driver = NewObject<UStaticMeshComponent>(Vent);
+			Driver->SetStaticMesh(LoadObject<UStaticMesh>(nullptr,TEXT("/Game/WC/Props/SM_Item_Screwdriver.SM_Item_Screwdriver")));
+			Driver->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			Driver->SetupAttachment(Vent->Mesh);
+			Driver->RegisterComponent();
+			VentTool = Driver;
+			VentToolAt = Clock;
+			TickVentTool();
+		}
 		Items.Remove(TEXT("screwdriver"));
 		Set(TEXT("vent_seen"));
 		Set(TEXT("vent_open"));
 		UE_LOG(LogWCStory, Display, TEXT("WCVENT t=%.1f opened (%.0f s after coming in)"), PlaySeconds, PlaySeconds - InsideAt);
 		for (int32 i = 0; i < 4; ++i) After(0.1f + i * 0.38f, [this, i]() { Play2D(TEXT("switch_click"), 0.45f, EWCSnd::SFX, 0.62f + 0.05f * i); });
-		After(1.75f, [this]() { Play2D(TEXT("door_unlock"), 0.5f, EWCSnd::SFX, 0.75f); ApplyWorldState(); });
+		After(1.75f, [this]() { if (VentTool.IsValid()) { VentTool->DestroyComponent(); VentTool.Reset(); } Play2D(TEXT("door_unlock"), 0.5f, EWCSnd::SFX, 0.75f); ApplyWorldState(); });
 		return;
 	}
 	// the doll from the vent: the small key is sewn inside her, and comes out in Inspect (WCGame.cpp, GWCHidden)
@@ -541,8 +599,8 @@ void AWCDirector::StoryEvent(FName Id)
 		Items.Remove(TEXT("doll"));
 		Items.Add(TEXT("doll_empty"));
 		Set(TEXT("doll_opened"));
-		if (!HasItem(TEXT("key_box")) && !Has(TEXT("box_open"))) Items.Add(TEXT("key_box"));
-		Play2D(TEXT("pickup"), 0.6f, EWCSnd::SFX, 1.15f);
+		if (!HasItem(TEXT("key_box")) && !Has(TEXT("box_open"))) GiveItem(TEXT("key_box"), TEXT("Heart-shaped jewelry box key"));
+		SetObjective(TEXT("Use the heart-shaped key on the upstairs jewelry box"));
 		UE_LOG(LogWCStory, Display, TEXT("WCDOLL t=%.1f the small key comes out of the doll"), PlaySeconds);
 		UpstairsThump();
 		return;
@@ -566,16 +624,11 @@ void AWCDirector::StoryEvent(FName Id)
 	// ================================================================= act 2: the peek, the empty room, locked in
 	if (Is(Id, TEXT("trig:t_up_landing")))
 	{
-		if (Has(TEXT("heard_upstairs")) && UpstairsAt < 0.0) { UpstairsAt = Clock; Tension = 0.35f; }
 		if (HasItem(TEXT("key_prayer")) && Has(TEXT("peek_done")) && !Has(TEXT("ceiling_started")) && Gate()) ScareCeiling();
 		return;
 	}
-	if (Is(Id, TEXT("trig:t_up_corridor")))
-	{
-				if (Has(TEXT("heard_upstairs")) && !Has(TEXT("peek_started")) && UpstairsAt > 0.0 && Clock - UpstairsAt > 12.0 * TestPace) ScarePeek();
-		return;
-	}
-	if (Is(Id, TEXT("trig:t_master")) && Has(TEXT("peek_done")) && !Has(TEXT("master_seen")))
+	if (Is(Id, TEXT("trig:t_master")) && Has(TEXT("peek_done")) && !Has(TEXT("master_seen")) &&
+		Clock >= SpeechFreeAt && Clock >= DialogueUntil)
 	{
 		Set(TEXT("master_seen"));
 		float T = Say(TEXT("d_masterempty"), 1.2f);
@@ -793,7 +846,7 @@ void AWCDirector::StoryTick(float Dt)
 			else NextDoorAt = Clock + 6.0;
 		}
 	}
-	if (FLoop* Drone = Loops.Find(TEXT("drone"))) Drone->Target = bIndoors && !Has(TEXT("dawn")) ? 0.24f + 0.20f * Tension : 0.f;
+	if (FLoop* Drone = Loops.Find(TEXT("drone"))) Drone->Target = bIndoors && !Has(TEXT("dawn")) ? 0.53f + 0.13f * Tension : 0.f;
 	// tension eases back toward a floor that rises as the night goes on
 	{
 		const float Floor = Has(TEXT("sprint_done")) ? 0.6f : (Has(TEXT("lockin_done")) ? 0.45f : (Has(TEXT("peek_done")) ? 0.3f : (Has(TEXT("heard_upstairs")) ? 0.2f : 0.08f)));
@@ -836,29 +889,38 @@ void AWCDirector::StoryTick(float Dt)
 	}
 	if (!H) return;
 
+	// Wait in darkness until the deputy rounds the corner with a real sightline.
+	const FVector Doorway = Pos(TEXT("Her_Peek"));
+	if (Has(TEXT("heard_upstairs")) && !Has(TEXT("peek_started")) && !bBusy &&
+		FMath::Abs(P->GetActorLocation().Z - Doorway.Z - 88.f) < 95.f &&
+		FVector::Dist2D(P->GetActorLocation(), Doorway) <= 300.f &&
+		PlayerSees(Doorway + FVector(0,0,146), .58f, 335.f))
+	{
+		ScarePeek();
+	}
 	// ---- S1: the peek is watching you back
 	if (Has(TEXT("peek_started")) && !Has(TEXT("peek_done")) && H->IsShown() && !Has(TEXT("peek_leaving")))
 	{
-		static double Seen = 0.0, Started = 0.0;
-		if (!Has(TEXT("peek_timing"))) { Set(TEXT("peek_timing")); Seen = 0.0; Started = Clock; }
-		// "as soon as your light hits her, she goes poof": lit means inside the beam and inside its short reach
-		AWCCharacter* Pk = Player();
-		if (Pk && Pk->IsFlashlightOn() && PlayerSees(H->HeadLocation(), 0.86f, 360.f)) Seen += Dt;
-		const double Waited = Clock - Started;
-		if (Waited > 9.0 && !Has(TEXT("peek_whisper"))) { Set(TEXT("peek_whisper")); Say(TEXT("m_whisper1")); }
-		if (Seen > 0.16 || H->DistToPlayer() < 210.f || Waited > 45.0)
+		if (Clock - UpstairsAt >= .24 && (PlayerSees(H->GetActorLocation()+FVector(0,0,145), .52f, 355.f) || H->DistToPlayer() < 145.f))
 		{
 			Set(TEXT("peek_leaving"));
-			if (Seen > 0.1) Play2D(TEXT("sting_soft"), 0.8f, EWCSnd::Music);
-			H->Slide(Pos(TEXT("Her_PeekBack")), 0.5f, [this]()
+			PlayAt(TEXT("step_wood"), H->GetActorLocation(), .50f, .9f);
+			H->Slide(Pos(TEXT("Her_PeekBack")) - FVector(0,0,22), .36f, [this]()
 			{
 				if (AWCEntity* E = Her()) E->Vanish();
-				if (AWCDoor* D = Door(TEXT("up_master"))) D->SetOpen(false, 2.8f);
-				SetLightsTagged(TEXT("W_U_hall"), 1.f);
+				SetReturnBlackout(false);
+				if (AWCDoor* Front = Door(TEXT("front")))
+				{
+					if (!Front->bLocked) Front->Slam();
+					Front->SetLocked(true);
+					Set(TEXT("locked_in"));
+				}
 				Set(TEXT("peek_done"));
 				Rest(150.f);
-				float T = Say(TEXT("d_peek"), 1.4f);
-				After(T, [this]() { SetObjective(TEXT("Find her upstairs")); });
+				const float Delay = FMath::Max(.65f, float(DialogueUntil - Clock + .1));
+				const float T = Say(TEXT("d_getout"), Delay);
+				SpeechFreeAt = FMath::Max(SpeechFreeAt, Clock + T + .3);
+				After(T, [this]() { if (!Has(TEXT("box_open")) && !Has(TEXT("door_stuck"))) SetObjective(TEXT("Try the front door, or check the jewelry box")); });
 				Tension = 0.4f;
 			});
 		}
@@ -959,14 +1021,15 @@ void AWCDirector::StoryTick(float Dt)
 void AWCDirector::ScarePeek()
 {
 	Set(TEXT("peek_started"));
+	UpstairsAt = Clock;
 	AWCEntity* H = Her();
-	if (!H) { Set(TEXT("peek_done")); return; }
+	if (!H) { Set(TEXT("peek_done")); SetReturnBlackout(false); return; }
 	if (AWCDoor* D = Door(TEXT("up_master"))) D->SetOpen(true, 0.01f, true);
 	H->Appear(Pos(TEXT("Her_Peek")), YawOf(TEXT("Her_Peek")), TEXT("Peek"));
-	H->SetGlow(0.2f);
+	H->SetGlow(0.f);
 	H->SetFarGlow(0.f);                 // barely there: only his own light, close to, finds her
-	SetLightsTagged(TEXT("W_U_hall"), 0.04f);      // and no moonlit window behind her to give her outline away from the stairs
-	PlayAt(TEXT("creak"), H->GetActorLocation(), 1.f, 0.8f);
+	SetReturnBlackout(true);
+	PlayAt(TEXT("creak"), H->GetActorLocation(), .50f, .8f);
 	UE_LOG(LogWCStory, Display, TEXT("WCSCARE t=%.1f S1_peek"), PlaySeconds);
 }
 
@@ -1106,7 +1169,7 @@ void AWCDirector::ScareCeiling()
 	P->SetLightScale(0.3f);
 	P->FlickerLight(1.2f, 0.6f);
 	Play2D(TEXT("bulb_die"), 0.5f);
-	Play2D(TEXT("sting_low"), 0.8f, EWCSnd::Music);
+	PlayScareLead(8.f);
 	SetLoop(TEXT("amb"), TEXT("amb_house"), 0.1f, 1.f);
 	Tension = 0.9f;
 	Say(TEXT("d_ceiling"), 2.4f);
@@ -1121,6 +1184,7 @@ void AWCDirector::ScareCeiling()
 			AWCCharacter* Pl = Player();
 			if (!E || !Pl) return;
 			Play2D(TEXT("her_scream"), 1.f);
+			Pl->AddShake(.72f);
 			E->SetStutter(0.f);
 			TArray<FVector> Pts; Pts.Add(FVector(Pl->GetActorLocation().X, Pl->GetActorLocation().Y, E->GetActorLocation().Z));
 			E->MoveAlong(Pts, 1875.f, TEXT("Run"));

@@ -296,6 +296,26 @@ void AWCDirector::TickFlies(float Dt)
 	const int32 N = FlyData.Num();
 	if (N == 0) return;
 	const float T = (float)Clock;
+	if (Mode == EWCMode::Playing && Clock > NextFlyBuzz && Player())
+	{
+		NextFlyBuzz = Clock + .55;
+		const FVector Ear = Player()->EyeLocation();
+		const bool Inside = IsInsideHouse(Ear);
+		const FFly* Closest = nullptr;
+		float Best = FMath::Square(167.f);
+		for (const FFly& Fly : FlyData)
+		{
+			const float D = FVector::DistSquared(Ear, Fly.Centre);
+			if (D < Best && IsInsideHouse(Fly.Centre) == Inside) { Best = D; Closest = &Fly; }
+		}
+		if (Closest && !bBusy && !bEventBusy && (!FlyVoice.IsValid() || !FlyVoice->IsPlaying()))
+		{
+			FlyVoice = PlayAt(TEXT("flies_buzz"), Closest->Centre, .42f, Rng.FRandRange(.91f,1.07f));
+			const auto Voice = FlyVoice;
+			After(Rng.FRandRange(.65f,1.25f), [Voice](){ if (Voice.IsValid()) Voice->FadeOut(.22f,0.f); });
+			NextFlyBuzz = Clock + Rng.FRandRange(4.5f,9.f);
+		}
+	}
 	for (int32 i = 0; i < N; ++i)
 	{
 		const FFly& F = FlyData[i];
@@ -666,7 +686,7 @@ UAudioComponent* AWCDirector::Play2D(const FString& Name, float Volume, EWCSnd C
 	return A;
 }
 
-UAudioComponent* AWCDirector::PlayAt(const FString& Name, const FVector& Where, float Volume, float Pitch, float Radius)
+UAudioComponent* AWCDirector::PlayAt(const FString& Name, const FVector& Where, float Volume, float Pitch, float Radius, bool bShedImpact)
 {
 	const bool bHouseSource = SpaceAt(Where) != EListeningSpace::Exterior;
 	if (bHouseSource && Player() && SpaceAt(Player()->GetActorLocation()) == EListeningSpace::Exterior) return nullptr;
@@ -693,15 +713,29 @@ UAudioComponent* AWCDirector::PlayAt(const FString& Name, const FVector& Where, 
 		Atten->Attenuation.OcclusionInterpolationTime = 0.3f;
 	}
 	USoundAttenuation* Profile = Atten;
-	if (Name == TEXT("trash_crash"))
+	if (bShedImpact)
 	{
 		if (!BinAtten)
 		{
 			BinAtten = DuplicateObject<USoundAttenuation>(Atten, this);
-			BinAtten->Attenuation.AttenuationShapeExtents = FVector(650.f);
+			BinAtten->Attenuation.AttenuationShapeExtents = FVector(1150.f);
 			BinAtten->Attenuation.FalloffDistance = 2400.f;
+			BinAtten->Attenuation.LPFRadiusMin = 1200.f;
+			BinAtten->Attenuation.OcclusionVolumeAttenuation = .93f;
+			BinAtten->Attenuation.OcclusionLowPassFilterFrequency = 7400.f;
 		}
 		Profile = BinAtten;
+	}
+	else if (Name == TEXT("flies_buzz"))
+	{
+		if (!FlyAtten)
+		{
+			FlyAtten = DuplicateObject<USoundAttenuation>(Atten, this);
+			FlyAtten->Attenuation.DistanceAlgorithm = EAttenuationDistanceModel::Linear;
+			FlyAtten->Attenuation.AttenuationShapeExtents = FVector(35.f);
+			FlyAtten->Attenuation.FalloffDistance = 185.f;
+		}
+		Profile = FlyAtten;
 	}
 	UAudioComponent* Audio = UGameplayStatics::SpawnSoundAtLocation(this, S, Where, FRotator::ZeroRotator, FMath::Max(Volume * Vol(EWCSnd::SFX), 0.0001f), Pitch, 0.f, Profile, nullptr, true);
 	if (Audio && bHouseSource) Audio->ComponentTags.Add(TEXT("HouseAudio"));
@@ -710,7 +744,7 @@ UAudioComponent* AWCDirector::PlayAt(const FString& Name, const FVector& Where, 
 
 void AWCDirector::SetLoop(FName Slot, const FString& Name, float Volume, float FadeSeconds, EWCSnd Cat)
 {
-	const bool bIndoor = Name == TEXT("amb_house") || Name == TEXT("amb_cellar") || Name == TEXT("music_drone") || Name == TEXT("music_low") || Name == TEXT("music_stalk");
+	const bool bIndoor = Name == TEXT("amb_house") || Name == TEXT("amb_cellar") || Name == TEXT("music_house") || Name == TEXT("music_low") || Name == TEXT("music_stalk");
 	if (bIndoor && Player() && SpaceAt(Player()->GetActorLocation()) == EListeningSpace::Exterior) return;
 	FLoop& L = Loops.FindOrAdd(Slot);
 	if (L.Name == Name && L.Audio.IsValid())
@@ -774,10 +808,27 @@ void AWCDirector::RefreshRoomTone(EListeningSpace Space)
 	const TCHAR* Bed = bOutside ? (Has(TEXT("dawn")) ? TEXT("amb_dawn") : TEXT("amb_yard")) :
 		(Space == EListeningSpace::Cellar ? TEXT("amb_cellar") : TEXT("amb_house"));
 	SetLoop(TEXT("amb"), Bed, 1.f, bOutside ? 0.f : 0.65f);
-	SetLoop(TEXT("drone"), bDarkInside ? TEXT("music_drone") : TEXT(""), 0.34f, bDarkInside ? 1.2f : 0.f, EWCSnd::Music);
-	// One sustained, event-free score underneath the room tone.
+	SetLoop(TEXT("drone"), bDarkInside ? TEXT("music_house") : TEXT(""), 0.55f, bDarkInside ? 1.2f : 0.f, EWCSnd::Music);
+	// The two tracks crossfade inside a single seamless house loop.
 	if (FParse::Param(FCommandLine::Get(), TEXT("WCSndLog")))
 		UE_LOG(LogWC, Display, TEXT("WCROOM bed=%s interiorScore=%d"), Bed, bDarkInside);
+}
+
+void AWCDirector::PlayScareLead(float Seconds)
+{
+	if (!Player() || (ScareLead.IsValid() && ScareLead->IsPlaying())) return;
+	UAudioComponent* Cue = Play2D(TEXT("scare_bump"), .71f, EWCSnd::Music);
+	if (!Cue) return;
+	ScareLead = Cue;
+	Cue->bIsUISound = false;
+	if (IsInsideHouse(Player()->GetActorLocation())) Cue->ComponentTags.Add(TEXT("HouseAudio"));
+	const TWeakObjectPtr<UAudioComponent> Voice = Cue;
+	After(FMath::Max(.1f, Seconds - .22f), [Voice]()
+	{
+		if (Voice.IsValid()) Voice->FadeOut(.22f, 0.f);
+	});
+	if (FParse::Param(FCommandLine::Get(), TEXT("WCSndLog")))
+		UE_LOG(LogWC, Display, TEXT("WCSCORE t=%.1f Bump in the Night (%.1fs)"), PlaySeconds, Seconds);
 }
 
 void AWCDirector::TickAudio(float Dt)
@@ -787,9 +838,11 @@ void AWCDirector::TickAudio(float Dt)
 		FLoop& L = P.Value;
 		UAudioComponent* A = L.Audio.Get();
 		if (!A) continue;
-		if (!FMath::IsNearlyEqual(L.Vol, L.Target, 0.0005f))
+		const bool bDuck = P.Key == TEXT("drone") && ScareLead.IsValid() && ScareLead->IsPlaying();
+		const float Target = bDuck ? .28f * L.Target : L.Target;
+		if (!FMath::IsNearlyEqual(L.Vol, Target, 0.0005f))
 		{
-			L.Vol = FMath::FInterpConstantTo(L.Vol, L.Target, Dt, L.Rate);
+			L.Vol = FMath::FInterpConstantTo(L.Vol, Target, Dt, L.Rate);
 			A->SetVolumeMultiplier(FMath::Max(L.Vol * Vol(L.Cat), 0.0001f));
 		}
 		if (!A->IsPlaying() && L.Target > 0.f && A->Sound && A->Sound->IsLooping()) A->Play();
@@ -799,8 +852,9 @@ void AWCDirector::TickAudio(float Dt)
 void AWCDirector::Footstep(const FVector& Feet, float Loud, FName Surface)
 {
 	const FString Name = FString::Printf(TEXT("step_%s"), *Surface.ToString().ToLower());
-	UAudioComponent* A = Play2D(Name, 0.42f * Loud, EWCSnd::SFX, Rng.FRandRange(0.93f, 1.07f));
-	if (!A && Surface != TEXT("Wood")) Play2D(TEXT("step_wood"), 0.42f * Loud, EWCSnd::SFX, Rng.FRandRange(0.93f, 1.07f));
+	const float Gain = Player() && IsInsideHouse(Player()->GetActorLocation()) ? .90f : .42f;
+	UAudioComponent* A = Play2D(Name, Gain * Loud, EWCSnd::SFX, Rng.FRandRange(0.93f, 1.07f));
+	if (!A && Surface != TEXT("Wood")) Play2D(TEXT("step_wood"), Gain * Loud, EWCSnd::SFX, Rng.FRandRange(0.93f, 1.07f));
 	if (Clock >= NextBoardCreak && (Surface == TEXT("Wood") || Surface == TEXT("Stairs")) &&
 		ListeningSpace != EListeningSpace::Exterior && Rng.FRand() < .12f)
 	{

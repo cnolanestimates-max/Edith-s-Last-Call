@@ -54,15 +54,22 @@ void AWCDirector::AutoBegin()
 		auto Do = [this](const TCHAR* Cmd) { AutoSteps.Add({A_Do, Cmd, 0.f}); };
 		Do(TEXT("check_yard_paths")); Do(TEXT("record_mix")); Do(TEXT("at:-535,-653,52,-38,-19")); Wait(2.f); Shot(TEXT("left_approach"));
 		Do(TEXT("at:-280,992,52,0,-18")); Wait(1.f); Shot(TEXT("right_approach"));
-		Do(TEXT("at:3750,-747,59,164,-8")); Wait(1.f); Do(TEXT("take_tape")); Wait(5.f);
+		Do(TEXT("at:3770,-743,59,0,-27")); Wait(1.f); Do(TEXT("take_tape")); Wait(3.95f); Shot(TEXT("bin_turn")); Wait(1.65f);
 		Do(TEXT("at:3066,-413,51,122,-35")); Wait(.7f); Shot(TEXT("flies_a")); Wait(.15f); Shot(TEXT("flies_b"));
 		Do(TEXT("at:-90,0,94,0,0")); Wait(.6f); Do(TEXT("mix_check"));
 		Do(TEXT("at:100,0,94,0,0")); Wait(.8f); Do(TEXT("mix_check"));
 		Do(TEXT("at:-90,0,94,0,0")); Wait(.3f); Do(TEXT("mix_check"));
 		Do(TEXT("at:330,30,94,0,0")); Wait(1.f); Do(TEXT("mix_check"));
-		Do(TEXT("at:716,390,442,-90,-44")); AutoSteps.Add({A_Look,TEXT("pick_screwdriver"),-1.f}); Wait(.35f);
+		Do(TEXT("at:210,287,442,88,-36")); AutoSteps.Add({A_Look,TEXT("pick_screwdriver"),-1.f}); Wait(.35f);
 		Shot(TEXT("screwdriver_focus")); Do(TEXT("use_screwdriver_pickup")); Wait(1.f);
-		Do(TEXT("finish_mix")); Wait(2.f);
+		Do(TEXT("finish_mix")); Wait(.5f);
+		Do(TEXT("at:1400,310,92,-90,-12")); Do(TEXT("vent_test")); Wait(.7f); Shot(TEXT("vent_driver")); Wait(1.5f);
+		Do(TEXT("return_key")); Wait(7.1f); Do(TEXT("at:960,96,442,174,-5")); Do(TEXT("switch_test")); Wait(.5f);
+		Shot(TEXT("dark_landing")); Do(TEXT("at:475,114,442,163,-1")); Wait(.16f); Shot(TEXT("doorway_glimpse")); Wait(1.5f);
+		Do(TEXT("at:716,373,442,-90,-40")); Do(TEXT("box_test")); Wait(1.2f); Shot(TEXT("jewelry_box")); Wait(.3f);
+		Use(TEXT("pick_keep_eye"));
+		Do(TEXT("haunt_test")); Wait(.3f); Do(TEXT("light_test")); Wait(.3f);
+		Do(TEXT("ceiling_music_test")); Wait(8.4f);
 		AutoIndex=0; AutoStepStart=Clock; return;
 	}
 	if (FParse::Param(FCommandLine::Get(), TEXT("WCTour")))
@@ -79,6 +86,7 @@ void AWCDirector::AutoBegin()
 		Subtitles.Reset();
 		if (AWCCharacter* Pl = Player()) { Pl->SetInputLocked(false); Pl->SetFlashlight(true, false); }
 		Fade = 0.f; FadeTarget = 0.f;
+		const bool Props = FParse::Param(FCommandLine::Get(), TEXT("WCPropReview"));
 		if (FParse::Param(FCommandLine::Get(), TEXT("WCBright")))
 		{
 			if (AWCCharacter* Pl = Player())
@@ -88,7 +96,7 @@ void AWCDirector::AutoBegin()
 				L->SetRelativeLocation(FVector(0, 0, 60));
 				L->RegisterComponent();
 				L->SetIntensityUnits(ELightUnits::Lumens);
-				L->SetIntensity(1800.f);
+				L->SetIntensity(Props ? 14000.f : 1800.f);
 				L->SetAttenuationRadius(2500.f);
 				L->SetCastShadows(false);
 			}
@@ -98,8 +106,28 @@ void AWCDirector::AutoBegin()
 			for (TPair<FName, FRoomLights>& Rm : Rooms) SwitchRoom(Rm.Key, true, false);
 			if (AWCCharacter* Pl = Player()) Pl->SetFlashlight(false, false);
 		}
-		Wait(4.f);
-		for (const FName& N : Names) { AutoSteps.Add({ A_Tele, N, 0.f }); Wait(2.6f); Shot(*N.ToString()); }
+		if (Props) bBusy = true;
+		Wait(3.f);
+		for (const FName& N : Names)
+		{
+			if (Props && N == TEXT("Tour_31_master")) AutoSteps.Add({ A_Do, TEXT("at:362,302,442,18,-12"), 0.f });
+			else AutoSteps.Add({ A_Tele, N, 0.f });
+			Wait(Props ? 1.f : 2.6f);
+			Shot(*N.ToString());
+		}
+		if (Props)
+		{
+			auto Photo = [&](const TCHAR* Stand,const TCHAR* Name) { AutoSteps.Add({A_Do,Stand,0.f}); Wait(1.f); Shot(Name); };
+			Photo(TEXT("at:1261,524,92,-94,-57"),TEXT("Detail_Kitchen_drawing"));
+			Photo(TEXT("at:1440,324,92,-111,-15"),TEXT("Detail_Kitchen_vent"));
+			Photo(TEXT("at:208,219,442,87,-24"),TEXT("Detail_Master_entry"));
+			Photo(TEXT("at:702,400,442,-88,-36"),TEXT("Detail_Master_jewelry"));
+			Photo(TEXT("at:515,-376,92,-150,-4"),TEXT("Detail_Living_seating"));
+			Photo(TEXT("at:556,-340,92,145,-3"),TEXT("Detail_Living_shelves"));
+			Photo(TEXT("at:3695,-743,59,0,-12"),TEXT("Detail_Shed_workbench"));
+			Photo(TEXT("at:3270,-535,60,145,-15"),TEXT("Detail_Back_yard_bin"));
+			Photo(TEXT("at:268,-30,92,7,12"),TEXT("Detail_Foyer_stairs"));
+		}
 		AutoIndex = 0;
 		AutoStepStart = Clock;
 		if (!AutoShotDir.IsEmpty()) { AutoShotDir = FPaths::ConvertRelativePathToFull(AutoShotDir); IFileManager::Get().MakeDirectory(*AutoShotDir, true); }
@@ -410,7 +438,7 @@ void AWCDirector::AutoBegin()
 	Go(TEXT("A_StairsTop")); Go(TEXT("A_Kitchen")); Use(TEXT("vent")); Flag(TEXT("vent_open"), 6.f); Wait(2.4f); Shot(TEXT("08g_vent_open_doll"));
 	Use(TEXT("pick_doll")); Wait(0.6f); AutoSteps.Add({ A_Do, TEXT("inspectdoll"), 0.f }); Flag(TEXT("heard_upstairs"), 10.f); Wait(14.f);
 	// ---- upstairs: S1
-	Go(TEXT("A_StairsTop")); Go(TEXT("N_up_hallB")); Flag(TEXT("peek_started"), 30.f); LookHer(1.0f); Shot(TEXT("09_S1_peek")); LookHer(2.5f);
+	Go(TEXT("A_StairsTop")); Go(TEXT("N_up_hallA")); AutoSteps.Add({ A_Look, TEXT("Her_Peek"), 0.f }); Flag(TEXT("peek_started"), 8.f); Shot(TEXT("09_S1_peek"));
 	Go(TEXT("Her_Peek"));                       // she is only found close to: walk to the doorway with the light on it
 	Flag(TEXT("peek_done"), 40.f); Wait(5.f);
 	Go(TEXT("A_Master")); Flag(TEXT("master_seen"), 10.f); Shot(TEXT("10_master")); Use(TEXT("jewelbox")); Flag(TEXT("box_open"), 4.f); Wait(0.8f); Shot(TEXT("10b_jewelry_box_open")); Use(TEXT("pick_keep_eye")); Flag(TEXT("want_leave"), 60.f);
@@ -695,6 +723,51 @@ void AWCDirector::AutoTick(float Dt)
 				UE_LOG(LogWCAuto, Display, TEXT("WCWALK %s hit=%s"), *It->Tags.Last().ToString(), Blocked && Hit.GetActor() ? *Hit.GetActor()->GetActorNameOrLabel() : TEXT("clear"));
 			}
 		}
+		else if (S.Arg == TEXT("vent_test"))
+		{
+			SwitchRoom(TEXT("master"),true,false); SwitchRoom(TEXT("uphall"),true,false);
+			Event(TEXT("use:vent"));
+		}
+		else if (S.Arg == TEXT("return_key"))
+		{
+			GiveItem(TEXT("doll"), TEXT("Rag doll"));
+			Event(TEXT("inspect:doll"));
+			UE_LOG(LogWCAuto, Display, TEXT("WCRETURN key=%d vent=%d"),HasItem(TEXT("key_box")),Has(TEXT("vent_open")));
+		}
+		else if (S.Arg == TEXT("haunt_test"))
+		{
+			for (int32 k=0;k<7;++k)
+			{
+				DialogueUntil=Clock; WhisperAt=Clock; CueFreeAt=Clock;
+				TickCues(0.f);
+			}
+		}
+		else if (S.Arg == TEXT("light_test"))
+		{
+			InsideAt=PlaySeconds-100.f;
+			for (const FName Name : {FName(TEXT("living")),FName(TEXT("master")),FName(TEXT("uphall"))})
+			{
+				SwitchRoom(Name,true,false);
+				Rooms.FindChecked(Name).KillAt=Clock-1.;
+			}
+			for (int32 k=0;k<3;++k) { NextLightKill=Clock-1.; TickHouseLights(.016f); }
+		}
+		else if (S.Arg == TEXT("ceiling_music_test"))
+		{
+			UE_LOG(LogWCAuto, Display, TEXT("WCRETURN recoveredEye=%d"), HasItem(TEXT("keep_eye")));
+			ScareCeiling();
+		}
+		else if (S.Arg == TEXT("switch_test"))
+		{
+			Event(TEXT("use:sw_uphall")); Event(TEXT("use:sw_master"));
+			UE_LOG(LogWCAuto, Display, TEXT("WCRETURN hall=%d master=%d visibleFromLanding=%d"),Rooms.FindChecked(TEXT("uphall")).bOn,Rooms.FindChecked(TEXT("master")).bOn, Her() && Her()->IsShown());
+		}
+		else if (S.Arg == TEXT("box_test"))
+		{
+			Event(TEXT("use:jewelbox"));
+			UE_LOG(LogWCAuto, Display, TEXT("WCRETURN peekDone=%d exitLocked=%d boxOpen=%d eyeVisible=%d"),Has(TEXT("peek_done")),
+				Door(TEXT("front")) && Door(TEXT("front"))->bLocked,Has(TEXT("box_open")),Thing(TEXT("pick_keep_eye")) && !Thing(TEXT("pick_keep_eye"))->IsHidden());
+		}
 		else if (S.Arg == TEXT("record_mix")) UAudioMixerBlueprintLibrary::StartRecordingOutput(this, 30.f);
 		else if (S.Arg == TEXT("finish_mix")) UAudioMixerBlueprintLibrary::StopRecordingOutputToAnyPath(this, EAudioRecordingExportType::WavFile, TEXT("arrival_mix"), AutoShotDir);
 		else if (S.Arg == TEXT("take_tape")) Event(TEXT("take:tape1"));
@@ -704,6 +777,9 @@ void AWCDirector::AutoTick(float Dt)
 			for (TObjectIterator<UAudioComponent> It; It; ++It)
 				if (It->GetWorld() == GetWorld() && It->IsPlaying() && It->ComponentHasTag(TEXT("HouseAudio"))) ++Active;
 			const FLoop* Bed = Loops.Find(TEXT("amb"));
+			const FLoop* Score = Loops.Find(TEXT("drone"));
+			UE_LOG(LogWCAuto, Display, TEXT("WCSCORE house=%s playing=%d"), Score ? *Score->Name : TEXT("none"),
+				Score && Score->Audio.IsValid() && Score->Audio->IsPlaying());
 			UE_LOG(LogWCAuto, Display, TEXT("WCARRIVAL x=%.0f bed=%s houseSources=%d smellPending=%d"), P->GetActorLocation().X,
 				Bed ? *Bed->Name : TEXT("none"), Active, Has(TEXT("smell_pending")));
 		}
@@ -792,7 +868,7 @@ void AWCDirector::AutoTick(float Dt)
 		Next(); return;
 	case A_Light: if (!P->IsFlashlightOn()) P->ToggleFlashlight(); Next(); return;
 	case A_Shot:
-		if (S.Arg == TEXT("flies_a") || S.Arg == TEXT("flies_b"))
+		if (S.Arg == TEXT("flies_a") || S.Arg == TEXT("flies_b") || S.Arg == TEXT("vent_driver"))
 		{
 			TArray<UInstancedStaticMeshComponent*> Clouds;
 			P->GetComponents(Clouds);
@@ -809,7 +885,7 @@ void AWCDirector::AutoTick(float Dt)
 					const FVector Delta = T.GetLocation() - P->EyeLocation();
 					if (Delta.SizeSquared() < FMath::Square(250.f) && FVector::DotProduct(Delta.GetSafeNormal(), P->EyeForward()) > .85f) ++NearbyInView;
 				}
-				UE_LOG(LogWCAuto, Display, TEXT("WCPARTICLES %s mesh=%s instances=%d nearbyInView=%d first=%s"), *S.Arg.ToString(), *Cloud->GetStaticMesh()->GetName(), Cloud->GetInstanceCount(), NearbyInView, *First.GetLocation().ToCompactString());
+				UE_LOG(LogWCAuto, Display, TEXT("WCPARTICLES %s mesh=%s instances=%d visible=%d nearbyInView=%d first=%s"), *S.Arg.ToString(), *Cloud->GetStaticMesh()->GetName(), Cloud->GetInstanceCount(), Cloud->IsVisible() && !Cloud->bHiddenInGame, NearbyInView, *First.GetLocation().ToCompactString());
 			}
 		}
 		if (!AutoShotDir.IsEmpty())

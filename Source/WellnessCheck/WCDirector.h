@@ -140,7 +140,7 @@ public:
 	// ------------------------------------------------------------------ sound
 	USoundBase* Snd(const FString& Name);
 	UAudioComponent* Play2D(const FString& Name, float Volume = 1.f, EWCSnd Cat = EWCSnd::SFX, float Pitch = 1.f);
-	UAudioComponent* PlayAt(const FString& Name, const FVector& Where, float Volume = 1.f, float Pitch = 1.f, float Radius = 1800.f);
+	UAudioComponent* PlayAt(const FString& Name, const FVector& Where, float Volume = 1.f, float Pitch = 1.f, float Radius = 1800.f, bool bShedImpact = false);
 	/** Looping bed in a named slot; an empty name fades the slot out. */
 	void SetLoop(FName Slot, const FString& Name, float Volume, float FadeSeconds = 2.f, EWCSnd Cat = EWCSnd::SFX);
 	void Footstep(const FVector& Feet, float Loud, FName Surface);
@@ -197,6 +197,8 @@ public:
 	void SwitchRoom(FName Room, bool bOn, bool bClick = true);
 	/** Every house light out, and the switches dead for a while. */
 	void KillLights(float DeadSeconds, bool bPop = false);
+	bool IsInsideHouse(const FVector& At) const { return SpaceAt(At) != EListeningSpace::Exterior; }
+	bool IsBinTurnActive() const { return BinTurnStarted >= 0.; }
 	bool IsDriving() const { return bDriving; }
 	bool bPowerOut = false;
 	int32 StalkState = 0;     // 0 none, 1 she has appeared, 2 she is coming
@@ -232,6 +234,13 @@ private:
 	double GrabHoldUntil = 0.0;
 	FVector LookAtPoint = FVector::ZeroVector;
 	double LookAtUntil = 0.0;
+	double BinTurnStarted = -1.;
+	bool bStepToShedDoor = false;
+	void TickBinTurn(float Dt);
+	void SetReturnBlackout(bool bActive);
+	TWeakObjectPtr<class UStaticMeshComponent> VentTool;
+	double VentToolAt = 0.;
+	void TickVentTool();
 	/** A memory of hers (1 family leaving, 2 the book in the attic, 3 the asking), shown from a fixed camera, then Then(). */
 	void PlayMemory(int32 N, TFunction<void()> Then);
 	// the house (WCHouse.cpp)
@@ -280,7 +289,9 @@ private:
 	TMap<FName, int32> CueCount;
 	TSet<int32> CueFired;
 	TSet<FName> TrigInside;
-	double CueFreeAt = 0.0, WhisperAt = -1.0;
+	double CueFreeAt = 0.0, WhisperAt = -1.0, NextFlyBuzz = 0., DialogueUntil = 0.;
+	int32 LastHaunt = -1;
+	TWeakObjectPtr<UAudioComponent> FlyVoice;
 	void FinaleDawn();
 	int32 DoorEvents = 0, CallStep = 0;
 	int32 TVWant = 0;                                          // the tape he has just put in (0 = none)
@@ -347,6 +358,8 @@ private:
 	EListeningSpace ListeningSpace = EListeningSpace::Exterior;
 	static EListeningSpace SpaceAt(const FVector& Position);
 	void RefreshRoomTone(EListeningSpace Space);
+	void PlayScareLead(float Seconds);
+	TWeakObjectPtr<UAudioComponent> ScareLead;
 	void TickAudio(float Dt);
 	void TickLights(float Dt);
 	void TickFlies(float Dt);
@@ -370,6 +383,7 @@ private:
 	TMap<FString, TArray<FString>> SoundVariants;
 	UPROPERTY(Transient) TObjectPtr<USoundAttenuation> Atten;
 	UPROPERTY(Transient) TObjectPtr<USoundAttenuation> BinAtten;
+	UPROPERTY(Transient) TObjectPtr<USoundAttenuation> FlyAtten;
 	TWeakObjectPtr<AWCEntity> HerActor;
 	TArray<TWeakObjectPtr<AWCTrigger>> Triggers;
 	TMap<FName, TWeakObjectPtr<AActor>> TagCache;

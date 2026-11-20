@@ -124,6 +124,18 @@ void AWCDirector::KillLights(float DeadSeconds, bool bPop)
 	if (bAny && bPop) Play2D(TEXT("bulb_pop"), 0.8f);
 }
 
+void AWCDirector::SetReturnBlackout(bool bActive)
+{
+	if (bActive)
+	{
+		for (FName Room : {FName(TEXT("uphall")), FName(TEXT("uprear")), FName(TEXT("master"))})
+			SwitchRoom(Room, false, false);
+		if (AWCDoor* Master = Door(TEXT("up_master"))) Master->SetOpen(true, .2f, true);
+	}
+	for (const TCHAR* Window : {TEXT("W_U_hall"), TEXT("W_U_master"), TEXT("W_U_living")})
+		SetLightsTagged(Window, bActive ? 0.f : 1.f);
+}
+
 static bool AnyRoomOn(const TMap<FName, AWCDirector::FRoomLights>& Rooms)
 {
 	for (const TPair<FName, AWCDirector::FRoomLights>& P : Rooms) if (P.Value.bOn) return true;
@@ -133,7 +145,16 @@ static bool AnyRoomOn(const TMap<FName, AWCDirector::FRoomLights>& Rooms)
 void AWCDirector::TickHouseLights(float Dt)
 {
 	const float T = (float)Clock;
-	const bool bMayKill = Has(TEXT("inside")) && !Has(TEXT("dawn")) && !bBusy && StalkState == 0 && (PlaySeconds - InsideAt) > 170.f * TestPace;
+	const bool bMayKill = Has(TEXT("inside")) && !Has(TEXT("dawn")) && !bBusy && StalkState == 0 && (PlaySeconds - InsideAt) > 35.f && Player() && IsInsideHouse(Player()->GetActorLocation());
+	FName NextRoom;
+	float Best = -1.f;
+	for (const auto& Pair : Rooms)
+	{
+		const FRoomLights& Room = Pair.Value;
+		if (!bMayKill || Clock < NextLightKill || !Room.bOn || Clock < Room.KillAt) continue;
+		const float Weight = Rng.FRandRange(.5f, 1.5f) / (1.f + Room.Kills);
+		if (Weight > Best) { Best = Weight; NextRoom = Pair.Key; }
+	}
 	for (TPair<FName, FRoomLights>& P : Rooms)
 	{
 		FRoomLights& R = P.Value;
@@ -146,10 +167,10 @@ void AWCDirector::TickHouseLights(float Dt)
 		{
 			if (ULightComponent* L = R.Lights[i].Get()) { L->SetVisibility(true); L->SetIntensity(R.Base[i] * N); }
 		}
-		if (bMayKill && Clock > R.KillAt && Clock > NextLightKill)
+		if (P.Key == NextRoom)
 		{
 			// she turns it off: a staged thing, minutes apart, not a tic
-			NextLightKill = Clock + Rng.FRandRange(120.f, 210.f) * FMath::Max(TestPace, 0.25f);
+			NextLightKill = Clock + Rng.FRandRange(31.f, 75.f);
 			SwitchRoom(P.Key, false, true);
 			PlayAt(TEXT("bulb_buzz"), R.SwitchLoc + FVector(0, 0, 120), 0.6f, 1.f, 900.f);
 			R.DeadUntil = Clock + Rng.FRandRange(5.f, 12.f);
@@ -180,7 +201,9 @@ bool AWCDirector::HouseEvent(FName Id)
 			Feedback(TEXT("Nothing."));
 			return true;
 		}
-		if (bPowerOut)
+		const bool bReturnBlackout = Has(TEXT("heard_upstairs")) && !Has(TEXT("peek_done")) &&
+			(Room == TEXT("uphall") || Room == TEXT("uprear") || Room == TEXT("master"));
+		if (bPowerOut || bReturnBlackout)
 		{
 			PlayAt(TEXT("switch_click"), At, 0.9f, 1.f, 900.f);
 			Feedback(TEXT("Dead."));
@@ -899,6 +922,37 @@ void AWCDirector::EndStalk(bool bDriven)
 }
 
 // ================================================================================================ per-frame
+void AWCDirector::TickBinTurn(float Dt)
+{
+	if (!IsBinTurnActive()) return;
+	AWCCharacter* Deputy = Player();
+	if (!Deputy || !Deputy->GetController()) { BinTurnStarted = -1.; return; }
+	const double Age = Clock - BinTurnStarted;
+	const FVector Target = Pos(TEXT("TrashPoint")) + FVector(0,0,24);
+	const FVector From = Deputy->GetActorLocation();
+	if (bStepToShedDoor && Age > .12)
+	{
+		const FVector Exit = Pos(TEXT("A_Shed"));
+		const FVector Inside = Pos(TEXT("A_ShedIn"));
+		const bool Align = From.X > Inside.X - 35.f && FMath::Abs(From.Y - Exit.Y) > 8.f;
+		const FVector Waypoint(Align ? From.X : Exit.X, Exit.Y, From.Z);
+		Deputy->SetActorLocation(FMath::VInterpConstantTo(From, Waypoint, Dt, 280.f), true);
+	}
+	if (Age >= .07)
+	{
+		AController* C = Deputy->GetController();
+		const FRotator Want = (Target - Deputy->EyeLocation()).Rotation();
+		C->SetControlRotation(FMath::RInterpTo(C->GetControlRotation(), Want, Dt, 14.f));
+	}
+	if (Age >= 2.35)
+	{
+		BinTurnStarted = -1.;
+		UE_LOG(LogWCHouse, Display, TEXT("WCBIN camera finished alignment=%.3f sight=%d"),
+			FVector::DotProduct(Deputy->EyeForward(), (Target-Deputy->EyeLocation()).GetSafeNormal()),
+			PlayerSees(Target, .8f, 1800.f));
+	}
+}
+
 void AWCDirector::HouseTick(float Dt)
 {
 	{
@@ -914,6 +968,8 @@ void AWCDirector::HouseTick(float Dt)
 		if (!VideoDir.IsEmpty() && Mode == EWCMode::Playing && VideoFrame < 4500) FScreenshotRequest::RequestScreenshot(VideoDir / FString::Printf(TEXT("f_%05d.png"), VideoFrame++), false, false);
 	}
 	if (bDriving) { TickDrive(Dt); return; }
+	TickBinTurn(Dt);
+	TickVentTool();
 	if (Clock < LookAtUntil)
 	{
 		if (AWCCharacter* Pl = Player())
