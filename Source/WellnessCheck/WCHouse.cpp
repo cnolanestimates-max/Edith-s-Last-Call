@@ -235,7 +235,7 @@ bool AWCDirector::HouseEvent(FName Id)
 		if (!R || R->Lights.Num() == 0)
 		{
 			PlayAt(TEXT("switch_click"), At, 0.9f, 1.f, 900.f);
-			Feedback(TEXT("Nothing."));
+			Feedback(Room == TEXT("dining") ? TEXT("Nothing. The chandelier is on the floor.") : (Room == TEXT("prayer") ? TEXT("Nothing. Somebody took the bulb out.") : TEXT("Nothing.")));
 			return true;
 		}
 		const bool bReturnBlackout = Has(TEXT("heard_upstairs")) && !Has(TEXT("peek_done")) &&
@@ -243,7 +243,7 @@ bool AWCDirector::HouseEvent(FName Id)
 		if (bPowerOut || bReturnBlackout)
 		{
 			PlayAt(TEXT("switch_click"), At, 0.9f, 1.f, 900.f);
-			Feedback(TEXT("Dead."));
+			Feedback(Has(TEXT("seen_fusebox")) ? TEXT("Dead. It needs that fuse.") : TEXT("Dead. The whole house is dead. There'll be a fuse box somewhere off the kitchen."));
 			return true;
 		}
 		if (Clock < R->DeadUntil && !R->bOn)
@@ -282,18 +282,18 @@ bool AWCDirector::HouseEvent(FName Id)
 	if (Id == TEXT("closed:note_mail") && Has(TEXT("lights_tried")) && !Has(TEXT("power_puzzled")))
 	{
 		Set(TEXT("power_puzzled"));
-		Think(TEXT("Cut off last September. ...Then what's running the lights?"));
+		Feedback(TEXT("Cut off over a year ago. ...Then what's running the lights?"));
 		return true;
 	}
 	if (Id == TEXT("closed:note_prayer") && !HasItem(TEXT("shears")))
 	{
-		After(0.8f, [this]() { Think(TEXT("A living hand, and something to cut with. She said scissors.")); });
+		After(0.8f, [this]() { Feedback(TEXT("A living hand, and something to cut with. She said scissors.")); });
 		return false;     // the story also listens for this
 	}
 	if (Id == TEXT("invuse:radio"))
 	{
 		Play2D(TEXT("radio_static"), 0.6f);
-		Think(Has(TEXT("locked_in")) ? TEXT("Static. Nothing gets out of this house.") : TEXT("Dispatch reads me fine out here."));
+		Feedback(Has(TEXT("locked_in")) ? TEXT("Static. Nothing gets out of this house.") : TEXT("Dispatch reads me fine out here."));
 		return true;
 	}
 	if (Id == TEXT("invuse:keep_ruth"))
@@ -301,7 +301,7 @@ bool AWCDirector::HouseEvent(FName Id)
 		// it still plays; and somewhere in the house something hums along
 		TWeakObjectPtr<UAudioComponent> Box = Play2D(TEXT("musicbox"), 0.55f);
 		After(6.5f, [Box]() { if (Box.IsValid()) Box->FadeOut(1.5f, 0.f); });
-		Think(TEXT("It still plays."));
+		Feedback(TEXT("It still plays."));
 		if (Has(TEXT("locked_in")) && !bBusy)
 		{
 			After(4.6f, [this]()
@@ -318,13 +318,13 @@ bool AWCDirector::HouseEvent(FName Id)
 	{
 		Set(TEXT("seen_fusebox"));
 		if (Has(TEXT("fuse_done")) || !bPowerOut) { Feedback(TEXT("Glass fuses. One is newer than the rest.")); return true; }
-		if (!HasItem(TEXT("fuse"))) { Feedback(TEXT("A fuse is blown.")); return true; }
+		if (!HasItem(TEXT("fuse"))) { Feedback(TEXT("One fuse is blown black. I need a spare.")); return true; }
 		Set(TEXT("fuse_done"));
 		bPowerOut = false;
 		Items.Remove(TEXT("fuse"));
 		PlayAt(TEXT("switch_click"), Pos(TEXT("FusePoint")), 1.f, 0.8f);
 		PlayAt(TEXT("bulb_buzz"), Pos(TEXT("FusePoint")), 0.8f);
-		After(0.7f, [this]() { SwitchRoom(TEXT("pantry"), true, false); Think(TEXT("That's got it.")); });
+		After(0.7f, [this]() { SwitchRoom(TEXT("pantry"), true, false); Feedback(TEXT("That's got it.")); });
 		return true;
 	}
 	if (Id == TEXT("use:desk"))
@@ -377,7 +377,7 @@ bool AWCDirector::HouseEvent(FName Id)
 		if (!Has(TEXT("watcher_seen"))) { Set(TEXT("watcher_seen")); After(1.8f, [this]() { Think(TEXT("...Was that")); }); }
 		return true;
 	}
-	if (Id == TEXT("take:fuse")) { if (!bPowerOut) Think(TEXT("A spare fuse. Might want that.")); return true; }
+	if (Id == TEXT("take:fuse")) { if (!bPowerOut) Feedback(TEXT("A spare fuse. Might want that.")); return true; }
 	if (Id == TEXT("take:key_attic"))
 	{
 		SetObjective(TEXT("Take the long key to the attic door upstairs"));

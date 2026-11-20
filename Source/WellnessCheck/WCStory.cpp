@@ -557,20 +557,20 @@ void AWCDirector::StoryEvent(FName Id)
 		if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 8.0; Say(TEXT("d_phonecord")); Set(TEXT("seen_phone")); }
 		return;
 	}
-	if (Is(Id, TEXT("locked:cellar"))) { if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 4.0; Feedback(TEXT("Padlocked.")); } return; }
+	if (Is(Id, TEXT("locked:cellar"))) { if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 4.0; Feedback(TEXT("Padlocked from this side. The cellar.")); } return; }
 	if (Is(Id, TEXT("locked:up_ell")))
 	{
-		if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 5.0; Feedback(TEXT("Locked.")); }
+		if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 5.0; Feedback(TEXT("Locked. A newer lock than the others. The man of the house would have kept the key.")); }
 		return;
 	}
 	if (Is(Id, TEXT("locked:up_attic")))
 	{
-		if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 5.0; Feedback(TEXT("Locked.")); }
+		if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 5.0; Feedback(TEXT("The attic. Locked. Danny's things are up there.")); }
 		return;
 	}
 	if (Is(Id, TEXT("locked:sitting")) || Is(Id, TEXT("locked:up_prayer")))
 	{
-		if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 5.0; Feedback(TEXT("Locked.")); }
+		if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 5.0; Feedback(TEXT("Locked. Scratches round the keyhole, from the inside.")); }
 		return;
 	}
 	if (Id.ToString().StartsWith(TEXT("locked:")) && !Is(Id, TEXT("locked:back")))
@@ -710,7 +710,7 @@ void AWCDirector::StoryEvent(FName Id)
 	}
 		if (Is(Id, TEXT("locked:back")))
 	{
-		if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 4.0; Feedback(TEXT("Nailed shut.")); }
+		if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 4.0; Feedback(TEXT("Nailed shut from the inside. Every board.")); }
 		if (Has(TEXT("want_leave")) && !Has(TEXT("lockin_started")) && !bBusy && !bEventBusy && StalkState == 0) { After(1.5f, [this]() { ScareLockIn(); }); return; }
 		if (Has(TEXT("lockin_done"))) Set(TEXT("backdoor_tried"));      // the phone rings later, when things have gone quiet (StoryTick)
 		return;
@@ -741,7 +741,7 @@ void AWCDirector::StoryEvent(FName Id)
 	if (Is(Id, TEXT("unlock:up_prayer"))) { Say(TEXT("d_prayer"), 3.f); Checkpoint(TEXT("prayer")); return; }
 	if (Is(Id, TEXT("take:keep_walter")))
 	{
-				Think(TEXT("A wedding ring. W.H. to E.H., 1942."));
+				Feedback(TEXT("A wedding ring. W.H. to E.H., 1942."));
 		After(1.5f, [this]() { if (AWCCharacter* Pl = Player()) Pl->FlickerLight(1.2f, 0.7f); });
 		return;
 	}
@@ -796,7 +796,7 @@ void AWCDirector::StoryEvent(FName Id)
 	{
 		if (!(HasItem(TEXT("keep_ruth")) && HasItem(TEXT("keep_walter")) && HasItem(TEXT("keep_daniel")) && HasItem(TEXT("keep_eye"))))
 		{
-			if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 5.0; Feedback(TEXT("Not yet.")); }
+			if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 5.0; Feedback(TEXT("Not yet. What was theirs, and what was hers.")); }
 			// he has come down without everything: the door at the top of the stairs lets go, so he can fetch it
 			if (AWCDoor* Cd = Door(TEXT("cellar"))) if (Cd->bLocked) { Cd->SetLocked(false); PlayAt(TEXT("door_unlock"), Cd->GetActorLocation() + FVector(0, 0, 100), 1.f, 0.8f, 3000.f); }
 			return;
@@ -820,7 +820,7 @@ void AWCDirector::StoryEvent(FName Id)
 			{
 				if (!HasItem(TEXT("shears")))
 				{
-					if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 5.0; Feedback(TEXT("Nothing to cut it with.")); }
+					if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 5.0; Feedback(TEXT("Nothing to cut it with. She said scissors. The sewing room.")); }
 					return;
 				}
 				// cutting takes a moment; she keeps coming
