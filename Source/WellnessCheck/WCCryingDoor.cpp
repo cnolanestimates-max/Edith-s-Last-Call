@@ -18,8 +18,8 @@ namespace
 {
 constexpr float CrySeconds = 12.5f;
 constexpr float SilenceSeconds = .68f;
-constexpr float StrikeSeconds = .62f;
-constexpr float ReleaseSeconds = .34f;
+constexpr float FaceSeconds = 1.03f;
+constexpr float ReleaseSeconds = 1.00f;
 
 AStaticMeshActor* SpawnCompanyMask(UWorld* World, FVector Point, FRotator Facing)
 {
@@ -46,12 +46,12 @@ AStaticMeshActor* SpawnCompanyMask(UWorld* World, FVector Point, FRotator Facing
 	AWCSmokeMan::Build(Smoke, 184.f, 1953);
 	auto* Bounce = NewObject<UPointLightComponent>(Mask);
 	Bounce->SetupAttachment(Face);
-	Bounce->SetRelativeLocation(FVector(38,-20,14));
+	Bounce->SetRelativeLocation(FVector(23,-12,13));
 	Bounce->SetIntensityUnits(ELightUnits::Lumens);
-	Bounce->SetIntensity(42.f);
+	Bounce->SetIntensity(7.f);
 	Bounce->SetLightColor(FLinearColor(.73f,.78f,.85f));
-	Bounce->SetAttenuationRadius(95.f);
-	Bounce->SetCastShadows(false);
+	Bounce->SetAttenuationRadius(57.f);
+	Bounce->SetCastShadows(true);
 	Bounce->SetLightingChannels(true,true,false);
 	Bounce->RegisterComponent();
 	return Mask;
@@ -142,19 +142,19 @@ void AWCDirector::TickCryingDoor(float Dt)
 			return;
 		}
 		if (Clock < DoorOpenedAt+3.2 || Dist>154.f || !PlayerSees(At,.66f,155.f)) return;
-		DoorMaskPoint = Latch - 6.f*Along + 2.f*Hall;
-		DoorPeekPoint = Latch - 40.f*Along + 55.f*Hall;
+		// The latch is 29 cm inside the room at 15 degrees. Keep the entire mask
+		// beyond that sweep. The real door leaf and the jamb occlude either cheek.
+		DoorMaskPoint = Latch + 16.f*Along - 51.f*Hall;
+		DoorPeekPoint = Latch - 46.f*Along + 82.f*Hall;
 		const FRotator Facing = (DoorPeekPoint-DoorMaskPoint).Rotation();
-		// Keep the face inside the room, behind the solid wall beside the jamb, until impact.
-		// This also lets its textures and render resources become resident before the close-up.
 		DoorMask = SpawnCompanyMask(GetWorld(),DoorMaskPoint + 65.f*Along - 90.f*Hall,Facing);
 		if (!DoorMask.IsValid()) { FinishDoorListening(true); return; }
 		bBusy = true;
 		DoorListenTime = 0.f;
 		DoorListening = EDoorListening::Listening;
 		// Two voices start together. Their reflections originate at different points in the room.
-		DoorCry = PlayAt(TEXT("door_weeping"),At-Hall*43.f,1.20f);
-		DoorWhisper = PlayAt(TEXT("door_whispering"),At-Hall*25.f-Along*28.f,.83f);
+		DoorCry = PlayAt(TEXT("door_weeping"),At-Hall*43.f,1.22f);
+		DoorWhisper = PlayAt(TEXT("door_whispering"),At-Hall*25.f-Along*28.f,.91f);
 		UE_LOG(LogCryingDoor,Display,TEXT("WCJAMB listening t=%.2f crying=%d whisper=%d"),Clock,DoorCry.IsValid(),DoorWhisper.IsValid());
 		return;
 	}
@@ -162,45 +162,44 @@ void AWCDirector::TickCryingDoor(float Dt)
 	DoorListenTime += Dt;
 	if (DoorListening == EDoorListening::Listening)
 	{
-		if (Dist>210.f || P->IsDown() || P->IsInputLocked())
+		if (Dist>210.f || P->IsDown() || (P->IsInputLocked() && !DoorPeekCamera.IsValid()))
 		{
 			FinishDoorListening(false);
 			return;
 		}
+		if (!DoorPeekCamera.IsValid() && DoorListenTime >= CrySeconds - 1.45f)
+		{
+			if (!PlayerSees(At,.50f,210.f)) { FinishDoorListening(false); return; }
+			const FRotator View = (DoorMaskPoint-DoorPeekPoint).Rotation();
+			DoorPeekCamera = GetWorld()->SpawnActor<ACameraActor>(DoorPeekPoint,View);
+			if (!DoorPeekCamera.IsValid()) { FinishDoorListening(true); return; }
+			DoorPeekCamera->GetCameraComponent()->SetFieldOfView(66.f);
+			P->SetInputLocked(true);
+			PC->SetViewTargetWithBlend(DoorPeekCamera.Get(),.95f,VTBlend_EaseInOut,2.f,true);
+		}
 		if (DoorListenTime < CrySeconds) return;
-		if (!PlayerSees(At,.50f,210.f)) { FinishDoorListening(false); return; }
-		const FRotator View = (DoorMaskPoint-DoorPeekPoint).Rotation();
-		DoorPeekCamera = GetWorld()->SpawnActor<ACameraActor>(DoorPeekPoint,View);
-		if (!DoorPeekCamera.IsValid()) { FinishDoorListening(true); return; }
-		DoorPeekCamera->GetCameraComponent()->SetFieldOfView(70.f);
-		P->SetInputLocked(true);
-		PC->SetViewTargetWithBlend(DoorPeekCamera.Get(),.42f,VTBlend_EaseInOut,2.f,true);
 		if (DoorCry.IsValid()) DoorCry->Stop();
 		if (DoorWhisper.IsValid()) DoorWhisper->Stop();
 		SetDoorSilence(true);
 		DoorListening = EDoorListening::Silence;
 		UE_LOG(LogCryingDoor,Display,TEXT("WCJAMB silence after %.2f seconds"),DoorListenTime);
 	}
-	const float ImpactTime = DoorListenTime - CrySeconds - SilenceSeconds;
-	if (ImpactTime < 0.f) return;
+	const float RevealTime = DoorListenTime - CrySeconds - SilenceSeconds;
+	if (RevealTime < 0.f) return;
 	if (DoorListening == EDoorListening::Silence)
 	{
 		SetDoorSilence(false);
-		DoorListening = EDoorListening::Strike;
-		DoorMask->SetActorHiddenInGame(false);
-		PlayAt(TEXT("sting_hit"),DoorMaskPoint,.96f);
-		UE_LOG(LogCryingDoor,Display,TEXT("WCJAMB strike t=%.2f"),Clock);
+		DoorListening = EDoorListening::FaceVisible;
+		DoorMask->SetActorLocation(DoorMaskPoint);
+		PlayAt(TEXT("door_room_scream"),Latch - 25.f*Along - 182.f*Hall,1.04f);
+		UE_LOG(LogCryingDoor,Display,TEXT("WCJAMB face in seam t=%.2f"),Clock);
 	}
-	if (DoorListening == EDoorListening::Strike)
+	if (DoorListening == EDoorListening::FaceVisible)
 	{
-		const float Hit = FMath::Clamp(ImpactTime/.19f,0.f,1.f);
-		const float PullBack = FMath::Clamp((ImpactTime-.43f)/.19f,0.f,1.f);
-		const FVector Towards = (DoorPeekPoint-DoorMaskPoint).GetSafeNormal();
-		DoorMask->SetActorLocation(DoorMaskPoint + Towards*
-			(FMath::Lerp(-70.f,-3.f,FMath::InterpEaseOut(0.f,1.f,Hit,2.6f))-67.f*PullBack*PullBack));
-		if (ImpactTime < StrikeSeconds) return;
+		if (RevealTime < FaceSeconds) return;
 		DoorMask->SetActorHiddenInGame(true);
 		DoorListening = EDoorListening::Recover;
+		UE_LOG(LogCryingDoor,Display,TEXT("WCJAMB empty seam t=%.2f"),Clock);
 	}
-	if (ImpactTime >= StrikeSeconds + ReleaseSeconds) FinishDoorListening(true);
+	if (RevealTime >= FaceSeconds + ReleaseSeconds) FinishDoorListening(true);
 }

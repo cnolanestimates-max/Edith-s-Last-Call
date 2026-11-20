@@ -110,4 +110,4 @@ Dialogue generated with Google Gemini TTS (see VO/_manifest.json). Radio and pho
 
 ## Ruth's door
 
-Edith's full-voice crying performance was generated for this game with Higgsfield Mirelo, job ca17ac21-4b1f-44f2-88b4-76cb6b4e87ed. The separate whisper stem uses the game's existing whisper recordings. Mastering source is in Scripts/audio/make_door_voices.py.
+The sobs in this encounter use Epic Stock Media's *AAA Game Character British Female Detective* (Crying Vocal Female Low Energy Weep) and SoundBits' *Vox Hominis* (Crying Female 04 05). The recordings came from volumes 2 and 5 of Cheyenne's Sonniss GDC 2026 collection under the included Game Audio GDC Bundle license. The late vocal distortion is ordinary pitch and saturation processing. The wordless whisper and background scream use the game's own breath and scream recordings. The scene mix can be rebuilt with Scripts/audio/make_door_voices.py.

@@ -334,7 +334,7 @@ private:
 	void TickCryingDoor(float Dt);
 	void FinishDoorListening(bool bCompleted);
 	void SetDoorSilence(bool bMute);
-	enum class EDoorListening : uint8 { Idle, Listening, Silence, Strike, Recover };
+	enum class EDoorListening : uint8 { Idle, Listening, Silence, FaceVisible, Recover };
 	EDoorListening DoorListening = EDoorListening::Idle;
 	float DoorListenTime = 0.f;
 	double NextDoorLook = 0., DoorOpenedAt = -10.;

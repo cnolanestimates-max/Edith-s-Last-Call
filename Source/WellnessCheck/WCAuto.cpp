@@ -72,7 +72,8 @@ void AWCDirector::AutoBegin()
 			Do(TEXT("at:218,-116,442,-70,-5")); Wait(1.f); Do(TEXT("at:218,120,442,-90,0"));
 			Wait(1.f); Do(TEXT("check_left_door")); Do(TEXT("record_mix"));
 			Do(TEXT("at:218,-116,442,-70,-5")); Do(TEXT("wait_door_cry")); Wait(4.f); Shot(TEXT("02_listening"));
-			Do(TEXT("wait_door_mask")); Shot(TEXT("03_mask_at_crack")); Flag(TEXT("kids_open"),4.f);
+			Do(TEXT("wait_door_mask")); Shot(TEXT("03_mask_at_crack"));
+			Do(TEXT("wait_empty_crack")); Shot(TEXT("04_empty_crack")); Flag(TEXT("kids_open"),4.f);
 			Do(TEXT("finish_door_mix")); Do(TEXT("check_open_ruth")); Wait(.8f);
 		}
 		else if (FParse::Param(FCommandLine::Get(),TEXT("WCHarrowArt")))
@@ -1023,9 +1024,30 @@ void AWCDirector::AutoTick(float Dt)
 		else if (S.Arg == TEXT("wait_door_cry") || S.Arg == TEXT("wait_door_mask"))
 		{
 			const bool bReady = S.Arg==TEXT("wait_door_cry") ? DoorListening==EDoorListening::Listening :
-				DoorListening==EDoorListening::Strike && DoorListenTime>13.41f;
+				DoorListening==EDoorListening::FaceVisible && DoorListenTime>13.41f;
 			if (!bReady && In<17.f) return;
 			if (!bReady) UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL missing %s"),*S.Arg.ToString());
+			if (bReady && S.Arg==TEXT("wait_door_mask"))
+			{
+				int32 Seen=0;
+				FCollisionQueryParams Q(SCENE_QUERY_STAT(WCMaskInCrack),true,P);
+				Q.AddIgnoredActor(DoorMask.Get());
+				for (int32 Offset=-15; Offset<=15; Offset+=5)
+				{
+					const FVector Point=DoorMask->GetActorTransform().TransformPosition(FVector(7,Offset,-2));
+					FHitResult Hit;
+					if (!GetWorld()->LineTraceSingleByChannel(Hit,DoorPeekPoint,Point,ECC_Visibility,Q)) ++Seen;
+				}
+				const FBox Box=DoorMask->GetStaticMeshComponent()->Bounds.GetBox();
+				const float Depth=Door(TEXT("up_kids"))->GetActorLocation().Y-Box.Max.Y;
+				UE_LOG(LogWCAuto,Display,TEXT("WCJAMB aperture %d/7 face samples visible; nearest mask bound %.1f cm inside room"),Seen,Depth);
+				if (Depth<29.f || Seen==0 || Seen==7) UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL face must be behind partly occluding door"));
+			}
+		}
+		else if (S.Arg==TEXT("wait_empty_crack"))
+		{
+			if (DoorListening!=EDoorListening::Recover && In<2.f) return;
+			if (!DoorMask.IsValid() || !DoorMask->IsHidden()) UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL mask remained in crack"));
 		}
 		else if (S.Arg == TEXT("check_open_ruth"))
 		{
