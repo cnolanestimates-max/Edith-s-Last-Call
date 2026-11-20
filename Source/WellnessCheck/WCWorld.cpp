@@ -115,6 +115,18 @@ void AWCDoor::Slam()
 	if (AWCDirector* D = AWCDirector::Get(this)) D->PlayAt(TEXT("door_slam"), GetActorLocation() + FVector(0, 0, 100), 1.f);
 }
 
+void AWCDoor::HoldAtCrack(bool bHold, bool bSnap)
+{
+	bHeldAtCrack = bHold;
+	bEnabled = !bHold;
+	if (bHold)
+	{
+		SetLocked(false);
+		SetAngle(FMath::Sign(OpenAngle) * 15.f, 3.2f);
+		if (bSnap) Snap();
+	}
+}
+
 void AWCDoor::Interact(AWCCharacter* By)
 {
 	AWCDirector* D = AWCDirector::Get(this);
@@ -146,7 +158,7 @@ void AWCDoor::Tick(float Dt)
 {
 	Super::Tick(Dt);
 	// a door only stops you when it is shut; an open leaf never pins you in a doorway
-	const bool bSolid = FMath::Abs(Angle) < 2.f && FMath::Abs(Target) < 2.f;
+	const bool bSolid = bHeldAtCrack || (FMath::Abs(Angle) < 2.f && FMath::Abs(Target) < 2.f);
 	if (bSolid != bWasSolid)
 	{
 		bWasSolid = bSolid;

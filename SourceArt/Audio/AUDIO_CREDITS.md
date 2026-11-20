@@ -107,3 +107,7 @@ Dialogue generated with Google Gemini TTS (see VO/_manifest.json). Radio and pho
 
 - `amb_yard` and `amb_dawn` are original synthesized wind and insect beds. `Scripts/audio/make_exterior_beds.py` masters both loops.
 - `trash_crash` uses two edited hits from 344 Audio, *Haunting Ambiences Vol. 3*, "Metal Bangs, Metal Hits, Banging On Doors." Source is the Sonniss GDC 2026 Game Audio Bundle 1 of 5, under the included GDC Game Audio license. The mastering recipe is in `Scripts/audio/make_trash.py`.
+
+## Ruth's door
+
+Edith's full-voice crying performance was generated for this game with Higgsfield Mirelo, job ca17ac21-4b1f-44f2-88b4-76cb6b4e87ed. The separate whisper stem uses the game's existing whisper recordings. Mastering source is in Scripts/audio/make_door_voices.py.

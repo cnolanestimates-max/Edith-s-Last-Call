@@ -61,12 +61,30 @@ void AWCDirector::AutoBegin()
 				Wait(1.55f); Shot(*FString::Printf(TEXT("turn_%d_end"),AutoSteps.Num())); Wait(1.7f);
 			}
 		}
+		else if (FParse::Param(FCommandLine::Get(),TEXT("WCCryingDoor")))
+		{
+			Do(TEXT("flag:inside")); Do(TEXT("at:1700,25,92,-68,-7")); Do(TEXT("quiet_door_due"));
+			Flag(TEXT("first_quiet_door"),5.f); Wait(2.f); Shot(TEXT("00_quiet_door"));
+			Do(TEXT("at:216,28,442,85,0")); Do(TEXT("flag:peek_done")); Do(TEXT("flag:lockin_done"));
+			Do(TEXT("flag:phone_done")); Wait(1.f); Do(TEXT("check_closed_ruth"));
+			Do(TEXT("at:216,28,442,-82,-3")); Flag(TEXT("ruth_door_ajar"),4.f);
+			Wait(3.5f); Shot(TEXT("01_door_cracked")); Do(TEXT("check_ajar_reload"));
+			Do(TEXT("at:218,-116,442,-70,-5")); Wait(1.f); Do(TEXT("at:218,120,442,-90,0"));
+			Wait(1.f); Do(TEXT("check_left_door")); Do(TEXT("record_mix"));
+			Do(TEXT("at:218,-116,442,-70,-5")); Do(TEXT("wait_door_cry")); Wait(4.f); Shot(TEXT("02_listening"));
+			Do(TEXT("wait_door_mask")); Shot(TEXT("03_mask_at_crack")); Flag(TEXT("kids_open"),4.f);
+			Do(TEXT("finish_door_mix")); Do(TEXT("check_open_ruth")); Wait(.8f);
+		}
 		else if (FParse::Param(FCommandLine::Get(),TEXT("WCHarrowArt")))
 		{
 			Do(TEXT("flag:inside")); Do(TEXT("lit_review")); Wait(.5f);
+			Do(TEXT("at:340,277,442,142,-5")); Wait(1.1f); Shot(TEXT("00a_wardrobe_from_door"));
+			Do(TEXT("at:412,489,442,178,-5")); Wait(1.1f); Shot(TEXT("00b_wardrobe_cabinet"));
+			Do(TEXT("at:269,472,442,172,21")); Wait(1.f); Shot(TEXT("00c_wardrobe_crest"));
 			Do(TEXT("at:305,500,442,180,-11")); Wait(1.1f); Shot(TEXT("01_Edith_wardrobe"));
 			Do(TEXT("at:195,563,442,-155,-20")); Wait(1.f); Shot(TEXT("02_work_dress_and_gown"));
 			Do(TEXT("at:197,458,442,164,-17")); Wait(1.f); Shot(TEXT("03_church_and_tea_dresses"));
+			Do(TEXT("at:192,500,442,180,-20")); Touch(TEXT("look_master_wardrobe"));
 			Do(TEXT("at:1302,498,92,6,-14")); Wait(1.f); Shot(TEXT("04_icebox_closed"));
 			Do(TEXT("at:1429,528,92,0,-22")); Touch(TEXT("fridge_door")); Wait(1.1f);
 			Do(TEXT("at:1295,522,92,-1,-16")); Wait(1.f); Shot(TEXT("05_icebox_open"));
@@ -993,6 +1011,28 @@ void AWCDirector::AutoTick(float Dt)
 			for (int32 I=0; I<4; ++I) After(.45f+3.f*I, [this,Group=Groups[I]] { PlayHouseHaunt(Group); });
 		}
 		else if (S.Arg == TEXT("record_mix")) UAudioMixerBlueprintLibrary::StartRecordingOutput(this, 30.f);
+		else if (S.Arg == TEXT("finish_door_mix")) UAudioMixerBlueprintLibrary::StopRecordingOutputToAnyPath(this,EAudioRecordingExportType::WavFile,TEXT("ruth_door"),AutoShotDir);
+		else if (S.Arg == TEXT("quiet_door_due")) { NextDoorAt=Clock; NextScareAt=Clock; }
+		else if (S.Arg == TEXT("check_closed_ruth")) { if (!Door(TEXT("up_kids"))->bLocked || Has(TEXT("ruth_door_ajar"))) UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL door opened behind player")); }
+		else if (S.Arg == TEXT("check_ajar_reload"))
+		{
+			AWCDoor* Ruth=Door(TEXT("up_kids"));
+			if (!DoLoad() || Ruth->bLocked || !Ruth->IsAjar() || Ruth->CanInteract()) UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL lost cracked door on reload"));
+		}
+		else if (S.Arg == TEXT("check_left_door")) { if (DoorListening!=EDoorListening::Idle || bBusy || bDoorSilence) UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL could not leave crying door")); }
+		else if (S.Arg == TEXT("wait_door_cry") || S.Arg == TEXT("wait_door_mask"))
+		{
+			const bool bReady = S.Arg==TEXT("wait_door_cry") ? DoorListening==EDoorListening::Listening :
+				DoorListening==EDoorListening::Strike && DoorListenTime>13.41f;
+			if (!bReady && In<17.f) return;
+			if (!bReady) UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL missing %s"),*S.Arg.ToString());
+		}
+		else if (S.Arg == TEXT("check_open_ruth"))
+		{
+			AWCDoor* Ruth=Door(TEXT("up_kids"));
+			if (!DoLoad() || !Has(TEXT("kids_open")) || Ruth->bLocked || !Ruth->CanInteract() || bDoorSilence || P->IsInputLocked())
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL route unavailable after scare"));
+		}
 		else if (S.Arg == TEXT("finish_mix")) UAudioMixerBlueprintLibrary::StopRecordingOutputToAnyPath(this, EAudioRecordingExportType::WavFile, TEXT("arrival_mix"), AutoShotDir);
 		else if (S.Arg == TEXT("lit_review")) { SwitchRoom(TEXT("den"),true,false); SwitchRoom(TEXT("master"),true,false); }
 		else if (S.Arg == TEXT("replay_bin")) { Flags.Remove(TEXT("tape1_taken")); Event(TEXT("take:tape1")); }

@@ -652,22 +652,22 @@ bool AWCDirector::DoorOpensByItself()
 	for (TActorIterator<AWCDoor> It(GetWorld()); It; ++It)
 	{
 		AWCDoor* D = *It;
-		if (D->bLocked || D->IsOpen()) continue;
-		const FVector At = D->GetActorLocation() + FVector(0, 0, 100);
+		if (D->bLocked || D->IsOpen() || D->WCId == TEXT("front") || D->WCId == TEXT("back") ||
+			D->WCId == TEXT("up_kids") || D->WCId == TEXT("cellar") || D->WCId == TEXT("up_master")) continue;
+		const FVector At = D->GetActorLocation() + D->GetActorForwardVector()*57.f + FVector(0, 0, 115);
 		const float Dist = FVector::Dist(Eye, At);
-		if (Dist < 260.f || Dist > 950.f || FMath::Abs(At.Z - Eye.Z) > 160.f) continue;
+		if (Dist < 125.f || Dist > 820.f || FMath::Abs(At.Z - Eye.Z) > 130.f) continue;
 		FHitResult Hit;
 		FCollisionQueryParams Q(FName(TEXT("WCDoorSelf")), false, P);
 		Q.AddIgnoredActor(D);
 		if (GetWorld()->LineTraceSingleByChannel(Hit, Eye, At, ECC_Visibility, Q)) continue;         // he has to be able to see it go
 		const float Facing = FVector::DotProduct(P->EyeForward(), (At - Eye).GetSafeNormal());
 		const float Score = Facing + 0.3f * (1.f - Dist / 950.f);
-		if (Facing > 0.2f && Score > BestScore) { BestScore = Score; Best = D; }
+		if (Facing > .86f && Score > BestScore) { BestScore = Score; Best = D; }
 	}
 	if (!Best) return false;
 	Best->SetOpen(true, 6.5f, true);                                          // slowly
 	PlayAt(TEXT("door_creak_long"), Best->GetActorLocation() + FVector(0, 0, 110), 1.f, 0.9f, 2200.f);
-	Tension = FMath::Max(Tension, 0.5f);
 	UE_LOG(LogWCEvents, Display, TEXT("WCDOOR t=%.1f %s opened by itself"), PlaySeconds, *Best->GetActorNameOrLabel());
 	return true;
 }

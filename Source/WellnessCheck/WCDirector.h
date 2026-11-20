@@ -327,10 +327,22 @@ private:
 	int32 LastHaunt = -1;
 	TWeakObjectPtr<UAudioComponent> FlyVoice;
 	void FinaleDawn();
-	int32 DoorEvents = 0, CallStep = 0;
+	int32 CallStep = 0;
 	int32 TVWant = 0;                                          // the tape he has just put in (0 = none)
 	// (the recorder is part of the television's own model)
 	double NextDoorAt = -1.0;
+	void TickCryingDoor(float Dt);
+	void FinishDoorListening(bool bCompleted);
+	void SetDoorSilence(bool bMute);
+	enum class EDoorListening : uint8 { Idle, Listening, Silence, Strike, Recover };
+	EDoorListening DoorListening = EDoorListening::Idle;
+	float DoorListenTime = 0.f;
+	double NextDoorLook = 0., DoorOpenedAt = -10.;
+	bool bDoorSilence = false;
+	FVector DoorMaskPoint, DoorPeekPoint;
+	TWeakObjectPtr<class ACameraActor> DoorPeekCamera;
+	TWeakObjectPtr<class AStaticMeshActor> DoorMask;
+	TWeakObjectPtr<class UAudioComponent> DoorCry, DoorWhisper;
 	bool bDev = false;
 	// the eye in the dark (S14)
 	void TickEye(float Dt);

@@ -689,7 +689,7 @@ void AWCDirector::StoryEvent(FName Id)
 			Set(TEXT("ceiling_done"));
 			Rest(120.f);
 			float T = Say(TEXT("d_getup2"), 0.6f);
-			After(T + 1.f, [this]() { Set(TEXT("kids_pending")); SetObjective(TEXT("Find what was theirs")); Checkpoint(TEXT("ceiling_done")); });
+			After(T + 1.f, [this]() { Set(TEXT("kids_pending")); if (!Has(TEXT("kids_open"))) SetObjective(TEXT("Check the doors along the front upstairs landing")); Checkpoint(TEXT("ceiling_done")); });
 		}
 		else if (Has(TEXT("sprint_started")) && !Has(TEXT("sprint_done")))
 		{
@@ -723,7 +723,13 @@ void AWCDirector::StoryEvent(FName Id)
 		Say(TEXT("d_kidsdoor"), 0.8f);
 		return;
 	}
-	if (Is(Id, TEXT("take:keep_ruth"))) { Think(TEXT("Ruth's. Her name is scratched in the bottom.")); Checkpoint(TEXT("underbed")); return; }
+	if (Is(Id, TEXT("take:keep_ruth")))
+	{
+		Think(TEXT("Ruth's. Her name is scratched in the bottom."));
+		if (!Has(TEXT("book_done")) && !HasItem(TEXT("key_desk")) && !Has(TEXT("walter_keys_taken")))
+			SetObjective(TEXT("Check Customs of the First Settlers on the living-room shelf beside the stairs"));
+		Checkpoint(TEXT("underbed")); return;
+	}
 	
 	if (Is(Id, TEXT("unlock:up_prayer"))) { Say(TEXT("d_prayer"), 3.f); Checkpoint(TEXT("prayer")); return; }
 	if (Is(Id, TEXT("take:keep_walter")))
@@ -859,13 +865,18 @@ void AWCDirector::StoryTick(float Dt)
 		if (PlaySeconds - InsideAt > CallAt[CallStep] * TestPace) { Say(CallId[CallStep]); SpeechFreeAt = Clock + 8.0; ++CallStep; }
 	}
 	// a door that opens by itself: twice in the whole game at most, minutes apart, never over anything else
-	if (Has(TEXT("peek_done")) && !Has(TEXT("dawn")) && !Has(TEXT("sprint_started")) && DoorEvents < 2 && !bBusy)
+	if (bIndoors && Has(TEXT("inside")) && !Has(TEXT("dawn")) && !Has(TEXT("sprint_started")) &&
+		!Has(TEXT("second_quiet_door")) && !HasActiveEncounter() && !P->IsInputLocked() && !P->IsDown() && !ActiveNote.IsValid() && Clock > DialogueUntil)
 	{
-		if (NextDoorAt < 0.0) NextDoorAt = Clock + 230.0 * TestPace;
+		if (NextDoorAt < 0.0) NextDoorAt = Clock + Rng.FRandRange(24.f, 46.f) * TestPace;
 		if (Clock >= NextDoorAt && Gate())
 		{
-			if (DoorOpensByItself()) { ++DoorEvents; NextDoorAt = Clock + 700.0 * TestPace; Rest(45.f); }
-			else NextDoorAt = Clock + 6.0;
+			if (DoorOpensByItself())
+			{
+				RememberAtCheckpoint(Has(TEXT("first_quiet_door")) ? TEXT("second_quiet_door") : TEXT("first_quiet_door"));
+				NextDoorAt = Clock + Rng.FRandRange(105.f,185.f)*TestPace;
+			}
+			else NextDoorAt = Clock + .85;
 		}
 	}
 	if (FLoop* Drone = Loops.Find(TEXT("drone"))) Drone->Target = bIndoors && !Has(TEXT("dawn")) ? 0.53f + 0.13f * Tension : 0.f;
@@ -880,14 +891,9 @@ void AWCDirector::StoryTick(float Dt)
 		if (Deferred[i].Valid && !Deferred[i].Valid()) { FDeferred D = Deferred[i]; Deferred.RemoveAt(i); if (D.Skip) D.Skip(); }
 		else if (!bBusy && (Gate() || Clock >= Deferred[i].Deadline)) { FDeferred D = Deferred[i]; Deferred.RemoveAt(i); if (D.Go) D.Go(); }
 	}
-	if (Has(TEXT("kids_pending")) && !Has(TEXT("kids_open")) && !HasActiveEncounter())
-	{
-		// a quiet while after the hallway, a door that was locked creaks open and a music box starts
-		Set(TEXT("kids_open"));
-		if (AWCDoor* D = Door(TEXT("up_kids"))) { D->SetLocked(false); D->SetOpen(true, 4.5f, true); PlayAt(TEXT("door_creak_long"), D->GetActorLocation() + FVector(0, 0, 110), 1.f); }
-		PlayAt(TEXT("musicbox"), Pos(TEXT("MusicBoxPoint")), 1.f);
-	}
-	if (Has(TEXT("kids_open")) && !Has(TEXT("underbed_done")) && !HasActiveEncounter())
+	TickCryingDoor(Dt);
+	if (Has(TEXT("kids_open")) && !Has(TEXT("underbed_done")) && !HasActiveEncounter() &&
+		(!Has(TEXT("ruth_door_ajar")) || (P->GetActorLocation().Y < -235.f && Clock > DoorOpenedAt + 6.)))
 	{
 		// he has to be looking into the room, with the box in plain sight
 		AWCCharacter* Pl = Player();

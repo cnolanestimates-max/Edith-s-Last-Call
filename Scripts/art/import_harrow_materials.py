@@ -15,7 +15,7 @@ def build(only=()):
         assert lib.save_loaded_asset(tex,False)
         return tex
     weave=None
-    for name in ('Calico','Burgundy','Brocade','Gingham','Enamel','Fruit','Wrapper','Preserve','PearLabel','PlumLabel','DressDogwood','DressSunday','DressWedding','DressPoppy'):
+    for name in ('Calico','Burgundy','Brocade','Gingham','Walnut','Burr','Enamel','Fruit','Wrapper','Preserve','PearLabel','PlumLabel','DressDogwood','DressSunday','DressWedding','DressPoppy'):
         if only and name not in only:continue
         cloth=name in ('Calico','Burgundy','Brocade','Gingham')
         if cloth and weave is None:weave=texture('Weave_N','normal')

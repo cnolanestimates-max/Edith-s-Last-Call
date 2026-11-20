@@ -217,4 +217,5 @@ def main():
     print(f"processed {done}; failed: {failed}")
 
 
-main()
+if __name__ == '__main__':
+    main()

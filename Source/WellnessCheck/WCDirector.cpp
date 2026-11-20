@@ -248,6 +248,7 @@ void AWCDirector::BeginPlay()
 
 void AWCDirector::EndPlay(const EEndPlayReason::Type Reason)
 {
+	SetDoorSilence(false);
 	Steps.Reset();
 	Deferred.Reset();
 	Super::EndPlay(Reason);
@@ -544,6 +545,7 @@ bool AWCDirector::DoLoad()
 {
 	UWCSave* S = Cast<UWCSave>(UGameplayStatics::LoadGameFromSlot(SaveSlot, 0));
 	if (!S) return false;
+	if (DoorListening != EDoorListening::Idle) FinishDoorListening(false);
 	Flags = TSet<FName>(S->Flags);
 	YardCawsLeft = FMath::Clamp(S->YardCawsLeft,-1,8);
 	NextYardCaw = -1.;
@@ -558,6 +560,8 @@ bool AWCDirector::DoLoad()
 		It->SetOpen(S->OpenDoors.Contains(It->WCId), 0.01f, true);
 		It->Snap();
 	}
+	if (AWCDoor* Ruth = Door(TEXT("up_kids")))
+		Ruth->HoldAtCrack(Has(TEXT("ruth_door_ajar")) && !Has(TEXT("kids_open")), true);
 	for (TActorIterator<AWCPickup> It(GetWorld()); It; ++It)
 	{
 		if (Items.Contains(It->ItemId)) { It->SetActorHiddenInGame(true); It->SetActorEnableCollision(false); }

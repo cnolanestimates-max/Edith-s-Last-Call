@@ -61,6 +61,7 @@ public:
 	void OpenAwayFrom(const FVector& From, float Seconds = -1.f);
 	void SetOpen(bool bNewOpen, float Seconds = -1.f, bool bSilent = false);
 	void SetAngle(float Degrees, float Seconds);
+	void HoldAtCrack(bool bHold, bool bSnap = false);
 	void Slam();
 	void SetLocked(bool bNewLocked) { bLocked = bNewLocked; }
 	void Snap();
@@ -73,6 +74,7 @@ protected:
 	float Rate = 60.f;
 	float BaseYaw = 0.f;
 	bool bWasSolid = true;
+	bool bHeldAtCrack = false;
 };
 
 UCLASS()
