@@ -190,6 +190,7 @@ void AWCDirector::TickCryingDoor(float Dt)
 	{
 		SetDoorSilence(false);
 		DoorListening = EDoorListening::FaceVisible;
+		StartleDeputy(1.f);
 		DoorMask->SetActorLocation(DoorMaskPoint);
 		PlayAt(TEXT("door_room_scream"),Latch - 25.f*Along - 182.f*Hall,1.04f);
 		UE_LOG(LogCryingDoor,Display,TEXT("WCJAMB face in seam t=%.2f"),Clock);

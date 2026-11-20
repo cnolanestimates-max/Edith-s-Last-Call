@@ -194,6 +194,8 @@ void AWCDirector::BeginPlay()
 		SaveSlot = TEXT("WCListeningCheck");
 	if (bAuto && FParse::Param(FCommandLine::Get(), TEXT("WCSettlersCheck")))
 		SaveSlot = TEXT("WCSettlersCheck");
+	if (bAuto && FParse::Param(FCommandLine::Get(), TEXT("WCBreathCheck")))
+		SaveSlot = TEXT("WCDeputyBreathCheck");
 	if (FParse::Param(FCommandLine::Get(), TEXT("WCFast"))) TestPace = 0.08f;
 	FParse::Value(FCommandLine::Get(), TEXT("WCShots="), AutoShotDir);
 	static int32 AutoRuns = 0;
@@ -250,6 +252,7 @@ void AWCDirector::BeginPlay()
 
 void AWCDirector::EndPlay(const EEndPlayReason::Type Reason)
 {
+	if (DeputyBreath.IsValid()) DeputyBreath->Stop();
 	SetDoorSilence(false);
 	Steps.Reset();
 	Deferred.Reset();
@@ -296,6 +299,7 @@ void AWCDirector::Tick(float Dt)
 	{
 		CreditsScroll += Dt;
 	}
+	TickDeputyBreathing(Dt);
 	TickAudio(Dt);
 	TickLights(Dt);
 	if (!bDriving) TickFlies(Dt);
@@ -849,6 +853,7 @@ void AWCDirector::SetLoop(FName Slot, const FString& Name, float Volume, float F
 
 void AWCDirector::ApplyVolumes()
 {
+	if (DeputyBreath.IsValid()) DeputyBreath->SetVolumeMultiplier(DeputyBreathGain * Vol(EWCSnd::SFX));
 	for (TPair<FName, FLoop>& P : Loops)
 	{
 		if (UAudioComponent* A = P.Value.Audio.Get()) A->SetVolumeMultiplier(FMath::Max(P.Value.Vol * Vol(P.Value.Cat), 0.0001f));
@@ -902,6 +907,60 @@ void AWCDirector::PlayScareLead(float Seconds)
 	});
 	if (FParse::Param(FCommandLine::Get(), TEXT("WCSndLog")))
 		UE_LOG(LogWC, Display, TEXT("WCSCORE t=%.1f Bump in the Night (%.1fs)"), PlaySeconds, Seconds);
+}
+
+void AWCDirector::StartleDeputy(float Strength)
+{
+	BreathFear = FMath::Max(BreathFear, Strength);
+	BreathPhase = FMath::Max(BreathPhase, .73f);
+}
+
+void AWCDirector::HoldDeputyBreath(float Seconds)
+{
+	BreathResumeAt = FMath::Max(BreathResumeAt, Clock + Seconds);
+	if (DeputyBreath.IsValid()) DeputyBreath->FadeOut(.08f, 0.f);
+}
+
+void AWCDirector::TickDeputyBreathing(float Dt)
+{
+	if ((!IsPlaying() && Mode != EWCMode::Ending) || !Player() || bDoorSilence)
+	{
+		if (DeputyBreath.IsValid()) DeputyBreath->Stop();
+		return;
+	}
+
+	const bool bChased = StalkState == 2 || bSprintActive || (bLockInActive && bLockInRun) || Clock < GrabHoldUntil;
+	const float Unease = .55f * FMath::SmoothStep(.24f, .95f, Tension);
+	const float Target = bChased ? 1.f : Unease;
+	BreathFear = FMath::FInterpConstantTo(BreathFear, Target, Dt, Target > BreathFear ? 1.1f : .047f);
+	if (Clock < BreathResumeAt)
+	{
+		BreathPhase = .85f;
+		return;
+	}
+	const float Period = FMath::Lerp(3.65f, 1.16f, BreathFear) * BreathTempo;
+	BreathPhase = FMath::Min(1.f, BreathPhase + Dt / Period);
+	if (BreathPhase < 1.f || (DeputyBreath.IsValid() && DeputyBreath->IsPlaying())) return;
+
+	// Independent cadence and takes keep the breath from changing the house's random events.
+	LastBreathTake = (LastBreathTake + BreathRandom.RandRange(1, 2)) % 3;
+	const bool bQuick = BreathFear >= .52f;
+	const FString Cue = FString::Printf(TEXT("deputy_%s_%02d"), bQuick ? TEXT("quick") : TEXT("steady"), LastBreathTake + 1);
+	DeputyBreathGain = FMath::Lerp(.53f, .87f, BreathFear) * (Clock < DialogueUntil ? .78f : 1.f);
+	const float Pitch = BreathRandom.FRandRange(.96f,1.04f);
+	if (USoundBase* Clip = Snd(Cue))
+	{
+		DeputyBreath = UGameplayStatics::CreateSound2D(this, Clip, DeputyBreathGain * Vol(EWCSnd::SFX), Pitch);
+		if (DeputyBreath.IsValid())
+		{
+			DeputyBreath->bIsUISound = false;
+			DeputyBreath->Play();
+			static const bool bLog = FParse::Param(FCommandLine::Get(), TEXT("WCSndLog"));
+			if (bLog) UE_LOG(LogWC,Display,TEXT("WCBREATH t=%.2f %s fear=%.2f pitch=%.3f gain=%.2f drive=%d chase=%d"), PlaySeconds, *Cue, BreathFear, Pitch, DeputyBreathGain, bDriving, bChased);
+		}
+	}
+	BreathPhase = 0.f;
+	BreathTempo = BreathRandom.FRandRange(.90f,1.11f);
 }
 
 void AWCDirector::TickAudio(float Dt)

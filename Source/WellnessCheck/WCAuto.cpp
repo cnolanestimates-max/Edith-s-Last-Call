@@ -52,7 +52,14 @@ void AWCDirector::AutoBegin()
 		Player()->SetInputLocked(false); Player()->SetFlashlight(true,false); Fade = FadeTarget = 0.f;
 		auto Do = [this](const TCHAR* Cmd) { AutoSteps.Add({A_Do,Cmd,0.f}); };
 		auto Touch = [this](const TCHAR* Id) { AutoSteps.Add({A_Use,Id,0.f}); };
-		if (FParse::Param(FCommandLine::Get(),TEXT("WCSettlersCheck")))
+		if (FParse::Param(FCommandLine::Get(),TEXT("WCBreathCheck")))
+		{
+			Do(TEXT("record_mix")); Wait(8.f); Do(TEXT("breath_end_drive")); Wait(12.f);
+			Do(TEXT("flag:inside")); Do(TEXT("at:552,-319,92,90,-5")); Wait(8.f);
+			Do(TEXT("look_at_settlers")); Do(TEXT("pull_settlers")); Flag(TEXT("book_done"),18.f);
+			Wait(16.f); Do(TEXT("breath_lockin")); Wait(23.f); Do(TEXT("finish_mix")); Wait(.65f);
+		}
+		else if (FParse::Param(FCommandLine::Get(),TEXT("WCSettlersCheck")))
 		{
 			if (FParse::Param(FCommandLine::Get(),TEXT("WCLegacyBook"))) Do(TEXT("check_old_book_save"));
 			else
@@ -942,7 +949,9 @@ void AWCDirector::AutoTick(float Dt)
 	case A_Aim: P->SetAiming(S.F > 0.5f); Next(); return;
 	case A_Crouch: if (S.F > 0.5f) P->Crouch(); else P->UnCrouch(); Next(); return;
 	case A_Do:
-		if (S.Arg == TEXT("look_at_settlers"))
+		if (S.Arg == TEXT("breath_end_drive")) EndDrive();
+		else if (S.Arg == TEXT("breath_lockin")) ScareLockIn();
+		else if (S.Arg == TEXT("look_at_settlers"))
 		{
 			AimAt(P, Thing(TEXT("book_settlers"))->GetActorLocation(), Dt);
 			if (In < .8) return;

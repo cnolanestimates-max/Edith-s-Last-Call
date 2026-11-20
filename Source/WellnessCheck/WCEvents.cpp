@@ -167,6 +167,7 @@ void AWCDirector::LeftScare()
 	// the beat: everything stops, even the clock
 	After(14.8f, [this]()
 	{
+		HoldDeputyBreath(3.2f);
 		SetLoop(TEXT("amb"), TEXT(""), 0.f, 0.3f);
 		SetLoop(TEXT("music"), TEXT(""), 0.f, 0.3f);
 		for (TObjectIterator<UAudioComponent> It; It; ++It) if (It->GetWorld() == GetWorld() && It->Sound && It->Sound->GetName().Contains(TEXT("m_left"))) It->FadeOut(0.1f, 0.f);
@@ -177,6 +178,7 @@ void AWCDirector::LeftScare()
 	{
 		Play2D(TEXT("bell_toll"), .30f);
 		Say(TEXT("m_whyleave"));
+		StartleDeputy(1.f);
 		if (AWCCharacter* Pl = Player()) { Pl->AddShake(1.f); Pl->FlickerLight(1.6f, 0.9f); }
 		Tension = 1.f;
 	});

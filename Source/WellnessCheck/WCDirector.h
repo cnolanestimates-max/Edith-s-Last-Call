@@ -456,6 +456,15 @@ private:
 	void PlayScareLead(float Seconds);
 	TWeakObjectPtr<UAudioComponent> ScareLead;
 	void TickAudio(float Dt);
+	void TickDeputyBreathing(float Dt);
+	void StartleDeputy(float Strength);
+	void HoldDeputyBreath(float Seconds);
+	TWeakObjectPtr<UAudioComponent> DeputyBreath;
+	float DeputyBreathGain = 0.f;
+	FRandomStream BreathRandom{43817};
+	float BreathFear = 0.f, BreathPhase = .82f, BreathTempo = 1.f;
+	int32 LastBreathTake = INDEX_NONE;
+	double BreathResumeAt = 0.;
 	void TickLights(float Dt);
 	void TickFlies(float Dt);
 	UPROPERTY(VisibleAnywhere) TObjectPtr<class UInstancedStaticMeshComponent> Flies;

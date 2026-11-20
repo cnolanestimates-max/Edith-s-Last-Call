@@ -238,6 +238,7 @@ void AWCDirector::TickBathChair(float Dt)
 		if (Age>=.94 && !bChairLanded)
 		{
 			bChairLanded=true;
+			StartleDeputy(.76f);
 			PlayAt(TEXT("wheel_sidefall"),Chair->GetActorLocation(),.83f,.94f,1200.f);
 			UE_LOG(LogTemp,Display,TEXT("WCBATHCHAIR chassis landed, upper wheel free"));
 		}

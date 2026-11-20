@@ -50,6 +50,7 @@ Dialogue generated with Google Gemini TTS (see VO/_manifest.json). Radio and pho
 - The wheelchair's rolling tread and axle rub are original procedural Foley. Its baseboard tap uses the game's wood footstep and chair scrape. Its landing blends the wood recording with a shortened, damped layer from `trash_crash`, which includes 344 Audio's *Haunting Ambiences Vol. 3* metal impacts from the licensed Sonniss GDC 2026 bundle. The four sounds can be rebuilt with `Scripts/audio/make_bath_wheel.py`.
 
 - `deputy_pant` uses SoundBits, *Vox Hominis – Human Effort Voices*, “Panting Male 02 04” from volume 5 of the Sonniss GDC 2026 bundle. Edited to a 5.4-second close-mic breathing cue under the included Game Audio GDC Bundle license.
+- The six `deputy_steady` and `deputy_quick` takes use individual inhales and exhales from that same performance. Their timing, filtering and caught exhale are authored in `Scripts/audio/make_deputy_breaths.py`.
 
 - amb_car: InMotionAudio - Car Interior Driving Ambience/VEHCar_TownDrivingAmbience06_InMotionAudio_CarInteriorDrivingAmbience.wav
 - car_stop: SoundBits - Cars - Mad Mustang Mercury/VEHSkid_Tire Skids on Gravel 15 06_SNDBTS_CRS-MMM.wav

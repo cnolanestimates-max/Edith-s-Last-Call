@@ -185,6 +185,7 @@ float AWCDirector::Say(FName LineId, float Delay)
 	After(Delay, [this, Line, Len, LineId]()
 	{
 		DialogueUntil = FMath::Max(DialogueUntil, Clock + Len + .6);
+		if (Line.Kind == 0) HoldDeputyBreath(Len);
 		const FString Asset = FString::Printf(TEXT("VO/%s"), *LineId.ToString());
 		if (Line.Kind == 1) Play2D(TEXT("radio_click"), 0.5f);
 		if (Line.Kind == 3 && Her() && Her()->IsShown())
@@ -420,6 +421,7 @@ void AWCDirector::StoryEvent(FName Id)
 			// Hold the current view through the impact and flinch. Turn as the last rattle fades.
 			const FVector Bin = Pos(TEXT("TrashPoint")) + FVector(0, 0, 24);
 			PlayAt(TEXT("trash_can_fall"), Bin, 1.f, 1.f, 2400.f, true);
+			StartleDeputy(.81f);
 			if (AWCCharacter* Deputy = Player())
 			{
 				Deputy->SetFlashlight(true, false);
@@ -942,7 +944,7 @@ void AWCDirector::StoryTick(float Dt)
 	if (Has(TEXT("peek_started")) && !Has(TEXT("peek_done")) && H->IsShown() && !Has(TEXT("peek_leaving")))
 	{
 		const bool bInView = PlayerSees(H->HeadLocation(), .57f, 900.f);
-		if (bInView && PeekSeenAt < 0.) PeekSeenAt = Clock;
+		if (bInView && PeekSeenAt < 0.) { PeekSeenAt = Clock; StartleDeputy(.81f); }
 		const double Distance = FVector::Dist2D(P->GetActorLocation(), H->GetActorLocation());
 		if (bInView && PeekSeenAt >= 0. && Clock - PeekSeenAt >= .45 && Distance <= 150.)
 		{

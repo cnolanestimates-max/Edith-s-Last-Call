@@ -1183,9 +1183,11 @@ void AWCDirector::ScareBook()
 			if (IsValid(EyeW)) EyeW->Reveal();
 		});
 		// Hold the stare after the pupil stops, then let the treads carry her away.
+		After(4.85f, [this]() { StartleDeputy(.84f); });
 		After(6.4f, [this, EyeW, Backing]()
 		{
 			if (IsValid(EyeW)) EyeW->Withdraw(true);
+			StartleDeputy(.93f);
 			After(.4f, [Backing]() { if (Backing.IsValid()) Backing->DestroyComponent(); });
 			const FVector A = Pos(TEXT("StairRunA")), B = Pos(TEXT("StairRunB")), C = Pos(TEXT("StairRunC"));
 			if (A.IsNearlyZero() || B.IsNearlyZero()) return;
