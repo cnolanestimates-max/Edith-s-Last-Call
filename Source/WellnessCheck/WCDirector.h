@@ -204,6 +204,9 @@ public:
 	FVector BinFocusPoint() const;
 	bool IsBinTurnActive() const { return BinTurnAt >= 0.; }
 	bool IsTurningToBin() const { return IsBinTurnActive() && Clock >= BinTurnAt; }
+	bool IsLookingAtPendant() const { return bPendantGuiding; }
+	bool DeferSittingRoomUnlock();
+	static FLinearColor EdithMoonlight() { return FLinearColor(.33f,.54f,1.f); }
 	bool IsDriving() const { return bDriving; }
 	bool bPowerOut = false;
 	int32 StalkState = 0;     // 0 none, 1 she has appeared, 2 she is coming
@@ -319,7 +322,7 @@ private:
 	void PlayHouseHaunt(int32 Pick);
 	bool TryListeningSnicker(AWCCharacter* P);
 	void TickListeningSnicker();
-	void RememberAtCheckpoint(FName Flag);
+	void RememberAtCheckpoint(FName Flag, bool bEnabled = true);
 	TWeakObjectPtr<UAudioComponent> ListeningSnicker;
 	FVector ListeningStartForward = FVector::ZeroVector;
 	void TickHallClock();
@@ -333,11 +336,12 @@ private:
 	UPROPERTY(Transient) TObjectPtr<class USceneCaptureComponent2D> BathCapture;
 	UPROPERTY(Transient) TObjectPtr<class UPointLightComponent> BathBounce;
 	UPROPERTY(Transient) TObjectPtr<class UPointLightComponent> BathRim;
+	UPROPERTY(Transient) TObjectPtr<class UPointLightComponent> BathEyeFill;
 	TWeakObjectPtr<UAudioComponent> BathEdithBreath;
 	double NextBathBreath = 0.;
 	float MirrorDwell = 0.f;
 	float MirrorWitnessSeconds = 0.f;
-	FLightingChannels MirrorBodyChannels;
+	TMap<TWeakObjectPtr<UPrimitiveComponent>, FLightingChannels> MirrorMeshChannels;
 	double MirrorShownAt = -1., NextMirrorCapture = 0.;
 	void TickBathChair(float Dt);
 	bool PrepareRollingChair();
@@ -358,7 +362,8 @@ private:
 	float ChairTravel = 0.f, ChairSpeed = 0.f, ChairImpactOmega = 0.f;
 	float ChairBypassStart = 0.f, ChairBypassMiddle = 0.f, ChairBypassEnd = 0.f, ChairBypassOffset = 0.f;
 	bool bChairExitArmed = false, bChairLanded = false;
-	void TickHallPendant();
+	void TickHallPendant(float Dt);
+	bool PendantScareDue() const;
 	TWeakObjectPtr<class UStaticMeshComponent> HallPendant;
 	TWeakObjectPtr<class USpotLightComponent> PendantBeam;
 	UPROPERTY(Transient) TObjectPtr<class UPointLightComponent> PendantSpill;
@@ -368,6 +373,9 @@ private:
 	bool bPendantLit = true, bPendantReveal = false;
 	double LastPendantWave = 0.;
 	bool bPendantWatching = false;
+	bool bPendantGuiding = false, bPendantUnlockWaiting = false;
+	int32 PendantSweepsSeen = 0;
+	float PendantLitDwell = 0.f;
 	void TickYardCrows();
 	int32 YardCawsLeft = -1;
 	double NextYardCaw = -1.;

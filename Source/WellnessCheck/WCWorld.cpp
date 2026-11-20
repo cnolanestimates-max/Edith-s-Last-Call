@@ -135,6 +135,7 @@ void AWCDoor::Interact(AWCCharacter* By)
 	{
 		if (!KeyId.IsNone() && D->HasItem(KeyId))
 		{
+			if (WCId == TEXT("sitting") && D->DeferSittingRoomUnlock()) return;
 			bLocked = false;
 			D->PlayAt(TEXT("door_unlock"), GetActorLocation() + FVector(0, 0, 100), 0.9f);
 			D->Event(FName(*FString::Printf(TEXT("unlock:%s"), *WCId.ToString())));

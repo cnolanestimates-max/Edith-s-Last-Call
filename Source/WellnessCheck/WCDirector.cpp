@@ -288,7 +288,7 @@ void AWCDirector::Tick(float Dt)
 			HouseTick(Dt);
 			TickBathMirror(Dt);
 			TickBathChair(Dt);
-			TickHallPendant();
+			TickHallPendant(Dt);
 			StoryTick(Dt);
 			if (BedCamera.IsValid()) TickUnderBed(Dt);
 			if (SettlersDropAt >= 0.) TickSettlersPickup();
@@ -516,14 +516,14 @@ void AWCDirector::Checkpoint(FName Id)
 	UE_LOG(LogWC, Display, TEXT("WCCHECKPOINT t=%.1f %s"), PlaySeconds, *Id.ToString());
 }
 
-void AWCDirector::RememberAtCheckpoint(FName Flag)
+void AWCDirector::RememberAtCheckpoint(FName Flag, bool bEnabled)
 {
-	Set(Flag);
+	if (bEnabled) Set(Flag); else Flags.Remove(Flag);
 	// A restart should remember the encounter but restore the original checkpoint,
 	// including its inventory, doors and player position.
 	if (UWCSave* Saved = Cast<UWCSave>(UGameplayStatics::LoadGameFromSlot(SaveSlot, 0)))
 	{
-		Saved->Flags.AddUnique(Flag);
+		if (bEnabled) Saved->Flags.AddUnique(Flag); else Saved->Flags.Remove(Flag);
 		if (!UGameplayStatics::SaveGameToSlot(Saved, SaveSlot, 0))
 			UE_LOG(LogWC, Warning, TEXT("WC: could not persist %s at the current checkpoint"), *Flag.ToString());
 	}

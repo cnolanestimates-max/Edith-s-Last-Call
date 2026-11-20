@@ -108,7 +108,8 @@ void AWCDirector::HouseBegin()
 		if (PendantBulbSlot != INDEX_NONE) PendantLit = HallPendant->GetMaterial(PendantBulbSlot);
 		PendantDark = LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/WC/Materials/M_BulbOff.M_BulbOff"));
 	}
-	if (!bPowerOut && !Has(TEXT("pendant_off"))) SwitchRoom(TEXT("pendant"), true, false);
+	if (!Has(TEXT("pendant_off")) && !(Has(TEXT("lockin_started")) && !Has(TEXT("lockin_done"))))
+		SwitchRoom(TEXT("pendant"), true, false);
 	NextStalkAt = Clock + 300.0 / 1.15;
 	UE_LOG(LogWCHouse, Display, TEXT("WCHOUSE %d lit rooms, %d nav points, car %d"), Rooms.Num(), NavPts.Num(), Car.IsValid() ? 1 : 0);
 }
@@ -164,7 +165,7 @@ void AWCDirector::SetReturnBlackout(bool bActive)
 		PeekMoonKey->SetWorldLocationAndRotation(Source,(Chest-Source).Rotation());
 		PeekMoonKey->SetIntensityUnits(ELightUnits::Lumens);
 		PeekMoonKey->SetIntensity(3584.f);
-		PeekMoonKey->SetLightColor(FLinearColor(.33f,.54f,1.f));
+		PeekMoonKey->SetLightColor(EdithMoonlight());
 		PeekMoonKey->SetInnerConeAngle(19.f);
 		PeekMoonKey->SetOuterConeAngle(34.f);
 		PeekMoonKey->SetAttenuationRadius(385.f);
@@ -185,13 +186,21 @@ static bool AnyRoomOn(const TMap<FName, AWCDirector::FRoomLights>& Rooms)
 void AWCDirector::TickHouseLights(float Dt)
 {
 	const float T = (float)Clock;
+	// The hall pendant has a separate feed. A scripted blackout interrupts it for the scare,
+	// then its own wall switch determines whether it lights again, even with the main fuse blown.
+	if (const FRoomLights* Pendant = Rooms.Find(TEXT("pendant")))
+	{
+		if (!Pendant->bOn && !Has(TEXT("pendant_off")) && Clock >= Pendant->DeadUntil &&
+			!(Has(TEXT("lockin_started")) && !Has(TEXT("lockin_done"))) && !HasActiveEncounter())
+			SwitchRoom(TEXT("pendant"), true, false);
+	}
 	const bool bMayKill = Has(TEXT("inside")) && !Has(TEXT("dawn")) && !bBusy && StalkState == 0 && (PlaySeconds - InsideAt) > 35.f && Player() && IsInsideHouse(Player()->GetActorLocation());
 	FName NextRoom;
 	float Best = -1.f;
 	for (const auto& Pair : Rooms)
 	{
 		const FRoomLights& Room = Pair.Value;
-		if (Pair.Key == TEXT("pendant") && !Has(TEXT("pendant_seen"))) continue;
+		if (Pair.Key == TEXT("pendant")) continue;
 		if (!bMayKill || Clock < NextLightKill || !Room.bOn || Clock < Room.KillAt) continue;
 		const float Weight = Rng.FRandRange(.5f, 1.5f) / (1.f + Room.Kills);
 		if (Weight > Best) { Best = Weight; NextRoom = Pair.Key; }
@@ -244,7 +253,9 @@ bool AWCDirector::HouseEvent(FName Id)
 		}
 		const bool bReturnBlackout = Has(TEXT("heard_upstairs")) && !Has(TEXT("peek_done")) &&
 			(Room == TEXT("uphall") || Room == TEXT("uprear") || Room == TEXT("master"));
-		if (bPowerOut || bReturnBlackout)
+		const bool bCircuitDead = Room == TEXT("pendant") ?
+			(Has(TEXT("lockin_started")) && !Has(TEXT("lockin_done"))) : bPowerOut;
+		if (bCircuitDead || bReturnBlackout)
 		{
 			PlayAt(TEXT("switch_click"), At, 0.9f, 1.f, 900.f);
 			Feedback(Has(TEXT("seen_fusebox")) ? TEXT("Dead. It needs that fuse.") : TEXT("Dead. The whole house is dead. There'll be a fuse box somewhere off the kitchen."));
@@ -259,8 +270,7 @@ bool AWCDirector::HouseEvent(FName Id)
 		SwitchRoom(Room, !R->bOn);
 		if (Room == TEXT("pendant"))
 		{
-			if (R->bOn) Flags.Remove(TEXT("pendant_off"));
-			else Set(TEXT("pendant_off"));
+			RememberAtCheckpoint(TEXT("pendant_off"), !R->bOn);
 		}
 		if (R->bOn && !Has(TEXT("lights_tried")))
 		{

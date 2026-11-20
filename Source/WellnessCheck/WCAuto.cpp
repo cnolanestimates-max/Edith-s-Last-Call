@@ -123,10 +123,28 @@ void AWCDirector::AutoBegin()
 		else if (FParse::Param(FCommandLine::Get(),TEXT("WCHallPendant")))
 		{
 			Do(TEXT("record_mix")); Do(TEXT("flag:inside")); Do(TEXT("at:265,105,92,0,-1")); Do(TEXT("lamp_only"));
-			Do(TEXT("pendant_visible")); Wait(.5f); Shot(TEXT("01_lamp_finds_edith"));
-			Do(TEXT("pendant_empty")); Wait(.48f); Shot(TEXT("02_swing_empty"));
-			Do(TEXT("pendant_visible")); Wait(.55f); Shot(TEXT("03_edith_returns"));
-			Do(TEXT("walk_to_pendant")); Wait(1.8f); Do(TEXT("check_pendant_gone")); Shot(TEXT("04_close_hall_empty"));
+			Do(TEXT("check_pendant_on")); Do(TEXT("check_quiet_pendant"));
+			Do(TEXT("flag:peek_done")); Do(TEXT("check_quiet_pendant"));
+			Do(TEXT("flag:phone_done")); Do(TEXT("flag:lockin_done")); Do(TEXT("flag:power_out"));
+			Do(TEXT("at:1010,-406,442,-90,-42")); Touch(TEXT("look_upbath_tub")); Wait(3.f); Touch(TEXT("pick_key_sitting"));
+			Do(TEXT("at:2150,30,92,180,0")); Do(TEXT("check_quiet_pendant"));
+			if (FParse::Param(FCommandLine::Get(),TEXT("WCPendantDoor")))
+			{
+				Do(TEXT("at:1092,103,92,90,-21")); Touch(TEXT("sw_pendant")); Do(TEXT("check_pendant_off"));
+				Do(TEXT("at:265,105,92,0,-1")); Do(TEXT("check_quiet_pendant")); Do(TEXT("check_pendant_off"));
+				Do(TEXT("at:1390,-111,92,-90,0")); Touch(TEXT("sitting")); Do(TEXT("check_sitting_locked"));
+				Do(TEXT("at:1092,103,92,90,-21")); Touch(TEXT("sw_pendant")); Do(TEXT("check_pendant_on"));
+				Do(TEXT("at:1390,-111,92,-90,0")); Touch(TEXT("sitting")); Flag(TEXT("sitting_open"),14.f); Do(TEXT("check_pendant_gone"));
+			}
+			else
+			{
+				Do(TEXT("at:265,105,92,0,-1"));
+				Do(TEXT("pendant_visible")); Wait(.5f); Shot(TEXT("01_lamp_finds_edith"));
+				Do(TEXT("pendant_empty")); Wait(.48f); Shot(TEXT("02_swing_empty"));
+				Do(TEXT("pendant_visible")); Wait(.55f); Shot(TEXT("03_edith_returns"));
+				Do(TEXT("walk_to_pendant")); Wait(1.8f); Do(TEXT("check_pendant_gone")); Shot(TEXT("04_close_hall_empty"));
+				Do(TEXT("at:1390,-111,92,-90,0")); Touch(TEXT("sitting")); Flag(TEXT("sitting_open"),3.f);
+			}
 			Do(TEXT("at:1092,103,92,90,-21")); Touch(TEXT("sw_pendant")); Do(TEXT("check_pendant_off"));
 			Touch(TEXT("sw_pendant")); Wait(.95f); Do(TEXT("check_pendant_on")); Do(TEXT("finish_mix")); Wait(.5f);
 		}
@@ -1111,6 +1129,21 @@ void AWCDirector::AutoTick(float Dt)
 		}
 		else if (S.Arg == TEXT("daniel_entry")) Event(TEXT("trig:t_daniel"));
 		else if (S.Arg == TEXT("lamp_only")) P->SetFlashlight(false,false);
+		else if (S.Arg == TEXT("check_quiet_pendant"))
+		{
+			const FQuat Expected(FVector::ForwardVector,FMath::DegreesToRadians(20.*FMath::Sin(Clock*1.38)));
+			if (bPendantWatching || bPendantReveal || Has(TEXT("pendant_seen")) || !HallPendant.IsValid() ||
+				!HallPendant->GetComponentQuat().Equals(Expected,.001f))
+			{
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL early apparition or halted swing"));
+			}
+			else if (In < 4.7) return;
+		}
+		else if (S.Arg == TEXT("check_sitting_locked"))
+		{
+			if (!Door(TEXT("sitting")) || !Door(TEXT("sitting"))->bLocked || Has(TEXT("pendant_seen")) || !HasItem(TEXT("key_sitting")))
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL sitting-room key or unlit approach"));
+		}
 		else if (S.Arg == TEXT("walk_to_pendant") && HallPendant.IsValid())
 		{
 			const FVector Mark = HallPendant->GetComponentLocation() + FVector(6,72,-327);

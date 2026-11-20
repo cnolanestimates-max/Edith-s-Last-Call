@@ -272,7 +272,7 @@ void AWCCharacter::Relocate(const FVector& Loc, float Yaw)
 bool AWCCharacter::Blocked() const
 {
 	const AWCDirector* D = AWCDirector::Get(this);
-	return bInputLocked || KDTime >= 0.f || !D || !D->IsPlaying() || D->IsBinTurnActive() || D->ActiveNote.IsValid();
+	return bInputLocked || KDTime >= 0.f || !D || !D->IsPlaying() || D->IsBinTurnActive() || D->IsLookingAtPendant() || D->ActiveNote.IsValid();
 }
 
 void AWCCharacter::BuildInput()
@@ -410,7 +410,7 @@ void AWCCharacter::DoInteract()
 	AWCDirector* D = AWCDirector::Get(this);
 	if (!D || !D->IsPlaying()) return;
 	if (D->ActiveNote.IsValid()) { D->CloseNote(); return; }
-	if (bInputLocked || KDTime >= 0.f || D->IsBinTurnActive()) return;
+	if (bInputLocked || KDTime >= 0.f || D->IsBinTurnActive() || D->IsLookingAtPendant()) return;
 	if (AWCInteractable* T = Focus.Get()) T->Interact(this);
 }
 
