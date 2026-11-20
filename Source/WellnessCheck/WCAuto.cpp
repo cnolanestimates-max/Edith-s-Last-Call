@@ -1051,6 +1051,18 @@ void AWCDirector::AutoTick(float Dt)
 		else if (S.Arg==TEXT("check_first_empty_chair") || S.Arg==TEXT("check_second_reflection"))
 		{
 			const bool Second=S.Arg==TEXT("check_second_reflection");
+			if (!Has(TEXT("bath_mirror_snicker")))
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL first reflection snicker missing"));
+			if (!Second)
+			{
+				const double ScheduledHaunt = WhisperAt;
+				const double FreeAt = CueFreeAt;
+				WhisperAt = CueFreeAt = Clock;
+				TickCues(0.f);
+				if (WhisperAt != Clock) UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL house haunt fired between reflections"));
+				WhisperAt = ScheduledHaunt;
+				CueFreeAt = FreeAt;
+			}
 			if (!Second && Her() && (Her()->Body->GetMaterial(0) == BathWrithingSkin ||
 				!Her()->GetActorScale3D().Equals(MirrorUnscaledTransform.GetScale3D())))
 				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL mirror skin or size persisted after turn"));

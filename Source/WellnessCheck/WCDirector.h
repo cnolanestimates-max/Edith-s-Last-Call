@@ -327,6 +327,7 @@ private:
 	FVector ListeningStartForward = FVector::ZeroVector;
 	void TickHallClock();
 	void InitializeBathMirror();
+	static bool IsInMirrorBathroom(const FVector& Eye);
 	void CaptureBathMirror(const FVector& Eye);
 	void TickBathMirror(float Dt);
 	void FinishBathMirror(bool bWitnessed);
@@ -341,8 +342,6 @@ private:
 	UPROPERTY(Transient) TObjectPtr<class USpotLightComponent> BathTorsoFill;
 	UPROPERTY(Transient) TObjectPtr<class UMaterialInterface> BathWrithingSkin;
 	UPROPERTY(Transient) TObjectPtr<class UMaterialInterface> BathOriginalSkin;
-	TWeakObjectPtr<UAudioComponent> BathEdithBreath;
-	double NextBathBreath = 0.;
 	float MirrorDwell = 0.f;
 	float MirrorWitnessSeconds = 0.f;
 	TMap<TWeakObjectPtr<UPrimitiveComponent>, FLightingChannels> MirrorMeshChannels;

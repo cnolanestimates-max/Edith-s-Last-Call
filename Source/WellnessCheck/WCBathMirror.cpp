@@ -2,7 +2,6 @@
 #include "WCCharacter.h"
 #include "WCEntity.h"
 #include "WCWorld.h"
-#include "Components/AudioComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Components/SpotLightComponent.h"
 #include "Components/SceneCaptureComponent2D.h"
@@ -166,12 +165,17 @@ void AWCDirector::CaptureBathMirror(const FVector& Eye)
 	BathCapture->CaptureScene();
 }
 
+bool AWCDirector::IsInMirrorBathroom(const FVector& Eye)
+{
+	return Eye.X > 2440 && Eye.X < 2786 && Eye.Y > -583 && Eye.Y < -214 && Eye.Z > 38 && Eye.Z < 270;
+}
+
 void AWCDirector::TickBathMirror(float Dt)
 {
 	AWCCharacter* P = Player();
 	if (!P) return;
 	const FVector Eye = P->EyeLocation();
-	const bool bRoom = Eye.X > 2440 && Eye.X < 2786 && Eye.Y > -583 && Eye.Y < -214 && Eye.Z > 38 && Eye.Z < 270;
+	const bool bRoom = IsInMirrorBathroom(Eye);
 	if (!BathChair.IsValid() || !BathCapture) return;
 	// The face occupies a small part of the glass. Resolve its moving relief at
 	// the sink, then return to the ordinary reflection budget when the encounter ends.
@@ -181,17 +185,6 @@ void AWCDirector::TickBathMirror(float Dt)
 		BathTarget->ResizeTarget(Resolution.X,Resolution.Y);
 		CaptureBathMirror(Eye);
 		NextMirrorCapture = Clock + 1./16.;
-	}
-	if (!bRoom || Has(TEXT("bath_mirror_seen")))
-	{
-		if (BathEdithBreath.IsValid()) BathEdithBreath->FadeOut(.18f,0.f);
-		BathEdithBreath.Reset();
-		NextBathBreath=0.;
-	}
-	else if (Clock>=NextBathBreath && (!BathEdithBreath.IsValid() || !BathEdithBreath->IsPlaying()))
-	{
-		BathEdithBreath=PlayAt(TEXT("her_breath"),BathChairHome.GetLocation()+FVector(0,0,112),.92f,.92f,1300.f);
-		NextBathBreath=Clock+6.9;
 	}
 	const FVector Gaze=P->EyeForward();
 	if (!bRoom)
@@ -277,6 +270,9 @@ void AWCDirector::TickBathMirror(float Dt)
 			H->SetGlow(0.f);
 			H->SetEyeShine(.021f);
 			H->SetMood(TEXT("watch"));
+			if (!Has(TEXT("bath_mirror_first_turn")) && !Has(TEXT("bath_mirror_snicker")) &&
+				PlayAt(TEXT("VO/edith_snicker_01"), H->HeadLocation(), .34f))
+				RememberAtCheckpoint(TEXT("bath_mirror_snicker"));
 			MirrorShownAt = Clock;
 			NextMirrorCapture = 0.;
 			bEventBusy = true;
