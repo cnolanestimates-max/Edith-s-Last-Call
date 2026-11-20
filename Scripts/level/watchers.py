@@ -91,9 +91,7 @@ for _row, _z in enumerate((GZ + 33.0, GZ + 69.0, GZ + 105.0, BKZ)):
         bx += w + 0.5
         k += 1
 interact("WCUsable", "book_settlers", None, SETTLERS_X, BKY - 12, BKZ + 12, 0, "Pull the book out", (10, 12, 14), (0, 0, 0))
-# the hole behind it, and what is in the hole
-for i, (ox, oz, s_) in enumerate(((0, 0, 1.0), (4.2, 3.0, 0.6), (-3.6, -3.2, 0.55))):
-    place(SPHERE, SETTLERS_X + ox, BKY - 0.4, BKZ + 13 + oz, -90, WF, name=f"BookHole_{i}", scale=(0.012, 8.6 * s_ / 50.0, 8.0 * s_ / 50.0), mats={0: "WC:M_Black"}, collide=False, shadow=False)
+# review_rooms installs the wall cut-through at this eye position.
 watcher("book_eye", SETTLERS_X, BKY + 1.0, BKZ + 13, -90.0, 0.0, 0, 5.6, scripted=True)
 # The wall behind this bookcase is the stair tower's: she is crouched on the main flight with her eye to the hole.
 # When she goes, she goes up it: from the tread behind the hole to the head of the flight, then along the landing.

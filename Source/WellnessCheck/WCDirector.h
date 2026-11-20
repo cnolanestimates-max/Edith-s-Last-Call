@@ -57,6 +57,7 @@ class WELLNESSCHECK_API UWCSave : public USaveGame
 	GENERATED_BODY()
 public:
 	UPROPERTY() int32 Version = 1;
+	UPROPERTY() int32 YardCawsLeft = -1;
 	UPROPERTY() TArray<FName> Flags;
 	UPROPERTY() TArray<FName> Items;
 	UPROPERTY() TArray<FName> NotesRead;
@@ -286,6 +287,13 @@ private:
 	void UpstairsThump();
 	void CueEvent(FName Id);
 	void TickCues(float Dt);
+	void TickHallClock();
+	void TickYardCrows();
+	int32 YardCawsLeft = -1;
+	double NextYardCaw = -1.;
+	TWeakObjectPtr<UAudioComponent> YardCrowVoice;
+	double NextHallTick = -1.;
+	int32 ExtraHallTicks = 0;
 	TMap<FName, int32> CueCount;
 	TSet<int32> CueFired;
 	TSet<FName> TrigInside;
@@ -384,6 +392,7 @@ private:
 	UPROPERTY(Transient) TObjectPtr<USoundAttenuation> Atten;
 	UPROPERTY(Transient) TObjectPtr<USoundAttenuation> BinAtten;
 	UPROPERTY(Transient) TObjectPtr<USoundAttenuation> FlyAtten;
+	UPROPERTY(Transient) TObjectPtr<USoundAttenuation> CrowAtten;
 	TWeakObjectPtr<AWCEntity> HerActor;
 	TArray<TWeakObjectPtr<AWCTrigger>> Triggers;
 	TMap<FName, TWeakObjectPtr<AActor>> TagCache;

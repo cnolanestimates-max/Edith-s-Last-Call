@@ -1,4 +1,4 @@
-"""Dress the two exterior approaches and place the bedroom tool on the reachable lip of its table."""
+"""Dress the two exterior approaches."""
 import math
 import unreal as u
 
@@ -9,19 +9,6 @@ def build():
     actors=u.get_editor_subsystem(u.EditorActorSubsystem)
     level=actors.get_all_level_actors()
     names={a.get_actor_label():a for a in level}
-    candidates=[a for a in level if a.get_actor_label().startswith('SM_Table_Small_01a') and
-                (a.get_actor_location()-u.Vector(700,300,350)).length()<20]
-    if len(candidates)!=1: raise RuntimeError('Cannot identify the upstairs bedside table')
-    table=candidates[0]
-    center,extent=table.get_actor_bounds(False)
-    tool=names['Pickup_pick_screwdriver']
-    tool.set_actor_rotation(u.Rotator(yaw=0),False)
-    tool.set_actor_location(u.Vector(718,321,center.z+extent.z),False,True)
-    mesh=tool.get_editor_property('mesh')
-    o,e,_=u.SystemLibrary.get_component_bounds(mesh)
-    tool.add_actor_world_offset(u.Vector(0,0,center.z+extent.z+.35-(o.z-e.z)),False,True)
-    tool.set_editor_property('grab_extent',u.Vector(16,8,7))
-    tool.set_editor_property('grab_offset',u.Vector(0,0,4))
     # Existing saved maps and fresh map builds go through the same placement pass.
     previously_dressed = 'YardTrail_Left_0' in names
     plane=u.EditorAssetLibrary.load_asset('/Engine/BasicShapes/Plane')
@@ -114,4 +101,4 @@ def build():
             elif 'Stump_Axe' in name: dest=(-1250,-780) if p.x<0 else (3660,510)
             elif 'Wheelbarrow' in name and p.x>2800: dest=(3520,150)
             if dest: a.set_actor_location(u.Vector(*dest,p.z),False,True)
-    print('WC_PATH_READY',len(segments),'segments;',trimmed,'brush clumps;',tool.get_actor_location())
+    print('WC_PATH_READY',len(segments),'segments;',trimmed,'brush clumps')

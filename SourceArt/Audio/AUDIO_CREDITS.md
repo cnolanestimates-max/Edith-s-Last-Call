@@ -25,6 +25,10 @@ amb_cellar, amb_house, amb_night, body_fall, bulb_die, bullet_impact_01, car_doo
 - ui_tick: Interface/click 002.wav
 - flashlight_click: Interface/switch 002.wav
 
+## Yard crows
+
+The four `yard_caw` one-shots are separate calls from Mish7913’s 2018 field recording. Each was trimmed, filtered and level-matched for the exterior perches. [Hooded Crow: Panic Cawing](https://freesound.org/people/Mish7913/sounds/741365/) · [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+
 ## Music (credit required)
 
 - `music_house` crossfades edited excerpts of “Apprehension” by Kevin MacLeod and “She's Watching Me” by Darren Curtis. [Apprehension](https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100327) · [Creative Commons Attribution 4.0](https://creativecommons.org/licenses/by/4.0/) · [Darren Curtis](https://www.darrencurtismusic.com/) · [Composer's permission](https://www.darrencurtismusic.com/faqs)
@@ -89,6 +93,7 @@ Dialogue generated with Google Gemini TTS (see VO/_manifest.json). Radio and pho
 - record_tune: Darren Curtis, "Sweet Little Lullaby" (darrencurtismusic.com; free for commercial use with credit), processed to sound like a horn gramophone
 - record_stop: made from record_tune and our own shelf_scrape
 - clock_tick: 344 Audio - Antique Clocks/CLOCKTick_Crooked Antique Clock_344 Audio_Antique Clocks.wav
+- clock_single_01 and clock_single_02 are individual mechanical strikes edited from the same 344 Audio antique clock recording.
 - bell_toll: Ivo Vicic - Church Bells/04 Church Bells, Near Distance, In Church Tower-3 Different Bell 02.wav (first stroke, pitched down)
 - tv_static: synthesised (noise, 60 Hz hum, line whine)
 

@@ -46,7 +46,6 @@ LOOKS = [
     ("sick_bed", 2480, 505, 70, "Leather cuffs on the rails. The buckles are open. The leather is not torn. It is stretched.", (50, 100, 40)),
     ("sick_wheelchair", 2240, 420, 60, "County property tag on the frame. They never came back for it.", (34, 34, 50)),
     ("sick_door_marks", 2200, 216, 150, "Pencil marks up the door frame. 'E.H. March 1992.' Then April, a hand higher. The last mark is above the lintel.", (56, 10, 90)),
-    ("hall_wheelchair", 2520, -110, 50, "On its side. One wheel is still turning.", (40, 40, 44)),
     # ---- upstairs front
     ("master_bed", 560, 440, UZ + 80, "One side slept in. The other side has his pyjamas laid out on the pillow.", (100, 80, 40)),
     ("vanity", 420, 560, UZ + 110, "She smashed the mirror. Then she swept up the glass and put the pieces in the drawer, in order.", (60, 22, 60)),

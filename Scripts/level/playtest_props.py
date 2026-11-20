@@ -1,5 +1,18 @@
-"""Place the bedroom screwdriver and jewelry box, and clear the kitchen drawing's spot."""
+"""Dress Edith's working desk and seat the kitchen drawing on the clear table edge."""
 import unreal as u
+
+
+def bottom_at(actor, x, y, height):
+    comp = actor.get_component_by_class(u.StaticMeshComponent)
+    origin, extent, _ = u.SystemLibrary.get_component_bounds(comp)
+    actor.add_actor_world_offset(u.Vector(x-origin.x,y-origin.y,height-origin.z+extent.z),False,True)
+
+
+def fit_grab(actor, extent):
+    origin, _, _ = u.SystemLibrary.get_component_bounds(actor.mesh)
+    offset = actor.get_actor_transform().inverse_transform_location(origin)
+    actor.set_editor_property('grab_offset',offset)
+    actor.set_editor_property('grab_extent',u.Vector(*extent))
 
 
 def dress():
@@ -8,34 +21,40 @@ def dress():
     named = {a.get_actor_label(): a for a in all_actors}
     bedside = next(a for a in all_actors if a.get_actor_label().startswith('SM_Table_Small_01a') and
                    (a.get_actor_location() - u.Vector(700,300,350)).length() < 4)
-    stand = named.get('MasterEntryTable') or actors.spawn_actor_from_class(u.StaticMeshActor,u.Vector(210,392,350),u.Rotator())
-    source, target = bedside.static_mesh_component, stand.static_mesh_component
-    target.set_static_mesh(source.static_mesh)
-    for i,mat in enumerate(source.get_materials()): target.set_material(i,mat)
-    target.set_collision_profile_name(source.get_collision_profile_name())
-    target.set_editor_property('lighting_channels',source.get_editor_property('lighting_channels'))
-    stand.set_actor_scale3d(bedside.get_actor_scale3d())
-    stand.set_folder_path(bedside.get_folder_path())
-    stand.set_actor_label('MasterEntryTable')
-    stand.set_actor_location(u.Vector(210,392,350),False,True)
-    def bottom_at(actor, x, y, height):
-        comp = actor.get_component_by_class(u.StaticMeshComponent)
-        origin, extent, _ = u.SystemLibrary.get_component_bounds(comp)
-        delta = u.Vector(x-origin.x, y-origin.y, height-origin.z+extent.z)
-        actor.add_actor_world_offset(delta,False,True)
-    top, e = stand.get_actor_bounds(False)
-    tool = named['Pickup_pick_screwdriver']
-    tool.set_actor_rotation(u.Rotator(yaw=8),False)
-    bottom_at(tool,211,374,top.z+e.z+.2)
-    top, e = bedside.get_actor_bounds(False)
+    if 'MasterEntryTable' in named:
+        actors.destroy_actor(named['MasterEntryTable'])
+    bedside.set_actor_scale3d(u.Vector(1.40,1.22,1))
+    center,extent = bedside.get_actor_bounds(False)
+    surface = center.z+extent.z+.1
+    lamp = next(a for a in all_actors if a.get_actor_label() in ('Oil_Lamp_Broken_Unlit','EdithDeskLamp')
+                and str(a.get_folder_path())=='House/Dressing/Master')
+    lamp.static_mesh_component.set_static_mesh(u.EditorAssetLibrary.load_asset('/Game/HorrorHouseKit/Meshes/Lights_Ambience/SM_Desk_Lamp_Green'))
+    lamp.static_mesh_component.set_editor_property('override_materials',[])
+    lamp.set_actor_label('EdithDeskLamp')
+    lamp.set_actor_rotation(u.Rotator(yaw=12),False)
+    lamp.set_actor_scale3d(u.Vector(.63,.63,.63))
+    bottom_at(lamp,739,280,surface)
+    book=named['Note_note_diary1']
+    book.mesh.set_relative_scale3d(u.Vector(.72,.72,.72))
+    book.set_actor_rotation(u.Rotator(yaw=7),False)
+    bottom_at(book,666,293,surface)
+    fit_grab(book,(16,12,4))
+    tool=named['Pickup_pick_screwdriver']
+    tool.set_actor_rotation(u.Rotator(yaw=-6),False)
+    bottom_at(tool,692,324,surface+.05)
+    fit_grab(tool,(13,5,4))
     for label in ('Usable_jewelbox','JewelBoxOpen'):
-        box = named[label]
+        box=named[label]
         box.set_actor_rotation(u.Rotator(yaw=25),False)
-        bottom_at(box,726,315,top.z+e.z+.1)
+        bottom_at(box,726,315,surface)
+    fit_grab(named['Usable_jewelbox'],(10,10,6))
     lid = named['JewelBoxOpen'].get_actor_location()
-    eye = named['Pickup_pick_keep_eye']
-    bottom_at(eye,lid.x,lid.y,lid.z+4.5)
-    bottom_at(named['Note_note_box'],679,286,top.z+e.z+.15)
+    bottom_at(named['Pickup_pick_keep_eye'],lid.x,lid.y,lid.z+4.5)
+    note=named['Note_note_box']
+    note.mesh.set_relative_scale3d(u.Vector(.25,.25,.17))
+    note.set_actor_rotation(u.Rotator(yaw=-10),False)
+    bottom_at(note,702,282,surface+.03)
+    fit_grab(note,(11,10,3))
     # The seance table has raised detail at its centre. Its flat wooden edge is the same
     # surface that carries the mug and plates. Clear the heap off the paper's footprint.
     bones = next(a for a in all_actors if a.get_actor_label().startswith('Bones_Pile') and

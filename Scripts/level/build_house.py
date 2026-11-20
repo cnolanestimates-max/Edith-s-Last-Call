@@ -978,5 +978,6 @@ exec(open(os.path.join(HERE, "float_sweep.py"), encoding="utf-8").read())
 import runpy
 runpy.run_path(os.path.join(HERE, "yard_access.py"))["build"]()
 runpy.run_path(os.path.join(HERE, "playtest_props.py"))["dress"]()
+runpy.run_path(os.path.join(HERE, "review_rooms.py"))["dress"]()
 if not level_editor.save_current_level():
     raise RuntimeError("Could not save yard routes and bedroom pickup")

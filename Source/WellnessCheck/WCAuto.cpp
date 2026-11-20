@@ -16,6 +16,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Camera/PlayerCameraManager.h"
 #include "GameFramework/PlayerController.h"
 #include "HAL/FileManager.h"
 #include "Kismet/GameplayStatics.h"
@@ -44,6 +45,32 @@ void AWCDirector::AutoBegin()
 	auto WaitHer = [this](float Timeout) { AutoSteps.Add({ A_WaitHer, NAME_None, Timeout }); };
 	auto Fire = [this](int32 N) { AutoSteps.Add({ A_Fire, NAME_None, (float)N }); };
 
+	if (FParse::Param(FCommandLine::Get(), TEXT("WCYardCrowCheck")))
+	{
+		Steps.Reset();
+		Fade = FadeTarget = 0.f;
+		if (AWCCharacter* Pl = Player()) Pl->SetInputLocked(false);
+		UGameplayStatics::SetGlobalTimeDilation(this, 5.f);
+		auto Do = [this](const TCHAR* Cmd) { AutoSteps.Add({A_Do,Cmd,0.f}); };
+		Do(TEXT("at:-1430,220,52,0,0")); Wait(16.f); Do(TEXT("crow_briefed")); Wait(240.f);
+		Do(TEXT("crow_budget")); Do(TEXT("at:330,30,94,0,0")); Wait(3.f); Do(TEXT("crow_inside"));
+		AutoIndex=0; AutoStepStart=Clock; return;
+	}
+	if (FParse::Param(FCommandLine::Get(), TEXT("WCRoomCheck")))
+	{
+		Steps.Reset();
+		if (AWCCharacter* Pl = Player()) { Pl->SetInputLocked(false); Pl->SetFlashlight(true, false); }
+		Fade = FadeTarget = 0.f;
+		AutoShotDir = FPaths::ConvertRelativePathToFull(AutoShotDir);
+		IFileManager::Get().MakeDirectory(*AutoShotDir, true);
+		auto Do = [this](const TCHAR* Cmd) { AutoSteps.Add({A_Do, Cmd, 0.f}); };
+		Do(TEXT("at:692,381,442,-90,-42")); AutoSteps.Add({A_Look,TEXT("pick_screwdriver"),-1.f});
+		Wait(.5f); Do(TEXT("use_screwdriver_pickup"));
+		Do(TEXT("at:851,419,92,82,-42")); AutoSteps.Add({A_Look,TEXT("phone"),-1.f});
+		Wait(1.7f); Shot(TEXT("Telephone_flashlight")); Do(TEXT("room_use_phone"));
+		Do(TEXT("at:980,-50,92,-42,-3")); Wait(57.f);
+		AutoIndex=0; AutoStepStart=Clock; return;
+	}
 	if (FParse::Param(FCommandLine::Get(), TEXT("WCArrivalCheck")))
 	{
 		Steps.Reset();
@@ -60,7 +87,7 @@ void AWCDirector::AutoBegin()
 		Do(TEXT("at:100,0,94,0,0")); Wait(.8f); Do(TEXT("mix_check"));
 		Do(TEXT("at:-90,0,94,0,0")); Wait(.3f); Do(TEXT("mix_check"));
 		Do(TEXT("at:330,30,94,0,0")); Wait(1.f); Do(TEXT("mix_check"));
-		Do(TEXT("at:210,287,442,88,-36")); AutoSteps.Add({A_Look,TEXT("pick_screwdriver"),-1.f}); Wait(.35f);
+		Do(TEXT("at:692,381,442,-90,-42")); AutoSteps.Add({A_Look,TEXT("pick_screwdriver"),-1.f}); Wait(.35f);
 		Shot(TEXT("screwdriver_focus")); Do(TEXT("use_screwdriver_pickup")); Wait(1.f);
 		Do(TEXT("finish_mix")); Wait(.5f);
 		Do(TEXT("at:1400,310,92,-90,-12")); Do(TEXT("vent_test")); Wait(.7f); Shot(TEXT("vent_driver")); Wait(1.5f);
@@ -92,6 +119,7 @@ void AWCDirector::AutoBegin()
 			if (AWCCharacter* Pl = Player())
 			{
 				UPointLightComponent* L = NewObject<UPointLightComponent>(Pl);
+				L->ComponentTags.Add(TEXT("PropReviewLight"));
 				L->SetupAttachment(Pl->GetRootComponent());
 				L->SetRelativeLocation(FVector(0, 0, 60));
 				L->RegisterComponent();
@@ -127,6 +155,13 @@ void AWCDirector::AutoBegin()
 			Photo(TEXT("at:3695,-743,59,0,-12"),TEXT("Detail_Shed_workbench"));
 			Photo(TEXT("at:3270,-535,60,145,-15"),TEXT("Detail_Back_yard_bin"));
 			Photo(TEXT("at:268,-30,92,7,12"),TEXT("Detail_Foyer_stairs"));
+			AutoSteps.Add({A_Do,TEXT("detail_lens"),0.f});
+			Photo(TEXT("at:852,419,92,83,-44"),TEXT("Detail_Kitchen_phone"));
+			AutoSteps.Add({A_Do,TEXT("normal_lens"),0.f});
+			Photo(TEXT("at:1924,-440,92,-97,-38"),TEXT("Detail_Den_letters"));
+			Photo(TEXT("at:1917,426,92,84,-14"),TEXT("Detail_Pantry_jars"));
+			AutoSteps.Add({A_Do,TEXT("at:490,-105,198,-53,-32"),0.f}); Wait(.5f);
+			AutoSteps.Add({A_Look,TEXT("W_book_eye"),-1.f}); Wait(.5f); Shot(TEXT("Detail_Stair_opening"));
 		}
 		AutoIndex = 0;
 		AutoStepStart = Clock;
@@ -788,6 +823,39 @@ void AWCDirector::AutoTick(float Dt)
 			const AWCInteractable* Target = P->GetFocus();
 			if (Target && Target->WCId == TEXT("pick_screwdriver")) P->DoInteract();
 			UE_LOG(LogWCAuto, Display, TEXT("WCARRIVAL standing pickup focus=%s inventory=%d"), Target ? *Target->WCId.ToString() : TEXT("none"), HasItem(TEXT("screwdriver")));
+		}
+		else if (S.Arg == TEXT("detail_lens") || S.Arg == TEXT("normal_lens"))
+		{
+			for (UActorComponent* Source : P->GetComponentsByTag(UPointLightComponent::StaticClass(), TEXT("PropReviewLight")))
+				if (auto* Lamp = Cast<UPointLightComponent>(Source)) Lamp->SetIntensity(S.Arg == TEXT("detail_lens") ? 420.f : 14000.f);
+			if (APlayerCameraManager* Camera = UGameplayStatics::GetPlayerCameraManager(this, 0))
+			{
+				if (S.Arg == TEXT("detail_lens")) Camera->SetFOV(34.f);
+				else Camera->UnlockFOV();
+			}
+		}
+		else if (S.Arg == TEXT("crow_briefed"))
+		{
+			UE_LOG(LogWCAuto, Display, TEXT("WCCROW before briefing remaining=%d"), YardCawsLeft);
+			Set(TEXT("briefed"));
+		}
+		else if (S.Arg == TEXT("crow_budget"))
+		{
+			UE_LOG(LogWCAuto, Display, TEXT("WCCROW finished remaining=%d"),YardCawsLeft);
+		}
+		else if (S.Arg == TEXT("crow_inside"))
+		{
+			YardCawsLeft = 2;
+			NextYardCaw = Clock;
+			TickYardCrows();
+			UE_LOG(LogWCAuto, Display, TEXT("WCCROW indoors remaining=%d audible=%d"),YardCawsLeft,YardCrowVoice.IsValid() && YardCrowVoice->IsPlaying());
+		}
+		else if (S.Arg == TEXT("room_use_phone"))
+		{
+			const AWCInteractable* Target = P->GetFocus();
+			Set(TEXT("phone_ringing"));
+			if (Target && Target->WCId == TEXT("phone")) P->DoInteract();
+			UE_LOG(LogWCAuto, Display, TEXT("WCROOM phone focus=%s answered=%d"),Target ? *Target->WCId.ToString() : TEXT("none"),Has(TEXT("phone_done")));
 		}
 		else if (S.Arg == TEXT("check_book_focus"))
 		{

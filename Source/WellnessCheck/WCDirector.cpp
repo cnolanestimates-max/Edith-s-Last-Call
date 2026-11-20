@@ -372,6 +372,8 @@ void AWCDirector::TickTriggers()
 		if (bIn && !TrigInside.Contains(T->WCId)) { TrigInside.Add(T->WCId); CueEvent(FName(*FString::Printf(TEXT("enter:%s"), *T->WCId.ToString()))); }
 		else if (!bIn) TrigInside.Remove(T->WCId);
 	}
+	TickYardCrows();
+	TickHallClock();
 	TickCues(0.f);
 }
 
@@ -500,6 +502,7 @@ void AWCDirector::DoSave(FName Id)
 	UWCSave* S = Cast<UWCSave>(UGameplayStatics::CreateSaveGameObject(UWCSave::StaticClass()));
 	if (!S) return;
 	S->Flags = Flags.Array();
+	S->YardCawsLeft = YardCawsLeft;
 	S->Items = Items.Array();
 	S->NotesRead = NotesRead;
 	S->Objective = Objective;
@@ -526,6 +529,8 @@ bool AWCDirector::DoLoad()
 	UWCSave* S = Cast<UWCSave>(UGameplayStatics::LoadGameFromSlot(SaveSlot, 0));
 	if (!S) return false;
 	Flags = TSet<FName>(S->Flags);
+	YardCawsLeft = FMath::Clamp(S->YardCawsLeft,-1,8);
+	NextYardCaw = -1.;
 	Items = TSet<FName>(S->Items);
 	NotesRead = S->NotesRead;
 	Objective = S->Objective;
@@ -726,6 +731,17 @@ UAudioComponent* AWCDirector::PlayAt(const FString& Name, const FVector& Where, 
 		}
 		Profile = BinAtten;
 	}
+	else if (Name == TEXT("yard_caw"))
+	{
+		if (!CrowAtten)
+		{
+			CrowAtten = DuplicateObject<USoundAttenuation>(Atten, this);
+			CrowAtten->Attenuation.AttenuationShapeExtents = FVector(420.f);
+			CrowAtten->Attenuation.FalloffDistance = 3000.f;
+			CrowAtten->Attenuation.dBAttenuationAtMax = -30.f;
+		}
+		Profile = CrowAtten;
+	}
 	else if (Name == TEXT("flies_buzz"))
 	{
 		if (!FlyAtten)
@@ -804,6 +820,8 @@ void AWCDirector::RefreshRoomTone(EListeningSpace Space)
 			if (Pair.Value.Audio.IsValid() && Pair.Value.Audio->ComponentHasTag(TEXT("HouseAudio")))
 				Pair.Value.Target = 0.f;
 	}
+	if (!bOutside && YardCrowVoice.IsValid() && YardCrowVoice->IsPlaying())
+		YardCrowVoice->FadeOut(.08f, 0.f);
 	ListeningSpace = Space;
 	const TCHAR* Bed = bOutside ? (Has(TEXT("dawn")) ? TEXT("amb_dawn") : TEXT("amb_yard")) :
 		(Space == EListeningSpace::Cellar ? TEXT("amb_cellar") : TEXT("amb_house"));

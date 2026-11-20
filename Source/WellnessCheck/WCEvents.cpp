@@ -159,7 +159,6 @@ void AWCDirector::LeftScare()
 		AWCCharacter* Pl = Player();
 		return Pl ? Pl->GetActorLocation() - FRotator(0.f, Pl->GetControlRotation().Yaw, 0.f).Vector() * Dist + FVector(0, 0, Up) : FVector::ZeroVector;
 	};
-	PlayAt(TEXT("clock_tick"), Behind(650.f, 20.f), 0.35f);
 	PlayAt(TEXT("whisper_far"), Behind(1300.f, 0.f), 0.6f, 1.f, 2600.f);
 	After(4.5f, [this, Behind]() { PlayAt(TEXT("whisper_far"), Behind(800.f, 0.f), 0.8f, 1.05f, 2200.f); });
 	After(8.0f, [this, Behind]() { PlayAt(TEXT("VO/m_left"), Behind(520.f, 20.f), 0.55f, 1.f, 1800.f); });
@@ -798,6 +797,63 @@ void AWCDirector::CueEvent(FName Id)
 		});
 		return;                              // one at a time
 	}
+}
+
+void AWCDirector::TickYardCrows()
+{
+	const AWCCharacter* P = Player();
+	if (!P || YardCawsLeft == 0 || !Has(TEXT("briefed")) || Has(TEXT("inside")) || Has(TEXT("dawn")) ||
+		IsInsideHouse(P->GetActorLocation()) || bEventBusy || IsBinTurnActive() || Clock < DialogueUntil) return;
+	if (YardCawsLeft < 0) YardCawsLeft = Rng.RandRange(4, 8);
+	if (NextYardCaw < 0.) NextYardCaw = Clock + Rng.FRandRange(5.f, 11.f);
+	if (Clock < NextYardCaw) return;
+
+	const FName Perches[] = {TEXT("CrowGate"), TEXT("CrowBranch")};
+	const int32 First = Rng.RandRange(0, 1);
+	NextYardCaw = Clock + 4.;
+	for (int32 Offset = 0; Offset < 2; ++Offset)
+	{
+		const int32 Index = (First + Offset) % 2;
+		const AActor* Perch = Find(Perches[Index]);
+		if (!Perch) continue;
+		FVector Center, Extent;
+		Perch->GetActorBounds(false, Center, Extent);
+		const FVector At = Center + FVector(0, 0, Extent.Z * .8f);
+		if (FVector::DistSquared(At, P->GetActorLocation()) > FMath::Square(2200.f)) continue;
+		const float Pitch = (Index == 0 ? .94f : 1.02f) * Rng.FRandRange(.975f, 1.025f);
+		YardCrowVoice = PlayAt(TEXT("yard_caw"), At, .34f, Pitch);
+		if (YardCrowVoice.IsValid())
+		{
+			--YardCawsLeft;
+			NextYardCaw = Clock + Rng.FRandRange(13.f, 29.f);
+			UE_LOG(LogWCEvents, Verbose, TEXT("WCCROW at=%.1f perch=%s remaining=%d next=%.1f"),Clock,*Perches[Index].ToString(),YardCawsLeft,NextYardCaw);
+		}
+		break;
+	}
+}
+
+void AWCDirector::TickHallClock()
+{
+	const AWCCharacter* P = Player();
+	const AActor* Cabinet = Find(TEXT("HallClockSource"));
+	if (!P || !Cabinet) return;
+	const FVector Mechanism = Cabinet->GetActorLocation() + FVector(0, 0, 125);
+	const FVector Here = P->GetActorLocation();
+	if (!IsInsideHouse(Here) || FMath::Abs(Here.Z - Mechanism.Z) > 180.f ||
+		FVector::DistSquared(Here, Mechanism) > FMath::Square(650.f) || Has(TEXT("dawn")))
+	{
+		NextHallTick = -1.;
+		ExtraHallTicks = 0;
+		return;
+	}
+	if (NextHallTick < 0.) NextHallTick = Clock + Rng.FRandRange(3.f, 8.f);
+	if (Clock < NextHallTick || bEventBusy || Clock < DialogueUntil || StalkState != 0 || ActiveNote.IsValid()) return;
+	if (ExtraHallTicks == 0)
+		ExtraHallTicks = Rng.RandRange(1, 3);
+	PlayAt(TEXT("clock_single"), Mechanism, .62f, Rng.FRandRange(.97f, 1.03f));
+	--ExtraHallTicks;
+	NextHallTick = Clock + (ExtraHallTicks ? Rng.FRandRange(.84f, 1.16f) : Rng.FRandRange(27.f, 45.f));
+	UE_LOG(LogWCEvents, Verbose, TEXT("WCCLOCK tick at %.1f, next %.1f"), Clock, NextHallTick);
 }
 
 void AWCDirector::TickCues(float Dt)
