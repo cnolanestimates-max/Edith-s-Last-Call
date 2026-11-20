@@ -1146,6 +1146,7 @@ void AWCDirector::ScareBook()
 		Dark->SetMaterial(0,LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/WC/Materials/M_Void.M_Void")));
 		Dark->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		Dark->SetCastShadow(false);
+		Dark->SetReceivesDecals(false);
 		Dark->SetWorldLocationAndRotation(EyeW->GetActorLocation()-EyeW->GetActorForwardVector()*14.,EyeW->GetActorRotation());
 		Dark->SetWorldScale3D(FVector(.012,.17,.26));
 		Dark->RegisterComponent();
@@ -1167,22 +1168,8 @@ void AWCDirector::ScareBook()
 			Q->GetController()->SetControlRotation(FMath::RInterpTo(Q->GetController()->GetControlRotation(), Want, 0.035f, 9.f));
 		});
 	}
-	// a cold glimmer on her eye, so it reads in the dark of the gap whatever his own light is doing
-	TWeakObjectPtr<UPointLightComponent> Glim;
-	if (EyeW)
-	{
-		UPointLightComponent* G = NewObject<UPointLightComponent>(EyeW);
-		G->RegisterComponent();
-		G->SetWorldLocation(EyeW->GetActorLocation() + Out * 10.f);
-		G->SetIntensityUnits(ELightUnits::Lumens);
-		G->SetIntensity(0.f);
-		G->SetAttenuationRadius(48.f);
-		G->SetLightColor(FLinearColor(0.75f, 0.85f, 1.f));
-		G->SetCastShadows(false);
-		Glim = G;
-	}
 	// ...and she is looking at him through the wall
-	After(0.62f, [this, EyeW, Book, From, Out, Glim, Backing]()
+	After(0.62f, [this, EyeW, Book, From, Out, Backing]()
 	{
 		Tension = .65f;
 		// the book goes out of his hand
@@ -1191,23 +1178,28 @@ void AWCDirector::ScareBook()
 		const float FloorZ = FMath::FloorToFloat((From.Z + 20.f) / 350.f) * 350.f + 8.3f;
 		StageSettlersPickup(Book, Start, Out, FloorZ);
 		After(.8f, [this, From]() { PlayAt(TEXT("shelf_violin"), From, .77f); });
-		After(1.05f, [EyeW, Glim]()
+		After(1.05f, [EyeW]()
 		{
 			if (IsValid(EyeW)) EyeW->Reveal();
-			if (Glim.IsValid()) Glim->SetIntensity(52.f);
 		});
 		// Hold the stare after the pupil stops, then let the treads carry her away.
-		After(6.4f, [this, EyeW, Glim, Backing]()
+		After(6.4f, [this, EyeW, Backing]()
 		{
-			if (Glim.IsValid()) Glim->DestroyComponent();
 			if (IsValid(EyeW)) EyeW->Withdraw(true);
 			After(.4f, [Backing]() { if (Backing.IsValid()) Backing->DestroyComponent(); });
 			const FVector A = Pos(TEXT("StairRunA")), B = Pos(TEXT("StairRunB")), C = Pos(TEXT("StairRunC"));
 			if (A.IsNearlyZero() || B.IsNearlyZero()) return;
 			UE_LOG(LogWCHouse, Display, TEXT("WCSCARE t=%.1f S10_book she runs up the stairs"), PlaySeconds);
 			// seven treads at a run, then away along the landing overhead
-			for (int32 k = 0; k < 7; ++k) After(0.12f + k * 0.19f, [this, A, B, k]() { PlayAt(TEXT("her_step"), FMath::Lerp(A, B, k / 6.f), 1.f, Rng.FRandRange(0.82f, 0.92f), 2600.f); });
-			for (int32 k = 0; k < 4; ++k) After(0.12f + 7 * 0.19f + k * 0.24f, [this, B, C, k]() { PlayAt(TEXT("her_step"), FMath::Lerp(B, C, (k + 1) / 4.f), 0.9f - 0.12f * k, Rng.FRandRange(0.9f, 1.f), 3000.f); });
+			const float Treads[] = {.09f,.32f,.50f,.71f,.89f,1.10f,1.29f};
+			for (int32 k = 0; k < UE_ARRAY_COUNT(Treads); ++k)
+				After(Treads[k], [this, A, B, k]() {
+					PlayAt(TEXT("shelf_stair_step"), FMath::Lerp(A,B,k/6.f), k%2 ? 1.22f : 1.34f, Rng.FRandRange(.92f,1.03f));
+				});
+			for (int32 k = 0; k < 4; ++k)
+				After(1.50f + k*.23f, [this, B, C, k]() {
+					PlayAt(TEXT("shelf_stair_step"), FMath::Lerp(B,C,(k+1)/4.f), 1.18f-.085f*k, Rng.FRandRange(.95f,1.06f));
+				});
 		});
 
 	});

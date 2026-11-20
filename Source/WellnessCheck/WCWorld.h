@@ -163,7 +163,7 @@ private:
 	float Seen = 0.f;
 	float LeaveT = -1.f;
 	float ShelfEyeAge = 0.f;
-	FRotator ShelfEyeGaze = FRotator::ZeroRotator;
+	FVector ShelfPupilOffset() const;
 	FVector Home = FVector::ZeroVector;
 	FQuat HomeQuat = FQuat::Identity;
 };

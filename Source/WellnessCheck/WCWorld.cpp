@@ -268,6 +268,7 @@ void AWCWatcher::BeginPlay()
 		C->SetLightingChannels(true, true, false);
 		if (Mat) C->SetMaterial(0, Mat);
 		C->RegisterComponent();
+		return C;
 	};
 	if (Kind == 2)
 	{
@@ -286,6 +287,17 @@ void AWCWatcher::BeginPlay()
 			Bounce->SetIntensityUnits(ELightUnits::Lumens); Bounce->SetIntensity(360.f);
 			Bounce->SetLightColor(FLinearColor(.57f,.68f,.78f)); Bounce->SetSourceRadius(10.f);
 			Bounce->SetAttenuationRadius(340.f); Bounce->SetCastShadows(true); Bounce->RegisterComponent();
+		}
+	}
+	else if (WCId == TEXT("book_eye"))
+	{
+		UStaticMesh* Plane = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Plane.Plane"));
+		UMaterialInterface* Pigment = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/WC/Materials/M_ShelfPupil.M_ShelfPupil"));
+		if (ensure(Plane && Pigment))
+		{
+			const FRotator FacingGap = FRotationMatrix::MakeFromXZ(FVector::RightVector, FVector::ForwardVector).Rotator();
+			auto* Pupil = Part(Plane, FVector(-2.8f, 0.f, 0.f), FVector(Radius / 100.f), Pigment, FacingGap);
+			Pupil->SetReceivesDecals(false);
 		}
 	}
 	else if (Kind == 0)
@@ -314,6 +326,12 @@ void AWCWatcher::BeginPlay()
 	SetActorHiddenInGame(!bOut);
 }
 
+FVector AWCWatcher::ShelfPupilOffset() const
+{
+	// The watcher faces the reader, so its left is the right edge of the reader's view.
+	return FVector(0.f, -2.15f * Radius, 0.f);
+}
+
 void AWCWatcher::Reveal()
 {
 	if (bGone) return;
@@ -321,10 +339,7 @@ void AWCWatcher::Reveal()
 	if (WCId == TEXT("book_eye"))
 	{
 		ShelfEyeAge = 0.f;
-		if (AWCDirector* D = AWCDirector::Get(this); D && D->Player())
-			ShelfEyeGaze = HomeQuat.UnrotateVector(D->Player()->EyeLocation()-Home).Rotation();
-		Turn->SetRelativeLocation(FVector(-1.3f*Radius, 2.3f*Radius, 0.f));
-		Turn->SetRelativeRotation(FRotator(-8.f, 84.f, 0.f));
+		Turn->SetRelativeLocation(ShelfPupilOffset());
 	}
 	SetActorHiddenInGame(false);
 	bOut = true;
@@ -366,7 +381,8 @@ void AWCWatcher::Tick(float Dt)
 		const float Dur = Kind == 0 ? 0.22f : 1.5f;
 		const float U = FMath::Clamp(LeaveT / Dur, 0.f, 1.f);
 		const FVector Away = Kind == 0 ? -HomeQuat.GetForwardVector() * (Radius * 3.2f) : FVector(0, 0, 190.f * (Radius / 5.2f));
-		SetActorLocation(Home + Away * (Kind == 0 ? U : U * U));
+		if (WCId == TEXT("book_eye")) Turn->SetRelativeLocation(ShelfPupilOffset() * U);
+		else SetActorLocation(Home + Away * (Kind == 0 ? U : U * U));
 		if (U >= 1.f) { bOut = false; bGone = !bScripted; SetActorHiddenInGame(true); }
 		return;
 	}
@@ -375,10 +391,8 @@ void AWCWatcher::Tick(float Dt)
 	{
 		if (ShelfEyeAge >= 3.8f) return;
 		ShelfEyeAge = FMath::Min(ShelfEyeAge + Dt, 3.8f);
-		const float Move = FMath::SmoothStep(0.f, 3.15f, ShelfEyeAge);
-		const float Look = FMath::SmoothStep(.35f, 3.8f, ShelfEyeAge);
-		Turn->SetRelativeLocation(FVector(-1.3f*Radius, 2.3f*Radius, 0.f) * (1.f-Move));
-		Turn->SetRelativeRotation(FQuat::Slerp(FRotator(-8.f,84.f,0.f).Quaternion(), ShelfEyeGaze.Quaternion(), Look));
+		const float Travel = FMath::SmoothStep(0.f, 3.8f, ShelfEyeAge);
+		Turn->SetRelativeLocation(ShelfPupilOffset() * (1.f - Travel));
 		return;
 	}
 	const float Dist = FVector::Dist(Eye, Home);

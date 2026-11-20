@@ -479,6 +479,7 @@ private:
 	TMap<FString, TArray<FString>> SoundVariants;
 	UPROPERTY(Transient) TObjectPtr<USoundAttenuation> Atten;
 	UPROPERTY(Transient) TObjectPtr<USoundAttenuation> BinAtten;
+	UPROPERTY(Transient) TObjectPtr<USoundAttenuation> StairRunAtten;
 	UPROPERTY(Transient) TObjectPtr<USoundAttenuation> FlyAtten;
 	UPROPERTY(Transient) TObjectPtr<USoundAttenuation> CrowAtten;
 	TWeakObjectPtr<AWCEntity> HerActor;

@@ -92,6 +92,7 @@ Dialogue generated with Google Gemini TTS (see VO/_manifest.json). Radio and pho
 - door_far_02: door_creak_long (re-processed)
 - door_far_03: door_slam (re-processed)
 - her_step_01: Epic Stock Media - Tower Defense Game/WOODImpt_Hit Blood Spill Splat Wood Impact Light Hit Squelch Small Thump 03_ESM_TDG.wav + our own step_wood_01
+- The bookshelf stair run uses the existing licensed her_step and Kenney wood contacts with a synthesized low board resonance. It is rendered by `Scripts/audio/make_shelf_steps.py`.
 - her_step_02: Epic Stock Media - Tower Defense Game/WOODImpt_Hit Blood Spill Splat Wood Impact Light Hit Squelch Small Thump 03_ESM_TDG.wav + our own step_wood_03
 - her_step_03: Epic Stock Media - Tower Defense Game/WOODImpt_Hit Blood Spill Splat Wood Impact Light Hit Squelch Small Thump 03_ESM_TDG.wav + our own step_wood_02
 - her_step_04: Epic Stock Media - Tower Defense Game/WOODImpt_Hit Blood Spill Splat Wood Impact Light Hit Squelch Small Thump 03_ESM_TDG.wav + our own step_wood_05

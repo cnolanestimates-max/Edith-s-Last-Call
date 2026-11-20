@@ -772,6 +772,20 @@ UAudioComponent* AWCDirector::PlayAt(const FString& Name, const FVector& Where, 
 		}
 		Profile = BinAtten;
 	}
+	else if (Name == TEXT("shelf_stair_step"))
+	{
+		if (!StairRunAtten)
+		{
+			// The shelf backs directly onto the flight. The boards transmit the low impacts through the wall.
+			StairRunAtten = DuplicateObject<USoundAttenuation>(Atten, this);
+			StairRunAtten->Attenuation.AttenuationShapeExtents = FVector(320.f);
+			StairRunAtten->Attenuation.FalloffDistance = 1680.f;
+			StairRunAtten->Attenuation.dBAttenuationAtMax = -22.f;
+			StairRunAtten->Attenuation.OcclusionVolumeAttenuation = .90f;
+			StairRunAtten->Attenuation.OcclusionLowPassFilterFrequency = 3500.f;
+		}
+		Profile = StairRunAtten;
+	}
 	else if (Name == TEXT("yard_caw"))
 	{
 		if (!CrowAtten)

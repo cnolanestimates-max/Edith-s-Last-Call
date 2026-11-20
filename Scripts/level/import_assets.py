@@ -316,6 +316,41 @@ def smoke_material():
     return m
 
 
+def shelf_pupil_material():
+    m = new_material("M_ShelfPupil")
+    m.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_UNLIT)
+    m.set_editor_property("blend_mode", unreal.BlendMode.BLEND_MASKED)
+    m.set_editor_property("two_sided", True)
+    uv = mel.create_material_expression(m, unreal.MaterialExpressionTextureCoordinate, -650, 0)
+    # A dilated black pupil. Only a narrow crescent of grey fibres separates it
+    # from the dark, with the top and bottom lost under the lids.
+    pigment = _custom(m, """
+float2 p = (UV - 0.5) * float2(2.48, 2.21);
+p.x += 0.025 * p.y;
+float a = atan2(p.y, p.x);
+float r = length(p) + 0.016 * sin(3.0*a + 0.5) + 0.009 * sin(7.0*a);
+float fibres = 0.68 + 0.18*sin(31.0*a + 3.0*r) + 0.14*sin(49.0*a - 5.0*r);
+float lip = smoothstep(0.47, 0.56, r) * (1.0 - smoothstep(0.59, 0.91, r));
+float lid = 1.0 - smoothstep(0.18, 0.72, abs(p.y + 0.055));
+float crescent = 0.54 + 0.28*cos(a - 0.3) + 0.18*cos(2.0*a + 0.7);
+return float3(0.20, 0.19, 0.17) * lip * lid * crescent * fibres;
+""", ["UV"], unreal.CustomMaterialOutputType.CMOT_FLOAT3, -300, 0)
+    assert mel.connect_material_expressions(uv, "", pigment, "UV")
+    # The house runs at -5 EV. Keep this small tonal cue legible through the night grade.
+    exposure = mel.create_material_expression(m, unreal.MaterialExpressionEyeAdaptation, -300, 180)
+    tone = mel.create_material_expression(m, unreal.MaterialExpressionDivide, -80, 0)
+    assert mel.connect_material_expressions(pigment, "", tone, "A")
+    assert mel.connect_material_expressions(exposure, "", tone, "B")
+    assert mel.connect_material_property(tone, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
+    silhouette = _custom(m, "return 1.0 - smoothstep(0.94, 1.0, length((UV - 0.5) * float2(2.48,2.21)));",
+                         ["UV"], unreal.CustomMaterialOutputType.CMOT_FLOAT1, -300, 350)
+    assert mel.connect_material_expressions(uv, "", silhouette, "UV")
+    assert mel.connect_material_property(silhouette, "", unreal.MaterialProperty.MP_OPACITY_MASK)
+    mel.recompile_material(m)
+    assert eal.save_loaded_asset(m, False)
+    log("M_ShelfPupil saved")
+
+
 def step_mats():
     eal.make_directory(G + "/Materials")
     flat_material("M_Dust", (0.9, 0.86, 0.78), 1.0)
@@ -334,6 +369,7 @@ def step_mats():
     smoke_material()
     flat_material("M_EyeBlack", (0.002, 0.002, 0.002), 0.05)
     flat_material("M_EyeIris", (0.30, 0.36, 0.40), 0.3, emissive=0.06)
+    shelf_pupil_material()
     # the same iris with its glow on a dial (the eye in the dark, S14)
     mg = new_material("M_EyeIrisGlow")
     cg = const3(mg, (0.30, 0.36, 0.40), -600, 0)
@@ -524,7 +560,7 @@ exec(open(ROOT + "/Scripts/level/import_surfaces.py", encoding="utf-8").read())
 exec(open(ROOT + "/Scripts/level/import_variants.py", encoding="utf-8").read())
 exec(open(ROOT + "/Scripts/level/import_items.py", encoding="utf-8").read())
 
-for name, fn in (("kit", step_kit), ("her", step_her), ("her_skin", step_her_skin), ("mats", step_mats), ("audio", step_audio), ("tex", step_tex), ("props", step_props), ("decals", step_decals), ("extra", step_extra_mats), ("mega", step_mega), ("variants", step_variants), ("drawings", step_drawings), ("items", step_items)):
+for name, fn in (("kit", step_kit), ("her", step_her), ("her_skin", step_her_skin), ("mats", step_mats), ("shelf_pupil", shelf_pupil_material), ("audio", step_audio), ("tex", step_tex), ("props", step_props), ("decals", step_decals), ("extra", step_extra_mats), ("mega", step_mega), ("variants", step_variants), ("drawings", step_drawings), ("items", step_items)):
     if name in STEPS:
         try:
             fn()
