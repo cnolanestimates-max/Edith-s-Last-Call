@@ -153,10 +153,11 @@ static bool IsMuted(FName Id)
 {
 	// 2026-11-19: only what he says to dispatch and to Edith is left.  Remarks to himself, about what he finds or what it
 	// means, are all gone (voice and subtitle).
-	static const TSet<FName> Muted = { TEXT("d_locked"), TEXT("d_cellar_locked"), TEXT("d_window"), TEXT("d_backdoor"), TEXT("d_table"),
-		TEXT("d_wayout"), TEXT("d_drawer"), TEXT("d_sitting"), TEXT("d_kidsdoor"), TEXT("d_musicbox"), TEXT("d_prayer"), TEXT("d_ring"),
-		TEXT("d_attic"), TEXT("d_after_attic"), TEXT("d_cellar"), TEXT("d_shelf"), TEXT("d_dawn"), TEXT("d_need"), TEXT("d_leave_early"), TEXT("d_phone_ring"),
-		TEXT("d_phonecord"), TEXT("d_masterempty"), TEXT("d_getup1b"), TEXT("d_getup2"), TEXT("d_tags") };
+	static const TSet<FName> Muted = { TEXT("d_locked"), TEXT("d_cellar_locked"), TEXT("d_window"), TEXT("d_backdoor"),
+		TEXT("d_wayout"), TEXT("d_drawer"), TEXT("d_kidsdoor"), TEXT("d_ring"),
+		TEXT("d_attic"), TEXT("d_after_attic"), TEXT("d_cellar"), TEXT("d_dawn"), TEXT("d_need"), TEXT("d_leave_early"), TEXT("d_phone_ring"),
+		TEXT("d_masterempty"), TEXT("d_getup1b"), TEXT("d_getup2") };
+	// 2026-11-20 (Cheyenne): back in, on their triggers: d_table, d_phonecord, d_sitting, d_musicbox, d_prayer, d_tags, d_shelf.
 	return Muted.Contains(Id);
 }
 
@@ -726,7 +727,7 @@ void AWCDirector::StoryEvent(FName Id)
 	}
 	if (Is(Id, TEXT("take:keep_ruth")))
 	{
-		Think(TEXT("Ruth's. Her name is scratched in the bottom."));
+		Say(TEXT("d_musicbox"), 1.0f);
 		if (!Has(TEXT("book_done")) && !HasItem(TEXT("key_desk")) && !Has(TEXT("walter_keys_taken")))
 			SetObjective(TEXT("Check Customs of the First Settlers on the living-room shelf beside the stairs"));
 		Checkpoint(TEXT("underbed")); return;
@@ -1398,7 +1399,8 @@ void AWCDirector::AtticTagsTaken()
 {
 	if (Has(TEXT("attic_tags"))) return;
 	Set(TEXT("attic_tags"));
-	After(1.4f, [this]()
+	const float T = Say(TEXT("d_tags"), 0.4f);       // she comes once he has said it
+	After(T + 1.4f, [this]()
 	{
 		const float AtticZ = Pos(TEXT("Her_AtticFar")).Z;
 		WhenQuiet([this]() { AtticCrawl(); },
