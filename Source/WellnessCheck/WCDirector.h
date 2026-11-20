@@ -224,6 +224,12 @@ private:
 	void ScarePhone();
 	void ScareCeiling();
 	void ScareUnderBed();
+	void TickUnderBed(float Dt);
+	TWeakObjectPtr<class ACameraActor> BedCamera;
+	TWeakObjectPtr<class USkeletalMeshComponent> BedArm;
+	float BedElapsed = 0.f;
+	FVector BedBoxStart;
+	FVector BedWristAtBox;
 	void ScareAttic();
 	void ScareCellarDoor();
 		void FinaleStep(int32 Knot);
@@ -233,8 +239,6 @@ private:
 	/** She has him: she screams in his face for Hold seconds (the view is pulled to her), then Then() runs. */
 	void Grab(float Hold, TFunction<void()> Then);
 	double GrabHoldUntil = 0.0;
-	FVector LookAtPoint = FVector::ZeroVector;
-	double LookAtUntil = 0.0;
 	double BinTurnStarted = -1.;
 	bool bStepToShedDoor = false;
 	void TickBinTurn(float Dt);
@@ -287,6 +291,7 @@ private:
 	void UpstairsThump();
 	void CueEvent(FName Id);
 	void TickCues(float Dt);
+	void PlayHouseHaunt(int32 Pick);
 	void TickHallClock();
 	void TickYardCrows();
 	int32 YardCawsLeft = -1;

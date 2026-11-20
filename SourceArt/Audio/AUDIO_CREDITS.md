@@ -97,6 +97,11 @@ Dialogue generated with Google Gemini TTS (see VO/_manifest.json). Radio and pho
 - bell_toll: Ivo Vicic - Church Bells/04 Church Bells, Near Distance, In Church Tower-3 Different Bell 02.wav (first stroke, pitched down)
 - tv_static: synthesised (noise, 60 Hz hum, line whine)
 
+## Edith's indoor one-shots
+
+- The two whimpers, two groans and two whispered snickers are edits of Edith's original Gemini vocal takes in `VO_dry`. The snickers use the timing and changing mouth sounds of her unlayered laughter. The mastering recipe is in `Scripts/audio/make_edith_haunts.py`.
+- Edith's upstairs steps use the existing four `her_step` wet footfalls credited above.
+
 ## Yard and rear shed
 
 - `amb_yard` and `amb_dawn` are original synthesized wind and insect beds. `Scripts/audio/make_exterior_beds.py` masters both loops.

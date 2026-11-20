@@ -7,6 +7,14 @@
 
 #include "Components/AudioComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Camera/CameraActor.h"
+#include "Camera/CameraComponent.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Components/SpotLightComponent.h"
+#include "Components/PointLightComponent.h"
+#include "Engine/SkeletalMesh.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "Materials/MaterialInterface.h"
 #include "Engine/StaticMesh.h"
 #include "EngineUtils.h"
 #include "Engine/PostProcessVolume.h"
@@ -202,7 +210,14 @@ float AWCDirector::Say(FName LineId, float Delay)
 // ---------------------------------------------------------------------------------------------- begin / world state
 void AWCDirector::ApplyWorldState()
 {
-		ShowTagged(TEXT("Show_drawer"), Has(TEXT("phone_done")));
+	// Restore the box to the correct side of the bed edge on Continue as well.
+	if (AWCInteractable* Box = Thing(TEXT("pick_keep_ruth")); Box && !BedCamera.IsValid())
+	{
+		const bool bTaken = HasItem(TEXT("keep_ruth"));
+		Box->bEnabled = Has(TEXT("underbed_done")) && !bTaken;
+		if (!bTaken) Box->SetActorLocation(Pos(TEXT("Her_Under")) + FVector(0, Has(TEXT("underbed_done")) ? -15.f : 150.f, 1.f));
+	}
+	ShowTagged(TEXT("Show_drawer"), Has(TEXT("phone_done")));
 	ShowTagged(TEXT("Hide_shears"), !HasItem(TEXT("shears")));
 	ShowTagged(TEXT("Show_bookkey"), Has(TEXT("book_done")) && !HasItem(TEXT("key_desk")) && !Has(TEXT("desk_open")));
 	ShowTagged(TEXT("Show_desk"), Has(TEXT("desk_open")) && !HasItem(TEXT("key_ell")));
@@ -1197,89 +1212,135 @@ void AWCDirector::ScareCeiling()
 }
 
 // ---------------------------------------------------------------------------------------------- S7 the hand under the bed
-// Slow.  He comes into Ruth's room and sees the music box on the floor; the view is held on it; her arm comes out from under the
-// bed, closes on the box and draws it back under.  She is never seen.  Then he has to get down and take it back.
+// Ruth's music box. The shot owns its view independently of the deputy's stance.
 void AWCDirector::ScareUnderBed()
 {
-	if (Has(TEXT("underbed_done"))) return;
-	Set(TEXT("underbed_done"));
-	UE_LOG(LogWCStory, Display, TEXT("WCSCARE t=%.1f S7_hand"), PlaySeconds);
-	for (TObjectIterator<UAudioComponent> It; It; ++It) if (It->GetWorld() == GetWorld() && It->Sound && It->Sound->GetName().Contains(TEXT("musicbox"))) It->FadeOut(2.5f, 0.f);
-	AWCEntity* H = Her();
+	if (BedCamera.IsValid() || Has(TEXT("underbed_done")) || HasItem(TEXT("keep_ruth"))) return;
 	AWCCharacter* P = Player();
+	APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0);
 	AWCInteractable* Box = Thing(TEXT("pick_keep_ruth"));
-	if (!H || !P || !Box) return;
+	USkeletalMesh* Mesh = LoadObject<USkeletalMesh>(nullptr, TEXT("/Game/WC/Her/SK_BedArm.SK_BedArm"));
+	if (!P || !PC || !Box || !Mesh) return;
+
+	BedBoxStart = Box->GetActorLocation();
+	const FVector View = BedBoxStart + FVector(-123, 54, 150);
+	const FVector Aim = BedBoxStart + FVector(0,-53,13);
+	ACameraActor* Camera = GetWorld()->SpawnActor<ACameraActor>(View, (Aim-View).Rotation());
+	if (!Camera) return;
+	BedCamera = Camera;
+	Camera->GetCameraComponent()->SetFieldOfView(59.f);
+	Camera->GetCameraComponent()->bConstrainAspectRatio = false;
+
+	USkeletalMeshComponent* Arm = NewObject<USkeletalMeshComponent>(Camera);
+	Arm->SetupAttachment(Camera->GetRootComponent());
+	Arm->SetAbsolute(true,true,true);
+	Arm->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	Arm->SetSkeletalMeshAsset(Mesh);
+	Arm->SetMaterial(0, LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/WC/Her/MI_HerDead.MI_HerDead")));
+	Arm->SetLightingChannels(true, true, true);
+	Arm->SetVisibility(false);
+	Arm->RegisterComponent();
+	BedArm = Arm;
+	const FBox Bounds = Box->Mesh->Bounds.GetBox();
+	BedWristAtBox = FVector(Bounds.GetCenter().X, Bounds.GetCenter().Y - 36.f, Bounds.Max.Z + 3.f);
+
+	// A practical beam follows this fixed camera, including when the player
+	// entered looking away or with the flashlight held below the mattress.
+	USpotLightComponent* Beam = NewObject<USpotLightComponent>(Camera);
+	Beam->SetupAttachment(Camera->GetRootComponent());
+	Beam->SetRelativeLocation(FVector(3,-12,-9));
+	Beam->SetIntensityUnits(ELightUnits::Lumens);
+	Beam->SetIntensity(500.f);
+	Beam->SetLightingChannels(true,true,false);
+	Beam->SetInnerConeAngle(24.f);
+	Beam->SetOuterConeAngle(42.f);
+	Beam->SetLightColor(FLinearColor(1.f,.91f,.78f));
+	Beam->SetAttenuationRadius(560.f);
+	Beam->RegisterComponent();
+	// Rake a little reflected light across the knuckles. Only the arm receives it.
+	UPointLightComponent* Bounce = NewObject<UPointLightComponent>(Camera);
+	Bounce->SetupAttachment(Camera->GetRootComponent());
+	Bounce->SetAbsolute(true,false,false);
+	Bounce->SetWorldLocation(BedBoxStart + FVector(-45,-28,52));
+	Bounce->SetLightingChannels(false,false,true);
+	Bounce->SetIntensityUnits(ELightUnits::Lumens);
+	Bounce->SetIntensity(235.f);
+	Bounce->SetLightColor(FLinearColor(.81f,.86f,.92f));
+	Bounce->SetAttenuationRadius(220.f);
+	Bounce->SetSourceRadius(13.f);
+	Bounce->SetCastShadows(false);
+	Bounce->RegisterComponent();
+
+	if (AWCEntity* E = Her()) E->Vanish();
+	for (TObjectIterator<UAudioComponent> It; It; ++It)
+		if (It->GetWorld() == GetWorld() && It->Sound && It->Sound->GetName().Contains(TEXT("musicbox")))
+			It->FadeOut(2.5f, 0.f);
 	bBusy = true;
-	P->SetInputLocked(true);
-	if (!P->IsFlashlightOn()) P->SetFlashlight(true);
-	const FVector BoxFrom = Box->GetActorLocation();
-	const FVector Under = Pos(TEXT("Her_Under"));
-	const FVector Dir = (BoxFrom - Under).GetSafeNormal2D();
-	const FVector Left(Dir.Y, -Dir.X, 0.f);
-	const float K = 1.25f;                                       // for this she is a quarter larger: a long arm, a big hand
-	// in the Under clip her left wrist lies 92 cm ahead of her and 30 cm to her left; the fingers go on past it
-	FVector AtBox = BoxFrom - Dir * (92.f * K + 17.f) - Left * (30.f * K);
-	AtBox.Z = Under.Z;
-	const FVector Hidden = AtBox - Dir * 175.f;
-	LookAtPoint = BoxFrom + FVector(0, 0, 6);
-	LookAtUntil = Clock + 9.8;
+	BedElapsed = 0.f;
 	Box->bEnabled = false;
-	H->Appear(Hidden, Dir.Rotation().Yaw, TEXT("Under"), true, 0.5f);
-	H->SetActorScale3D(FVector(K));
-	H->SetGlow(0.f);
-	Tension = 0.8f;
-	SetLoop(TEXT("amb"), TEXT("amb_house"), 0.1f, 1.5f);
-	if (bAuto && !AutoShotDir.IsEmpty())
-	{
-		const FString Dir0 = AutoShotDir;
-		After(3.6f, [Dir0]() { FScreenshotRequest::RequestScreenshot(Dir0 / TEXT("S7_auto_1_coming.png"), false, false); });
-		After(5.2f, [Dir0]() { FScreenshotRequest::RequestScreenshot(Dir0 / TEXT("S7_auto_2_on_box.png"), false, false); });
-		After(7.2f, [Dir0]() { FScreenshotRequest::RequestScreenshot(Dir0 / TEXT("S7_auto_3_taking.png"), false, false); });
-	}
-	After(1.6f, [this, AtBox, BoxFrom, Dir]()
-	{
-		AWCEntity* E = Her();
-		if (!E) return;
-		FVector At = AtBox;
-		const FVector Wrist = E->BoneWorld(TEXT("LeftHand")) - E->GetActorLocation();
-		const float Fwd = FVector::DotProduct(Wrist, Dir);
-		if (Fwd > 60.f && Fwd < 190.f) { At = BoxFrom - FVector(Wrist.X, Wrist.Y, 0.f) - Dir * 17.f; At.Z = AtBox.Z; }
-		UE_LOG(LogWCStory, Display, TEXT("WC: S7 wrist offset fwd %.0f side %.0f"), Fwd, FVector::DotProduct(Wrist, FVector(Dir.Y, -Dir.X, 0.f)));
-		E->Slide(At, 3.4f);
-		PlayAt(TEXT("scratch_wall"), BoxFrom, 0.8f, 0.7f, 1500.f);
-		Play2D(TEXT("sting_low"), 0.6f, EWCSnd::Music);
-	});
-	After(5.3f, [this, Box, BoxFrom, Hidden, Dir]()
-	{
-		// the fingers close; the box goes with them
-		AWCEntity* E = Her();
-		if (!E) return;
-		PlayAt(TEXT("pickup"), BoxFrom, 0.9f, 0.7f, 1200.f);
-		PlayAt(TEXT("drag_floor"), BoxFrom, 0.5f, 1.3f, 1200.f);
-		const FVector HerAt = E->GetActorLocation();
-		E->Slide(Hidden, 3.2f);
-		for (int32 i = 1; i <= 66; ++i) After(i * 0.05f, [this, Box, BoxFrom, HerAt, Dir]()
-		{
-			AWCEntity* E2 = Her();
-			if (!E2 || !IsValid(Box)) return;
-			const float Back = FMath::Clamp(FVector::DotProduct(HerAt - E2->GetActorLocation(), Dir), 0.f, 60.f);      // just under the edge of the bed: he can always reach it
-			Box->SetActorLocation(BoxFrom - Dir * Back);
-		});
-	});
-	After(9.6f, [this, Box]()
-	{
-		if (AWCEntity* E = Her()) { E->Vanish(); E->SetActorScale3D(FVector(1.f)); }
-		if (IsValid(Box)) Box->bEnabled = true;
-		if (AWCCharacter* Pl = Player()) Pl->SetInputLocked(false);
-		bBusy = false;
-		LookAtUntil = 0.0;
-		Rest(140.f);
-		ApplyWorldState();
-		Think(TEXT("...It took it. It's under the bed."));
-		ShowHint(TEXT("C: crouch"), 6.f);
-		Checkpoint(TEXT("hand"));
-	});
+	P->SetInputLocked(true);
+	P->GetCharacterMovement()->StopMovementImmediately();
+	P->ConsumeMovementInputVector();
+	PC->SetViewTargetWithBlend(Camera,.25f,VTBlend_EaseInOut,2.f,true);
+	Tension = .8f;
+	SetLoop(TEXT("amb"), TEXT("amb_house"), .1f, 1.5f);
+	UE_LOG(LogWCStory, Display, TEXT("WCSCARE t=%.1f S7_hand stance=%s view=%s box=%s lid=%.1f"), PlaySeconds,
+		P->bIsCrouched ? TEXT("crouched") : TEXT("standing"), *View.ToCompactString(), *BedBoxStart.ToCompactString(), Bounds.Max.Z);
 }
+
+void AWCDirector::TickUnderBed(float Dt)
+{
+	ACameraActor* Camera = BedCamera.Get();
+	AWCInteractable* Box = Thing(TEXT("pick_keep_ruth"));
+	USkeletalMeshComponent* Arm = BedArm.Get();
+	AWCCharacter* P = Player();
+	if (!Camera || !Arm || !Box || !P) return;
+	const float Previous = BedElapsed;
+	BedElapsed += Dt;
+	const float T = BedElapsed;
+	const float Reach = FMath::SmoothStep(1.75f, 4.6f, T);
+	const float Grip = FMath::SmoothStep(4.6f, 5.15f, T);
+	const float Pull = FMath::SmoothStep(5.45f, 7.85f, T);
+	const float Withdraw = FMath::SmoothStep(7.95f, 8.7f, T);
+	const FVector Under = Pos(TEXT("Her_Under"));
+	const FVector HideAt(Under.X, Under.Y - 15.f, BedBoxStart.Z);
+	const FVector Drag = (HideAt - BedBoxStart) * Pull;
+	Arm->SetWorldLocation(BedWristAtBox + FVector(0,-165.f*(1.f-Reach)-78.f*Withdraw, 2.f*FMath::Sin(PI*Reach)-1.5f*Grip) + Drag);
+	const float Searching = FMath::Sin(Reach * PI);
+	Arm->SetWorldRotation(FRotator(1.5f*Searching, 90.f - 4.f*Searching, 4.f*Searching));
+	Arm->SetMorphTarget(TEXT("Grip"), Grip*(1.f-Withdraw));
+	Arm->SetVisibility(T >= 1.75f && T < 8.7f);
+	Box->SetActorLocation(BedBoxStart + Drag);
+	if (Previous < 1.75f && T >= 1.75f)
+	{
+		PlayAt(TEXT("scratch_wall"), Under, .8f, .7f, 1500.f);
+		Play2D(TEXT("sting_low"), .6f, EWCSnd::Music);
+	}
+	if (Previous < 5.45f && T >= 5.45f)
+	{
+		PlayAt(TEXT("pickup"), BedBoxStart, .9f, .7f, 1200.f);
+		PlayAt(TEXT("drag_floor"), BedBoxStart, .5f, 1.3f, 1200.f);
+	}
+	if (T < 9.1f) return;
+
+	if (APlayerController* PC = UGameplayStatics::GetPlayerController(this,0))
+	{
+		PC->SetControlRotation((HideAt - P->EyeLocation()).Rotation());
+		PC->SetViewTargetWithBlend(P,.3f,VTBlend_EaseInOut,2.f,true);
+	}
+	BedCamera.Reset();
+	BedArm.Reset();
+	Camera->SetLifeSpan(.35f);
+	Set(TEXT("underbed_done"));
+	P->SetInputLocked(false);
+	bBusy = false;
+	Rest(140.f);
+	ApplyWorldState();
+	Think(TEXT("...It took it. It's under the bed."));
+	ShowHint(TEXT("C: crouch"), 6.f);
+	Checkpoint(TEXT("hand"));
+}
+
 
 // ---------------------------------------------------------------------------------------------- S5 the attic
 void AWCDirector::ScareAttic()

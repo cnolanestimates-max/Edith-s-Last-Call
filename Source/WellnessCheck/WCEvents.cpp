@@ -697,7 +697,7 @@ namespace
 		{ TEXT("enter:t_dining"), 3, TEXT("knock_far"), 0, 600.f, 1000.f, 0.9f, 1.f, TEXT("lockin_done"), 0 },
 		{ TEXT("enter:t_master"), 3, TEXT("chair_creak"), 3, 200.f, 300.f, 0.8f, 1.f, TEXT("lockin_done"), 0 },
 		{ TEXT("take:key_sitting"), 1, TEXT(""), 0, 0.f, 0.f, 1.f, 1.f, nullptr, 4 },
-		{ TEXT("door:sitting"), 1, TEXT("VO/m_laugh1"), 2, 250.f, 400.f, 0.5f, 1.f, nullptr, 0 },
+		{ TEXT("door:sitting"), 1, TEXT("VO/edith_snicker"), 2, 250.f, 400.f, 0.34f, 1.f, nullptr, 0 },
 		{ TEXT("take:key_prayer"), 1, TEXT("thump_far"), 1, 200.f, 500.f, 0.9f, 1.f, nullptr, 0 },
 		{ TEXT("enter:t_living"), 4, TEXT("scratch_wall"), 2, 200.f, 320.f, 0.9f, 0.85f, TEXT("phone_done"), 0 },
 		{ TEXT("enter:t_kitchen"), 5, TEXT("chair_scrape"), 3, 220.f, 320.f, 0.7f, 1.f, TEXT("phone_done"), 0 },
@@ -707,7 +707,7 @@ namespace
 		{ TEXT("take:key_ell"), 1, TEXT("VO/m_cry2"), 2, 300.f, 500.f, 0.55f, 1.f, nullptr, 0 },
 		// ---- the back rooms upstairs, the attic, the cellar
 		{ TEXT("door:up_ell"), 1, TEXT("house_groan"), 0, 500.f, 900.f, 0.9f, 1.f, nullptr, 0 },
-		{ TEXT("enter:t_aide"), 1, TEXT("VO/m_laugh2"), 1, 300.f, 600.f, 0.5f, 1.f, nullptr, 0 },
+		{ TEXT("enter:t_aide"), 1, TEXT("VO/edith_snicker"), 1, 300.f, 600.f, 0.34f, 1.f, nullptr, 0 },
 		{ TEXT("enter:t_up_ell"), 3, TEXT(""), 0, 0.f, 0.f, 1.f, 1.f, nullptr, 4 },
 		{ TEXT("enter:t_attic"), 1, TEXT("wind_gust"), 0, 600.f, 1000.f, 0.8f, 1.f, nullptr, 0 },
 		{ TEXT("take:key_cellar"), 1, TEXT("VO/m_moan2"), 1, 400.f, 800.f, 0.75f, 1.f, nullptr, 0 },
@@ -869,8 +869,17 @@ void AWCDirector::TickCues(float Dt)
 		StalkState != 0 || ActiveNote.IsValid() || Mode != EWCMode::Playing || (Has(TEXT("heard_upstairs")) && !Has(TEXT("peek_done")))) return;
 	WhisperAt = Clock + Rng.FRandRange(43.f, 102.f);
 	CueFreeAt = Clock + 14.;
-	const int32 Pick = (LastHaunt + 1 + Rng.RandRange(0, 5)) % 7;
+	constexpr int32 GroupCount = 9;
+	const int32 Pick = LastHaunt < 0 ? Rng.RandHelper(GroupCount) : (LastHaunt + 1 + Rng.RandHelper(GroupCount - 1)) % GroupCount;
 	LastHaunt = Pick;
+	PlayHouseHaunt(Pick);
+	UE_LOG(LogWCEvents, Display, TEXT("WCHAUNT one-shot group=%d next=%.1f"), Pick, WhisperAt - Clock);
+}
+
+void AWCDirector::PlayHouseHaunt(int32 Pick)
+{
+	AWCCharacter* P = Player();
+	if (!P) return;
 	const FVector Eye = P->EyeLocation();
 	const FRotator Yaw(0.f, P->GetControlRotation().Yaw, 0.f);
 	const FVector Side = FRotationMatrix(Yaw).GetUnitAxis(EAxis::Y) * (Rng.RandBool() ? 1.f : -1.f);
@@ -883,10 +892,13 @@ void AWCDirector::TickCues(float Dt)
 		const FVector Ear = Eye - Yaw.Vector() * 24.f + Side * 19.f;
 		PlayAt(FString::Printf(TEXT("VO/m_ear%d"),Rng.RandRange(1,3)), IsInsideHouse(Ear) ? Ear : Eye, .77f, Pitch);
 	}
+	else if (Pick == 1) PlayAt(TEXT("VO/edith_snicker"), At, .34f, Pitch);
+	else if (Pick == 7) PlayAt(TEXT("VO/edith_whimper"), At, .64f, Pitch);
+	else if (Pick == 8) PlayAt(TEXT("VO/edith_groan"), At, .66f, Pitch);
 	else if (Pick < 4)
 	{
-		const TCHAR* Voice[] = {TEXT(""),TEXT("laugh"),TEXT("cry"),TEXT("moan")};
-		PlayAt(FString::Printf(TEXT("VO/m_%s%d"), Voice[Pick], Rng.RandRange(1,2)), At, .74f, Pitch);
+		const TCHAR* Voice[] = {TEXT("cry"),TEXT("moan")};
+		PlayAt(FString::Printf(TEXT("VO/m_%s%d"), Voice[Pick - 2], Rng.RandRange(1,2)), At, .74f, Pitch);
 	}
 	else if (Pick == 4) PlayAt(TEXT("whisper_far"), At, .86f, Pitch);
 	else
@@ -898,13 +910,12 @@ void AWCDirector::TickCues(float Dt)
 		for (int32 i=0; i<Count; ++i)
 		{
 			const FVector Foot = At + Side * (37.f * i);
-			if (IsInsideHouse(Foot)) After(Delay, [this, Foot, Upstairs, Pitch]()
+			if (IsInsideHouse(Foot)) After(Delay, [this, Foot, Pitch]()
 			{
 				if (Player() && IsInsideHouse(Player()->GetActorLocation()) && !bBusy && !bEventBusy && Clock >= DialogueUntil)
-					PlayAt(Upstairs ? TEXT("step_stairs") : TEXT("her_step"), Foot, .91f, Pitch);
+					PlayAt(TEXT("her_step"), Foot, .91f, Pitch);
 			});
 			Delay += Rng.FRandRange(.38f,.72f);
 		}
 	}
-	UE_LOG(LogWCEvents, Display, TEXT("WCHAUNT one-shot group=%d next=%.1f"),Pick,WhisperAt-Clock);
 }

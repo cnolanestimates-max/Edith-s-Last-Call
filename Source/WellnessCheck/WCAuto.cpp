@@ -19,6 +19,7 @@
 #include "Camera/PlayerCameraManager.h"
 #include "GameFramework/PlayerController.h"
 #include "HAL/FileManager.h"
+#include "HAL/IConsoleManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Kismet/KismetSystemLibrary.h"
@@ -45,6 +46,54 @@ void AWCDirector::AutoBegin()
 	auto WaitHer = [this](float Timeout) { AutoSteps.Add({ A_WaitHer, NAME_None, Timeout }); };
 	auto Fire = [this](int32 N) { AutoSteps.Add({ A_Fire, NAME_None, (float)N }); };
 
+	const bool bBedCheck = FParse::Param(FCommandLine::Get(), TEXT("WCUnderBedCheck"));
+	if (bBedCheck || FParse::Param(FCommandLine::Get(), TEXT("WCHouseMixCheck")))
+	{
+		// An offscreen capture needs the focused game's mix, even with the window hidden.
+		if (IConsoleVariable* V = IConsoleManager::Get().FindConsoleVariable(TEXT("au.DisableAppVolume")))
+			V->Set(1, ECVF_SetByCode);
+		Steps.Reset();
+		Fade = FadeTarget = 0.f;
+		Player()->SetInputLocked(false);
+		Player()->SetFlashlight(true,false);
+		AutoShotDir = FPaths::ConvertRelativePathToFull(AutoShotDir);
+		IFileManager::Get().MakeDirectory(*AutoShotDir,true);
+		auto Do = [this](const TCHAR* Cmd) { AutoSteps.Add({A_Do,Cmd,0.f}); };
+		Set(TEXT("inside")); Set(TEXT("briefed"));
+		if (bBedCheck)
+		{
+			Do(TEXT("at:489,-263,444,-15,-29")); Wait(.6f);
+			if (FParse::Param(FCommandLine::Get(), TEXT("WCEnterCrouched")))
+				AutoSteps.Add({ A_Crouch, NAME_None, 1.f });
+			Wait(.6f); Do(TEXT("record_mix")); Do(TEXT("arm_bed_trigger"));
+			for (int32 I=0; I<94; ++I)
+			{
+				AutoSteps.Add({A_Shot, FName(*FString::Printf(TEXT("bed_%03d"),I)), 0.f});
+				Wait(.075f);
+			}
+			Do(TEXT("finish_bed_mix")); Do(TEXT("bed_result"));
+			AutoSteps.Add({ A_Crouch, NAME_None, 1.f });
+			Wait(.35f); Do(TEXT("at:638,-307,402,-90,-34"));
+			AutoSteps.Add({ A_Look, TEXT("pick_keep_ruth"), -1.f });
+			Wait(.5f); Do(TEXT("bed_pickup"));
+		}
+		else
+		{
+			Do(TEXT("at:182,71,94,0,-5")); Wait(4.f); Do(TEXT("mix_check"));
+			Do(TEXT("record_mix")); Wait(2.f); Go(TEXT("N_hallB")); Wait(1.5f);
+			Go(TEXT("A_Kitchen")); Wait(1.f); Do(TEXT("mix_check")); Go(TEXT("N_kitchen2")); Wait(2.f);
+			Do(TEXT("finish_house_mix"));
+			Do(TEXT("at:330,64,94,2,-6")); Wait(2.f);
+			for (int32 I=0; I<18; ++I)
+			{
+				AutoSteps.Add({A_Shot, FName(*FString::Printf(TEXT("dust_%02d"),I)), 0.f});
+				Wait(.12f);
+			}
+			Do(TEXT("dust_reference")); Wait(.3f); Shot(TEXT("without_dust")); Do(TEXT("dust_restore"));
+			Do(TEXT("audition_haunts")); Wait(13.f); Do(TEXT("finish_haunts")); Wait(.6f);
+		}
+		AutoIndex=0; AutoStepStart=Clock; return;
+	}
 	if (FParse::Param(FCommandLine::Get(), TEXT("WCYardCrowCheck")))
 	{
 		Steps.Reset();
@@ -498,7 +547,7 @@ void AWCDirector::AutoBegin()
 	Go(TEXT("A_StairsTop")); Flag(TEXT("ceiling_started"), 20.f * Slow); LookHer(2.5f); Shot(TEXT("17_S4_ceiling")); LookHer(7.5f); Shot(TEXT("18_S4_sprint")); LookHer(3.f);
 	Flag(TEXT("ceiling_done"), 40.f); Wait(8.f);
 	// ---- S7: under the bed
-	Flag(TEXT("kids_open"), 20.f * Slow); Go(TEXT("A_Kids")); Flag(TEXT("underbed_done"), 30.f); Wait(4.6f); Shot(TEXT("19_S7_hand_out")); Wait(2.6f); Shot(TEXT("20_S7_hand_takes")); Wait(4.f);
+	Flag(TEXT("kids_open"), 20.f * Slow); Go(TEXT("A_Kids")); Wait(3.9f); Shot(TEXT("19_S7_hand_out")); Wait(2.6f); Shot(TEXT("20_S7_hand_takes")); Flag(TEXT("underbed_done"), 30.f);
 	AutoSteps.Add({ A_Crouch, NAME_None, 1.f }); Use(TEXT("pick_keep_ruth")); AutoSteps.Add({ A_Crouch, NAME_None, 0.f }); Wait(1.f);
 	// ---- prayer room
 	Use(TEXT("up_prayer")); Go(TEXT("A_Prayer")); Wait(3.f); Shot(TEXT("21_prayer")); Use(TEXT("pick_keep_walter")); Wait(3.f); Use(TEXT("note_prayer")); Wait(1.f); Close();
@@ -803,6 +852,37 @@ void AWCDirector::AutoTick(float Dt)
 			UE_LOG(LogWCAuto, Display, TEXT("WCRETURN peekDone=%d exitLocked=%d boxOpen=%d eyeVisible=%d"),Has(TEXT("peek_done")),
 				Door(TEXT("front")) && Door(TEXT("front"))->bLocked,Has(TEXT("box_open")),Thing(TEXT("pick_keep_eye")) && !Thing(TEXT("pick_keep_eye"))->IsHidden());
 		}
+		else if (S.Arg == TEXT("arm_bed_trigger"))
+		{
+			Set(TEXT("kids_open")); bBusy=false; NextScareAt=Clock;
+		}
+		else if (S.Arg == TEXT("bed_result"))
+		{
+			const AWCInteractable* Box = Thing(TEXT("pick_keep_ruth"));
+			UE_LOG(LogWCAuto,Display,TEXT("WCBED done=%d unlocked=%d pickup=%d loc=%s cameraReturned=%d"),
+				Has(TEXT("underbed_done")), !P->IsInputLocked(), Box && Box->CanInteract(),
+				Box ? *Box->GetActorLocation().ToCompactString() : TEXT("missing"), UGameplayStatics::GetPlayerController(this,0)->GetViewTarget()==P);
+		}
+		else if (S.Arg == TEXT("bed_pickup"))
+		{
+			const AWCInteractable* Focused = P->GetFocus();
+			P->DoInteract();
+			UE_LOG(LogWCAuto,Display,TEXT("WCBED focus=%s recovered=%d"), Focused ? *Focused->WCId.ToString() : TEXT("none"),HasItem(TEXT("keep_ruth")));
+		}
+		else if (S.Arg == TEXT("dust_reference") || S.Arg == TEXT("dust_restore"))
+			P->Dust->SetVisibility(S.Arg == TEXT("dust_restore"));
+		else if (S.Arg == TEXT("finish_bed_mix"))
+			UAudioMixerBlueprintLibrary::StopRecordingOutputToAnyPath(this,EAudioRecordingExportType::WavFile,TEXT("under_bed"),AutoShotDir);
+		else if (S.Arg == TEXT("finish_house_mix"))
+			UAudioMixerBlueprintLibrary::StopRecordingOutputToAnyPath(this,EAudioRecordingExportType::WavFile,TEXT("house_walk"),AutoShotDir);
+		else if (S.Arg == TEXT("finish_haunts"))
+			UAudioMixerBlueprintLibrary::StopRecordingOutputToAnyPath(this,EAudioRecordingExportType::WavFile,TEXT("edith_one_shots"),AutoShotDir);
+		else if (S.Arg == TEXT("audition_haunts"))
+		{
+			UAudioMixerBlueprintLibrary::StartRecordingOutput(this,14.f);
+			const int32 Groups[] = {1,7,8,5};
+			for (int32 I=0; I<4; ++I) After(.45f+3.f*I, [this,Group=Groups[I]] { PlayHouseHaunt(Group); });
+		}
 		else if (S.Arg == TEXT("record_mix")) UAudioMixerBlueprintLibrary::StartRecordingOutput(this, 30.f);
 		else if (S.Arg == TEXT("finish_mix")) UAudioMixerBlueprintLibrary::StopRecordingOutputToAnyPath(this, EAudioRecordingExportType::WavFile, TEXT("arrival_mix"), AutoShotDir);
 		else if (S.Arg == TEXT("take_tape")) Event(TEXT("take:tape1"));
@@ -936,6 +1016,23 @@ void AWCDirector::AutoTick(float Dt)
 		Next(); return;
 	case A_Light: if (!P->IsFlashlightOn()) P->ToggleFlashlight(); Next(); return;
 	case A_Shot:
+		if (S.Arg == TEXT("dust_08"))
+		{
+			APlayerController* PC = UGameplayStatics::GetPlayerController(this,0);
+			const FVector Eye=P->EyeLocation();
+			int32 Width,Height; PC->GetViewportSize(Width,Height);
+			for (int32 I=0; I<P->Dust->GetInstanceCount(); ++I)
+			{
+				FTransform M; P->Dust->GetInstanceTransform(I,M,true);
+				const FVector V=M.GetLocation()-Eye;
+				FVector2D Pixel;
+				if (V.SizeSquared() > FMath::Square(480.) || FVector::DotProduct(V.GetSafeNormal(),P->GetControlRotation().Vector()) < .90f ||
+					!PC->ProjectWorldLocationToScreen(M.GetLocation(),Pixel) || Pixel.X <= 0 || Pixel.Y <= 0 || Pixel.X >= Width || Pixel.Y >= Height) continue;
+				FCollisionQueryParams Query(SCENE_QUERY_STAT(WCDustView),false,P);
+				if (!GetWorld()->LineTraceTestByChannel(Eye,M.GetLocation(),ECC_Visibility,Query))
+					UE_LOG(LogWCAuto,Display,TEXT("WCDUST mote=%d pixel=%.0f,%.0f range=%.0f visible=%d"),I,Pixel.X,Pixel.Y,V.Size(),P->Dust->IsVisible() && !P->Dust->bHiddenInGame);
+			}
+		}
 		if (S.Arg == TEXT("flies_a") || S.Arg == TEXT("flies_b") || S.Arg == TEXT("vent_driver"))
 		{
 			TArray<UInstancedStaticMeshComponent*> Clouds;

@@ -280,6 +280,7 @@ void AWCDirector::Tick(float Dt)
 					if (Clock >= NextTrigPoll) { NextTrigPoll = Clock + 0.1; TickTriggers(); }
 			HouseTick(Dt);
 			StoryTick(Dt);
+			if (BedCamera.IsValid()) TickUnderBed(Dt);
 		if (bAuto) AutoTick(Dt);
 	}
 	else if (Mode == EWCMode::Credits && CreditsScroll >= 0.f)

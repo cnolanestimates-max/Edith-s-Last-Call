@@ -970,17 +970,6 @@ void AWCDirector::HouseTick(float Dt)
 	if (bDriving) { TickDrive(Dt); return; }
 	TickBinTurn(Dt);
 	TickVentTool();
-	if (Clock < LookAtUntil)
-	{
-		if (AWCCharacter* Pl = Player())
-		{
-			if (AController* Ct = Pl->GetController())
-			{
-				const FRotator Want = (LookAtPoint - Pl->EyeLocation()).Rotation();
-				Ct->SetControlRotation(FMath::RInterpTo(Ct->GetControlRotation(), FRotator(Want.Pitch, Want.Yaw, 0.f), Dt, 3.2f));
-			}
-		}
-	}
 	if (Clock < GrabHoldUntil && Her() && Her()->IsShown())
 	{
 		if (AWCCharacter* Pl = Player())
@@ -1160,7 +1149,7 @@ void AWCDirector::ScareBook()
 			if (A.IsNearlyZero() || B.IsNearlyZero()) return;
 			UE_LOG(LogWCHouse, Display, TEXT("WCSCARE t=%.1f S10_book she runs up the stairs"), PlaySeconds);
 			// seven treads at a run, then away along the landing overhead
-			for (int32 k = 0; k < 7; ++k) After(0.12f + k * 0.19f, [this, A, B, k]() { PlayAt(TEXT("step_stairs"), FMath::Lerp(A, B, k / 6.f), 1.f, Rng.FRandRange(0.82f, 0.92f), 2600.f); });
+			for (int32 k = 0; k < 7; ++k) After(0.12f + k * 0.19f, [this, A, B, k]() { PlayAt(TEXT("her_step"), FMath::Lerp(A, B, k / 6.f), 1.f, Rng.FRandRange(0.82f, 0.92f), 2600.f); });
 			for (int32 k = 0; k < 4; ++k) After(0.12f + 7 * 0.19f + k * 0.24f, [this, B, C, k]() { PlayAt(TEXT("her_step"), FMath::Lerp(B, C, (k + 1) / 4.f), 0.9f - 0.12f * k, Rng.FRandRange(0.9f, 1.f), 3000.f); });
 		});
 
