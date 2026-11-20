@@ -192,6 +192,8 @@ void AWCDirector::BeginPlay()
 	bAuto = FParse::Param(FCommandLine::Get(), TEXT("WCAuto")) || FParse::Param(FCommandLine::Get(), TEXT("WCTour")) || FParse::Param(FCommandLine::Get(), TEXT("WCHerLook")) || FParse::Param(FCommandLine::Get(), TEXT("WCItems"));
 	if (bAuto && FParse::Param(FCommandLine::Get(), TEXT("WCListeningCheck")))
 		SaveSlot = TEXT("WCListeningCheck");
+	if (bAuto && FParse::Param(FCommandLine::Get(), TEXT("WCSettlersCheck")))
+		SaveSlot = TEXT("WCSettlersCheck");
 	if (FParse::Param(FCommandLine::Get(), TEXT("WCFast"))) TestPace = 0.08f;
 	FParse::Value(FCommandLine::Get(), TEXT("WCShots="), AutoShotDir);
 	static int32 AutoRuns = 0;
@@ -286,6 +288,7 @@ void AWCDirector::Tick(float Dt)
 			TickHallPendant();
 			StoryTick(Dt);
 			if (BedCamera.IsValid()) TickUnderBed(Dt);
+			if (SettlersDropAt >= 0.) TickSettlersPickup();
 		if (ListeningSnicker.IsValid()) TickListeningSnicker();
 		if (bAuto) AutoTick(Dt);
 	}
@@ -553,6 +556,16 @@ bool AWCDirector::DoLoad()
 {
 	UWCSave* S = Cast<UWCSave>(UGameplayStatics::LoadGameFromSlot(SaveSlot, 0));
 	if (!S) return false;
+	// Older checkpoints recorded the eye scare before the loose floor key was taken.
+	// Repair that same slot in place, preserving its position, doors and other progress.
+	if (S->Flags.Contains(TEXT("book_done")) && !S->Flags.Contains(TEXT("desk_open")) && !S->Items.Contains(TEXT("key_desk")))
+	{
+		S->Items.Add(TEXT("key_desk"));
+		if (S->Checkpoint == TEXT("book") || S->Objective.Contains(TEXT("settlers")) || S->Objective.Contains(TEXT("desk key")))
+			S->Objective = TEXT("Use the book's small key on Walter's desk in the downstairs den");
+		if (!UGameplayStatics::SaveGameToSlot(S, SaveSlot, 0))
+			UE_LOG(LogWC, Warning, TEXT("WC: repaired desk key in memory; could not update checkpoint"));
+	}
 	if (DoorListening != EDoorListening::Idle) FinishDoorListening(false);
 	Flags = TSet<FName>(S->Flags);
 	YardCawsLeft = FMath::Clamp(S->YardCawsLeft,-1,8);

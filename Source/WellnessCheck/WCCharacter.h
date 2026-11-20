@@ -38,6 +38,8 @@ public:
 	void FlickerLight(float Seconds, float Depth = 0.85f);
 	void SetInputLocked(bool bLocked) { bInputLocked = bLocked; }
 	bool IsInputLocked() const { return bInputLocked; }
+	// Scripted lean in world space, leaving capsule collision and the player's crouch state intact.
+	FVector PickupEyeOffset = FVector::ZeroVector;
 	/** Thrown onto your back. The screen is black while down; control returns after you get up. */
 	void Knockdown(float DownSeconds);
 	bool IsDown() const { return KDTime >= 0.f; }

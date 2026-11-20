@@ -249,6 +249,14 @@ private:
 	void FinaleCaught();
 	void ScareSewing();
 	void ScareBook();
+	void StageSettlersPickup(AActor* ShelfBook, const FVector& Start, const FVector& Out, float FloorZ);
+	void TickSettlersPickup();
+	void FinishSettlersPickup();
+	double SettlersDropAt = -1.;
+	FVector SettlersStart, SettlersFloor, SettlersEye;
+	FRotator SettlersFacing, SettlersInitialView;
+	TWeakObjectPtr<class UStaticMeshComponent> SettlersPages, SettlersCover, SettlersGlove, SettlersKey;
+	TWeakObjectPtr<class UPointLightComponent> SettlersFill;
 	/** She has him: she screams in his face for Hold seconds (the view is pulled to her), then Then() runs. */
 	void Grab(float Hold, TFunction<void()> Then);
 	double GrabHoldUntil = 0.0;

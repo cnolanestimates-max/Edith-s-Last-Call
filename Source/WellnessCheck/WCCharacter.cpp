@@ -575,6 +575,7 @@ void AWCCharacter::Tick(float Dt)
 		}
 	}
 	Cam->SetRelativeLocation(FVector(0.f, 0.f, Z));
+	if (!PickupEyeOffset.IsNearlyZero()) Cam->AddWorldOffset(PickupEyeOffset);
 	FRotator View = GetControlRotation();
 	View.Pitch = FMath::Clamp(FRotator::NormalizeAxis(View.Pitch) + PitchAdd, -89.f, 89.f);
 	View.Yaw += YawAdd;

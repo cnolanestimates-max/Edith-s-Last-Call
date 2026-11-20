@@ -52,7 +52,22 @@ void AWCDirector::AutoBegin()
 		Player()->SetInputLocked(false); Player()->SetFlashlight(true,false); Fade = FadeTarget = 0.f;
 		auto Do = [this](const TCHAR* Cmd) { AutoSteps.Add({A_Do,Cmd,0.f}); };
 		auto Touch = [this](const TCHAR* Id) { AutoSteps.Add({A_Use,Id,0.f}); };
-		if (FParse::Param(FCommandLine::Get(),TEXT("WCBathMirror")) && FParse::Param(FCommandLine::Get(),TEXT("WCContinue")))
+		if (FParse::Param(FCommandLine::Get(),TEXT("WCSettlersCheck")))
+		{
+			if (FParse::Param(FCommandLine::Get(),TEXT("WCLegacyBook"))) Do(TEXT("check_old_book_save"));
+			else
+			{
+				Do(TEXT("record_mix")); Do(TEXT("flag:inside")); Do(TEXT("at:552,-319,92,90,-5")); Wait(1.f);
+				Do(TEXT("look_at_settlers")); Do(TEXT("pull_settlers")); Wait(1.f); Shot(TEXT("01_eye"));
+				Wait(3.6f); Shot(TEXT("02_reaching")); Wait(1.1f); Shot(TEXT("03_lifting"));
+				Wait(1.f); Do(TEXT("check_visible_desk_key")); Shot(TEXT("04_key_in_book"));
+				Flag(TEXT("book_done"),4.f); Shot(TEXT("05_return")); Wait(1.25f); Do(TEXT("check_automatic_desk_key"));
+			}
+			Do(TEXT("at:2190,-330,92,0,-19")); Touch(TEXT("walter_drawer")); Wait(1.f); Touch(TEXT("pick_key_ell"));
+			Do(TEXT("check_desk_unlocked"));
+			if (!FParse::Param(FCommandLine::Get(),TEXT("WCLegacyBook"))) Do(TEXT("finish_book_mix"));
+		}
+		else if (FParse::Param(FCommandLine::Get(),TEXT("WCBathMirror")) && FParse::Param(FCommandLine::Get(),TEXT("WCContinue")))
 		{
 			Wait(.5f); Do(TEXT("check_bath_continue"));
 		}
@@ -144,7 +159,7 @@ void AWCDirector::AutoBegin()
 			Touch(TEXT("pick_key_sitting")); Shot(TEXT("04_drained_bath"));
 			Do(TEXT("at:1380,-420,92,0,-25")); Touch(TEXT("sitting_drawer")); Wait(.8f); Touch(TEXT("pick_ivory"));
 			Do(TEXT("at:231,-420,92,180,-28")); Touch(TEXT("look_piano")); Wait(1.f); Shot(TEXT("05_piano")); Touch(TEXT("pick_key_prayer"));
-			Do(TEXT("at:552,-319,92,90,-5")); Touch(TEXT("book_settlers")); Wait(4.f); Touch(TEXT("pick_key_desk"));
+			Do(TEXT("at:552,-319,92,90,-5")); Touch(TEXT("book_settlers")); Flag(TEXT("book_done"),12.f);
 			Do(TEXT("at:2190,-330,92,0,-19")); Touch(TEXT("walter_drawer")); Wait(1.f); Shot(TEXT("06_desk")); Touch(TEXT("pick_key_ell"));
 			Do(TEXT("at:150,56,442,0,0")); Do(TEXT("flag:peek_done")); Wait(2.f);
 			Do(TEXT("check_harrow_loot"));
@@ -659,8 +674,8 @@ void AWCDirector::AutoBegin()
 	Go(TEXT("A_Sitting")); Wait(3.f); Shot(TEXT("16_sitting")); Use(TEXT("note_diary2")); Wait(1.f); Close();
 	Use(TEXT("sitting_drawer")); Wait(.8f); Use(TEXT("pick_ivory")); Go(TEXT("A_Book")); Use(TEXT("look_piano")); Wait(1.f); Use(TEXT("pick_key_prayer")); Go(TEXT("A_Sitting")); Use(TEXT("note_deskkey")); Wait(1.f); Close(); Use(TEXT("pick_fuse"));
 	Go(TEXT("A_Pantry")); Use(TEXT("fusebox")); Flag(TEXT("fuse_done"), 4.f); Wait(2.f); Shot(TEXT("16a_fuse_in"));
-	Go(TEXT("A_Book")); Use(TEXT("book_settlers")); Flag(TEXT("book_done"), 6.f); Wait(0.9f); Shot(TEXT("16b_S10_book_eye")); Wait(3.f); Shot(TEXT("16c_S10_after"));
-	Use(TEXT("pick_key_desk")); Go(TEXT("A_Den")); Use(TEXT("desk")); Flag(TEXT("desk_open"), 6.f); Wait(2.f); Shot(TEXT("16b_desk_open_keys")); Use(TEXT("pick_key_ell")); Use(TEXT("pick_ammo_desk")); Wait(1.f);
+	Go(TEXT("A_Book")); Use(TEXT("book_settlers")); Wait(0.9f); Shot(TEXT("16b_S10_book_eye")); Flag(TEXT("book_done"),12.f); Shot(TEXT("16c_S10_after"));
+	Go(TEXT("A_Den")); Use(TEXT("desk")); Flag(TEXT("desk_open"), 6.f); Wait(2.f); Shot(TEXT("16b_desk_open_keys")); Use(TEXT("pick_key_ell")); Use(TEXT("pick_ammo_desk")); Wait(1.f);
 	// ---- S4: the head by the ceiling
 	Go(TEXT("A_StairsTop")); Flag(TEXT("ceiling_started"), 20.f * Slow); LookHer(2.5f); Shot(TEXT("17_S4_ceiling")); LookHer(7.5f); Shot(TEXT("18_S4_sprint")); LookHer(3.f);
 	Flag(TEXT("ceiling_done"), 40.f); Wait(8.f);
@@ -906,7 +921,45 @@ void AWCDirector::AutoTick(float Dt)
 	case A_Aim: P->SetAiming(S.F > 0.5f); Next(); return;
 	case A_Crouch: if (S.F > 0.5f) P->Crouch(); else P->UnCrouch(); Next(); return;
 	case A_Do:
-		if (S.Arg == TEXT("face_bath_exit"))
+		if (S.Arg == TEXT("look_at_settlers"))
+		{
+			AimAt(P, Thing(TEXT("book_settlers"))->GetActorLocation(), Dt);
+			if (In < .8) return;
+		}
+		else if (S.Arg == TEXT("pull_settlers"))
+		{
+			if (!P->GetFocus() || P->GetFocus()->WCId != TEXT("book_settlers"))
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL cannot focus settlers' book"));
+			P->DoInteract();
+		}
+		else if (S.Arg == TEXT("check_visible_desk_key"))
+		{
+			if (!P->IsInputLocked() || !SettlersPages.IsValid() || !SettlersCover.IsValid() || !SettlersKey.IsValid() || !SettlersGlove.IsValid() ||
+				!SettlersGlove->IsVisible() || SettlersCover->GetRelativeTransform().GetUnitAxis(EAxis::Y).Z < .45)
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL book reach or open cover"));
+		}
+		else if (S.Arg == TEXT("check_automatic_desk_key"))
+		{
+			if (!HasItem(TEXT("key_desk")) || P->IsInputLocked() || bBusy || !P->PickupEyeOffset.IsNearlyZero() ||
+				Thing(TEXT("pick_key_desk"))->CanInteract() || !DoLoad() || !HasItem(TEXT("key_desk")) || !Objective.Contains(TEXT("Walter's desk")))
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL automatic desk key or checkpoint"));
+		}
+		else if (S.Arg == TEXT("check_old_book_save"))
+		{
+			Set(TEXT("book_done")); Set(TEXT("inside")); Objective=TEXT("Pick up Walter's desk key from the floor below the settlers' book");
+			DoSave(TEXT("book"));
+			if (!DoLoad() || !HasItem(TEXT("key_desk")) || LastCheckpoint!=TEXT("book") || !Objective.Contains(TEXT("downstairs den")))
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL repair of old book checkpoint"));
+			ApplyWorldState();
+		}
+		else if (S.Arg == TEXT("check_desk_unlocked"))
+		{
+			if (!Has(TEXT("desk_open")) || !HasItem(TEXT("key_ell")))
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL Walter's desk or rear hall keys"));
+		}
+		else if (S.Arg == TEXT("finish_book_mix"))
+			UAudioMixerBlueprintLibrary::StopRecordingOutputToAnyPath(this,EAudioRecordingExportType::WavFile,TEXT("book_encounter"),AutoShotDir);
+		else if (S.Arg == TEXT("face_bath_exit"))
 		{
 			AimAt(P,FVector(2588,-200,145),Dt,4.f);
 			if (In<.85) return;

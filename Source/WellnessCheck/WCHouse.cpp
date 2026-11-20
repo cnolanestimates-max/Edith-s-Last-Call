@@ -317,7 +317,7 @@ bool AWCDirector::HouseEvent(FName Id)
 	if (Id == TEXT("take:key_desk")) { SetObjective(TEXT("Use the book's small key on Walter's desk in the downstairs den")); Checkpoint(TEXT("desk_key")); return true; }
 	if (Id == TEXT("use:book_settlers"))
 	{
-		if (Has(TEXT("book_done"))) return true;
+		if (Has(TEXT("book_done")) || bBusy) return true;
 		// he has to be standing square in front of it, and close, for what is behind it to be seen at all
 		if (AWCInteractable* Bk = Thing(TEXT("book_settlers")))
 		{
@@ -1093,14 +1093,13 @@ void AWCDirector::ScareSewing()
 // ================================================================================================ S10: the book
 void AWCDirector::ScareBook()
 {
-	Set(TEXT("book_done"));
 	UE_LOG(LogWCHouse, Display, TEXT("WCSCARE t=%.1f S10_book"), PlaySeconds);
 	AWCCharacter* P = Player();
 	AActor* Book = Find(TEXT("SettlersBook"));
 	AWCWatcher* EyeW = nullptr;
 	for (TActorIterator<AWCWatcher> It(GetWorld()); It; ++It) if (It->WCId == TEXT("book_eye")) EyeW = *It;
 	if (AWCInteractable* U = Thing(TEXT("book_settlers"))) U->bEnabled = false;
-	if (!P || !Book) { GiveItem(TEXT("key_desk"), TEXT("Small desk key")); return; }
+	if (!P || !Book) { FinishSettlersPickup(); return; }
 	bBusy = true;
 	P->SetInputLocked(true);
 	Play2D(TEXT("paper"), 0.8f, EWCSnd::SFX, 0.7f);
@@ -1151,23 +1150,10 @@ void AWCDirector::ScareBook()
 		Tension = 1.f;
 		// the book goes out of his hand
 		const FVector Start = From + Out * 26.f;
-		const float FloorZ = FMath::FloorToFloat((From.Z + 20.f) / 350.f) * 350.f + 3.f;
-		for (int32 i = 1; i <= 16; ++i)
-		{
-			After(i * 0.03f, [Book, Start, Out, FloorZ, i]()
-			{
-				if (!IsValid(Book)) return;
-				const float U = i / 16.f;
-				Book->SetActorLocation(FVector(Start.X + (Out.X * 6.f - Out.Y * 34.f) * U, Start.Y + (Out.Y * 6.f + Out.X * 34.f) * U, FMath::Lerp(Start.Z, FloorZ, U * U)));      // knocked aside, out of his line of sight
-				Book->SetActorRotation(FRotator(70.f * U, Book->GetActorRotation().Yaw + 9.f, 80.f * U));
-			});
-		}
-		After(0.5f, [this, Start, Out, FloorZ]()
-		{
-			PlayAt(TEXT("thump_far"), FVector(Start.X, Start.Y, FloorZ), 1.f, 1.5f, 900.f);
-			ShowTagged(TEXT("Show_bookkey"), true);
-			SetObjective(TEXT("Pick up Walter's desk key from the floor below the settlers' book"));
-		});
+		// The living-room floor dressing over the structural slab reaches Z=8 here.
+		const float FloorZ = FMath::FloorToFloat((From.Z + 20.f) / 350.f) * 350.f + 8.3f;
+		StageSettlersPickup(Book, Start, Out, FloorZ);
+		After(.5f, [this]() { PlayAt(TEXT("thump_far"), SettlersFloor, 1.f, 1.5f, 900.f); });
 		// she holds his eye for two seconds; then she is gone from the hole and running up the stairs behind the wall
 		After(2.1f, [this, EyeW, Glim]()
 		{
@@ -1181,15 +1167,6 @@ void AWCDirector::ScareBook()
 			for (int32 k = 0; k < 4; ++k) After(0.12f + 7 * 0.19f + k * 0.24f, [this, B, C, k]() { PlayAt(TEXT("her_step"), FMath::Lerp(B, C, (k + 1) / 4.f), 0.9f - 0.12f * k, Rng.FRandRange(0.9f, 1.f), 3000.f); });
 		});
 
-	});
-	After(4.1f, [this]()
-	{
-		if (AWCCharacter* Pl = Player()) Pl->SetInputLocked(false);
-		bBusy = false;
-		Rest(120.f);
-		Tension = 0.6f;
-		Think(TEXT("She was on the stairs."));
-		Checkpoint(TEXT("book"));
 	});
 }
 

@@ -222,7 +222,7 @@ void AWCDirector::ApplyWorldState()
 	UpdateFurniture(0.f, Furniture.IsEmpty());
 	RefreshFurnitureLoot();
 	ShowTagged(TEXT("Hide_shears"), !HasItem(TEXT("shears")));
-	ShowTagged(TEXT("Show_bookkey"), Has(TEXT("book_done")) && !HasItem(TEXT("key_desk")) && !Has(TEXT("desk_open")));
+	ShowTagged(TEXT("Show_bookkey"), false);
 	// The moving desk drawer exposes its keys only once it has cleared the apron.
 	ShowTagged(TEXT("Show_jewel"), Has(TEXT("box_open")));
 	ShowTagged(TEXT("Show_vent"), Has(TEXT("vent_open")));
@@ -239,8 +239,8 @@ void AWCDirector::ApplyWorldState()
 	ShowTagged(TEXT("Show_deskammo"), Has(TEXT("desk_open")) && !Has(TEXT("desk_ammo")));
 	ShowTagged(TEXT("Show_trunktags"), Has(TEXT("attic_started")) && !HasItem(TEXT("keep_daniel")));
 	ShowTagged(TEXT("Show_trunkkey"), Has(TEXT("attic_started")) && !HasItem(TEXT("key_cellar")));
-	if (AWCInteractable* Bk = Thing(TEXT("book_settlers"))) Bk->bEnabled = !Has(TEXT("book_done"));
-	ShowTagged(TEXT("SettlersBook"), !Has(TEXT("book_done")) || LastCheckpoint == TEXT("book"));
+	if (AWCInteractable* Bk = Thing(TEXT("book_settlers"))) Bk->bEnabled = !Has(TEXT("book_done")) && SettlersDropAt < 0.;
+	ShowTagged(TEXT("SettlersBook"), !Has(TEXT("book_done")) && SettlersDropAt < 0.);
 	ShowTagged(TEXT("L_Welcome"), !Has(TEXT("knocked")));
 	if (AWCInteractable* Desk = Thing(TEXT("desk"))) Desk->bEnabled = !Has(TEXT("desk_open"));
 	bPowerOut = Has(TEXT("power_out")) && !Has(TEXT("fuse_done"));
