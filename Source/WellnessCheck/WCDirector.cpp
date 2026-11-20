@@ -26,7 +26,6 @@ DEFINE_LOG_CATEGORY_STATIC(LogWC, Log, All);
 
 FWCSettings AWCDirector::Settings;
 int32 AWCDirector::PendingStart = 0;
-static const TCHAR* SaveSlot = TEXT("WellnessCheck");
 static const TCHAR* Sec = TEXT("WellnessCheck");
 
 // ---------------------------------------------------------------------------------------------- settings
@@ -191,6 +190,8 @@ void AWCDirector::BeginPlay()
 	}
 
 	bAuto = FParse::Param(FCommandLine::Get(), TEXT("WCAuto")) || FParse::Param(FCommandLine::Get(), TEXT("WCTour")) || FParse::Param(FCommandLine::Get(), TEXT("WCHerLook")) || FParse::Param(FCommandLine::Get(), TEXT("WCItems"));
+	if (bAuto && FParse::Param(FCommandLine::Get(), TEXT("WCListeningCheck")))
+		SaveSlot = TEXT("WCListeningCheck");
 	if (FParse::Param(FCommandLine::Get(), TEXT("WCFast"))) TestPace = 0.08f;
 	FParse::Value(FCommandLine::Get(), TEXT("WCShots="), AutoShotDir);
 	static int32 AutoRuns = 0;
@@ -281,6 +282,7 @@ void AWCDirector::Tick(float Dt)
 			HouseTick(Dt);
 			StoryTick(Dt);
 			if (BedCamera.IsValid()) TickUnderBed(Dt);
+		if (ListeningSnicker.IsValid()) TickListeningSnicker();
 		if (bAuto) AutoTick(Dt);
 	}
 	else if (Mode == EWCMode::Credits && CreditsScroll >= 0.f)
@@ -496,6 +498,19 @@ void AWCDirector::Checkpoint(FName Id)
 	LastCheckpoint = Id;
 	DoSave(Id);
 	UE_LOG(LogWC, Display, TEXT("WCCHECKPOINT t=%.1f %s"), PlaySeconds, *Id.ToString());
+}
+
+void AWCDirector::RememberAtCheckpoint(FName Flag)
+{
+	Set(Flag);
+	// A restart should remember the encounter but restore the original checkpoint,
+	// including its inventory, doors and player position.
+	if (UWCSave* Saved = Cast<UWCSave>(UGameplayStatics::LoadGameFromSlot(SaveSlot, 0)))
+	{
+		Saved->Flags.AddUnique(Flag);
+		if (!UGameplayStatics::SaveGameToSlot(Saved, SaveSlot, 0))
+			UE_LOG(LogWC, Warning, TEXT("WC: could not persist %s at the current checkpoint"), *Flag.ToString());
+	}
 }
 
 void AWCDirector::DoSave(FName Id)

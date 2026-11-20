@@ -1,4 +1,4 @@
-"""Import the six indoor one-shots and the isolated reaching arm."""
+"""Import the indoor one-shots and the isolated reaching arm."""
 import runpy
 from pathlib import Path
 import unreal as u
@@ -8,6 +8,8 @@ imported = runpy.run_path(str(root / 'Scripts/art/import_arrival_assets.py'))['i
 for cue in ('whimper', 'groan', 'snicker'):
     for take in (1, 2):
         imported(root / f'SourceArt/Audio/VO/edith_{cue}_{take:02}.wav', '/Game/WC/Audio/VO')
+
+imported(root / 'SourceArt/Audio/VO/edith_listening_snicker_01.wav', '/Game/WC/Audio/VO')
 
 options = u.FbxImportUI()
 options.automated_import_should_detect_type = False

@@ -869,11 +869,68 @@ void AWCDirector::TickCues(float Dt)
 		StalkState != 0 || ActiveNote.IsValid() || Mode != EWCMode::Playing || (Has(TEXT("heard_upstairs")) && !Has(TEXT("peek_done")))) return;
 	WhisperAt = Clock + Rng.FRandRange(43.f, 102.f);
 	CueFreeAt = Clock + 14.;
+	if (!Has(TEXT("heard_listening_snicker")) && !P->IsInputLocked() && !P->IsDown() &&
+		(!Her() || !Her()->IsShown()) && TryListeningSnicker(P))
+	{
+		LastHaunt = 1; // Keep the ordinary laugh out of the next random slot.
+		return;
+	}
 	constexpr int32 GroupCount = 9;
 	const int32 Pick = LastHaunt < 0 ? Rng.RandHelper(GroupCount) : (LastHaunt + 1 + Rng.RandHelper(GroupCount - 1)) % GroupCount;
 	LastHaunt = Pick;
 	PlayHouseHaunt(Pick);
 	UE_LOG(LogWCEvents, Display, TEXT("WCHAUNT one-shot group=%d next=%.1f"), Pick, WhisperAt - Clock);
+}
+
+bool AWCDirector::TryListeningSnicker(AWCCharacter* P)
+{
+	const FVector Eye = P->EyeLocation();
+	const FRotator Yaw(0.f, P->GetControlRotation().Yaw, 0.f);
+	const FVector Forward = Yaw.Vector();
+	const FVector Side = FRotationMatrix(Yaw).GetUnitAxis(EAxis::Y);
+	const float FirstSide = Rng.RandBool() ? 1.f : -1.f;
+	const FCollisionQueryParams Query(SCENE_QUERY_STAT(WCListeningSnicker), false, P);
+	for (float Sign : {FirstSide, -FirstSide})
+	{
+		const FVector Direction = (-Forward + .52f * Sign * Side).GetSafeNormal();
+		FHitResult Hit;
+		const bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Eye, Eye + 135.f * Direction, ECC_Visibility, Query);
+		const float Distance = bHit ? Hit.Distance - 10.f : 135.f;
+		const FVector Source = Eye + Direction * Distance;
+		if (Distance < 50.f || !IsInsideHouse(Source)) continue;
+
+		ListeningSnicker = PlayAt(TEXT("VO/edith_listening_snicker_01"), Source, .34f, .96f);
+		if (!ListeningSnicker.IsValid()) return false;
+		ListeningStartForward = Forward;
+		RememberAtCheckpoint(TEXT("heard_listening_snicker"));
+		return true;
+	}
+	return false;
+}
+
+void AWCDirector::TickListeningSnicker()
+{
+	UAudioComponent* Voice = ListeningSnicker.Get();
+	AWCCharacter* P = Player();
+	if (!Voice || !Voice->IsPlaying() || !P)
+	{
+		ListeningSnicker.Reset();
+		return;
+	}
+
+	const FVector Forward = FRotator(0.f, P->GetControlRotation().Yaw, 0.f).Vector();
+	const FVector Toward = (Voice->GetComponentLocation() - P->EyeLocation()).GetSafeNormal2D();
+	// Compare both headings against the same world-space source. Walking past the
+	// sound or glancing a few degrees won't cut the laugh off.
+	const bool bTurned = FVector::DotProduct(Forward, ListeningStartForward) < .77f &&
+		FVector::DotProduct(Forward - ListeningStartForward, Toward) > .35f;
+	const bool bInterrupted = bBusy || bEventBusy || StalkState != 0 || Clock < DialogueUntil ||
+		P->IsInputLocked() || P->IsDown() || ActiveNote.IsValid() || !IsInsideHouse(P->GetActorLocation());
+	if (bTurned || bInterrupted)
+	{
+		Voice->FadeOut(.045f, 0.f);
+		ListeningSnicker.Reset();
+	}
 }
 
 void AWCDirector::PlayHouseHaunt(int32 Pick)

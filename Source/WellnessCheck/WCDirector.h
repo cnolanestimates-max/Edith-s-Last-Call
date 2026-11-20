@@ -292,6 +292,11 @@ private:
 	void CueEvent(FName Id);
 	void TickCues(float Dt);
 	void PlayHouseHaunt(int32 Pick);
+	bool TryListeningSnicker(AWCCharacter* P);
+	void TickListeningSnicker();
+	void RememberAtCheckpoint(FName Flag);
+	TWeakObjectPtr<UAudioComponent> ListeningSnicker;
+	FVector ListeningStartForward = FVector::ZeroVector;
 	void TickHallClock();
 	void TickYardCrows();
 	int32 YardCawsLeft = -1;
@@ -383,6 +388,7 @@ private:
 	TArray<FLive> LiveLights;
 	TArray<TWeakObjectPtr<AActor>> BarMeshes[2];
 	void TickTriggers();
+	FString SaveSlot = TEXT("WellnessCheck");
 	void DoSave(FName Id);
 	bool DoLoad();
 

@@ -46,6 +46,19 @@ void AWCDirector::AutoBegin()
 	auto WaitHer = [this](float Timeout) { AutoSteps.Add({ A_WaitHer, NAME_None, Timeout }); };
 	auto Fire = [this](int32 N) { AutoSteps.Add({ A_Fire, NAME_None, (float)N }); };
 
+	if (FParse::Param(FCommandLine::Get(), TEXT("WCListeningCheck")))
+	{
+		Steps.Reset();
+		Fade = FadeTarget = 0.f;
+		Player()->SetInputLocked(false);
+		Set(TEXT("inside")); Set(TEXT("briefed"));
+		auto Do = [this](const TCHAR* Cmd) { AutoSteps.Add({A_Do, Cmd, 0.f}); };
+		Do(TEXT("at:380,82,94,0,0")); Wait(1.f);
+		Do(TEXT("snicker_checkpoint")); Do(TEXT("at:680,83,94,0,0")); Wait(1.f);
+		Flag(TEXT("heard_listening_snicker"), 100.f);
+		Wait(.30f); Do(TEXT("snicker_turn")); Wait(2.4f); Do(TEXT("snicker_reload"));
+		AutoIndex=0; AutoStepStart=Clock; return;
+	}
 	const bool bBedCheck = FParse::Param(FCommandLine::Get(), TEXT("WCUnderBedCheck"));
 	if (bBedCheck || FParse::Param(FCommandLine::Get(), TEXT("WCHouseMixCheck")))
 	{
@@ -851,6 +864,46 @@ void AWCDirector::AutoTick(float Dt)
 			Event(TEXT("use:jewelbox"));
 			UE_LOG(LogWCAuto, Display, TEXT("WCRETURN peekDone=%d exitLocked=%d boxOpen=%d eyeVisible=%d"),Has(TEXT("peek_done")),
 				Door(TEXT("front")) && Door(TEXT("front"))->bLocked,Has(TEXT("box_open")),Thing(TEXT("pick_keep_eye")) && !Thing(TEXT("pick_keep_eye"))->IsHidden());
+		}
+		else if (S.Arg == TEXT("snicker_checkpoint"))
+		{
+			Checkpoint(TEXT("snicker_test"));
+			Set(TEXT("qa_after_snicker_checkpoint"));
+		}
+		else if (S.Arg == TEXT("snicker_turn"))
+		{
+			const TWeakObjectPtr<UAudioComponent> Voice = ListeningSnicker;
+			if (Voice.IsValid() && Voice->IsPlaying())
+			{
+				const bool bTurnToward = FParse::Param(FCommandLine::Get(), TEXT("WCTurnToward"));
+				const float SourceYaw = (Voice->GetComponentLocation()-P->EyeLocation()).Rotation().Yaw;
+				FRotator View = P->GetControlRotation();
+				const float Side = FMath::Sign(FMath::FindDeltaAngleDegrees(View.Yaw, SourceYaw));
+				View.Yaw += Side * (bTurnToward ? 60.f : -55.f);
+				P->GetController()->SetControlRotation(View);
+				After(.30f, [Voice,bTurnToward] {
+					const bool Playing = Voice.IsValid() && Voice->IsPlaying();
+					UE_LOG(LogWCAuto,Display,TEXT("WCLISTEN toward=%d playingAfterTurn=%d"),bTurnToward,Playing);
+					if (Playing == bTurnToward) UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL listening reaction"));
+				});
+				After(2.15f, [Voice] {
+					if (Voice.IsValid() && Voice->IsPlaying()) UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL listening voice still active"));
+				});
+			}
+			else UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL no listening voice at reaction time"));
+		}
+		else if (S.Arg == TEXT("snicker_reload"))
+		{
+			Flags.Remove(TEXT("heard_listening_snicker")); // prove the marker is read from disk
+			const bool Loaded = DoLoad();
+			UE_LOG(LogWCAuto,Display,TEXT("WCLISTEN reload=%d remembered=%d checkpointX=%.0f"), Loaded,
+				Has(TEXT("heard_listening_snicker")),P->GetActorLocation().X);
+			if (!Loaded || !Has(TEXT("heard_listening_snicker")) || Has(TEXT("qa_after_snicker_checkpoint")) ||
+				FMath::Abs(P->GetActorLocation().X - 380.f) > 4.f)
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL listening checkpoint"));
+			WhisperAt = CueFreeAt = Clock;
+			TickCues(0.f);
+			if (ListeningSnicker.IsValid()) UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL listening encounter repeated"));
 		}
 		else if (S.Arg == TEXT("arm_bed_trigger"))
 		{

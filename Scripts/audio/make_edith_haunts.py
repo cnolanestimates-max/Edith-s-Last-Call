@@ -10,6 +10,8 @@ AUDIO = Path(__file__).resolve().parents[2] / "SourceArt/Audio"
 TAKES = {
     "snicker_01": ("laugh1", .02, .73, 1.02, (560, 5700), -11),
     "snicker_02": ("laugh2", .91, 2.20, .98, (490, 4900), -12),
+    # Three caught breaths with enough time to hear the first and turn during the next.
+    "listening_snicker_01": ("laugh2", .22, 2.25, .98, (490, 4900), -12),
     "whimper_01": ("cry1", 1.47, 2.25, 1.12, (240, 4200), -6),
     "whimper_02": ("cry2", .18, 1.06, 1.06, (200, 4700), -6),
     "groan_01": ("moan2", 2.14, 4.31, .82, (73, 2400), -5),
@@ -27,7 +29,7 @@ def render(name, take):
     x = pcm[round(start*sr):round(end*sr)].astype(float) / 32768
     x = signal.resample(x, round(len(x) * 48000 / (sr * pitch)))
     x = band(x, hz, 48000)
-    if name.startswith("snicker"):
+    if "snicker" in name:
         # Whisper the original cadence. Each frequency band's breath follows that
         # band in her performance, retaining mouth shape between the little pulses.
         rng = np.random.default_rng(810 + int(name[-2:]))

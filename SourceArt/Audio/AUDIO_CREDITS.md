@@ -100,6 +100,7 @@ Dialogue generated with Google Gemini TTS (see VO/_manifest.json). Radio and pho
 ## Edith's indoor one-shots
 
 - The two whimpers, two groans and two whispered snickers are edits of Edith's original Gemini vocal takes in `VO_dry`. The snickers use the timing and changing mouth sounds of her unlayered laughter. The mastering recipe is in `Scripts/audio/make_edith_haunts.py`.
+- The listening snicker uses a longer passage from the same unlayered `m_laugh2` performance and the same whispered treatment.
 - Edith's upstairs steps use the existing four `her_step` wet footfalls credited above.
 
 ## Yard and rear shed
