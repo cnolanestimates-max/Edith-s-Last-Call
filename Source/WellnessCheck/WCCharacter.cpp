@@ -609,7 +609,8 @@ void AWCCharacter::Tick(float Dt)
 		FaceAim = FMath::FInterpTo(FaceAim, FaceWant, Dt, 6.f);
 	}
 	FVector AimPoint = FMath::Lerp(Cam->GetComponentLocation() + Cam->GetForwardVector() * AimDist, FacePoint, FaceAim * 0.9f);
-	if (D && D->IsBinTurnActive())
+	const bool bLookingAtBin = D && D->IsTurningToBin();
+	if (bLookingAtBin)
 	{
 		const FVector Bin = D->BinFocusPoint();
 		const float Facing = FVector::DotProduct(Cam->GetForwardVector(), (Bin-Cam->GetComponentLocation()).GetSafeNormal());
@@ -628,7 +629,6 @@ void AWCCharacter::Tick(float Dt)
 	}
 	Flash->SetIntensity(FlashLumens * FlashFluxScale * Level);
 	Spill->SetIntensity(FlashLumens * 0.11f * SpillFluxScale * Level);
-	const bool bLookingAtBin = D && D->IsBinTurnActive();
 	BinBeam = FMath::FInterpTo(BinBeam, bLookingAtBin ? FMath::SmoothStep(.86f,.995f,float(FVector::DotProduct(Cam->GetForwardVector(),(D->BinFocusPoint()-Cam->GetComponentLocation()).GetSafeNormal()))) : 0.f, Dt, bLookingAtBin ? 7.5f : 2.f);
 	Throw->SetIntensity(FlashLumens * (0.24f + 2.3f * BinBeam) * ThrowFluxScale * Level);
 	Throw->SetAttenuationRadius(1000.f + 500.f * BinBeam);

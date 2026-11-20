@@ -2,6 +2,35 @@
 import unreal as u
 
 
+def wire_switch():
+    actors = u.get_editor_subsystem(u.EditorActorSubsystem)
+    by_label = {a.get_actor_label(): a for a in actors.get_all_level_actors()}
+    # Match the existing wall hardware and interaction volume. Both plates face into the hall.
+    for label in ('SwitchPlate', 'SwitchNub', 'Usable_sw'):
+        source = by_label[label + '_uphall']
+        name = label + '_pendant'
+        pos = source.get_actor_location() + u.Vector(212, 0, -350)
+        part = by_label.get(name)
+        if not part:
+            part = actors.spawn_actor_from_class(source.get_class(), pos, source.get_actor_rotation())
+            part.set_actor_label(name)
+        part.set_actor_location(pos, False, False)
+        part.set_folder_path('House/Lights/MainHall')
+        if label == 'Usable_sw':
+            part.set_editor_property('wc_id', u.Name('sw_pendant'))
+            part.set_editor_property('prompt', 'Hall pendant switch')
+            for prop in ('grab_extent', 'grab_offset'):
+                part.set_editor_property(prop, source.get_editor_property(prop))
+        else:
+            mesh = part.static_mesh_component
+            mesh.set_static_mesh(source.static_mesh_component.static_mesh)
+            mesh.set_material(0, source.static_mesh_component.get_material(0))
+            mesh.set_collision_profile_name('NoCollision')
+            mesh.set_editor_property('lighting_channels', source.static_mesh_component.get_editor_property('lighting_channels'))
+            part.set_actor_scale3d(source.get_actor_scale3d())
+    by_label['HallPendantBeam'].set_editor_property('tags', ['RoomLight', 'Room_pendant', 'HallPendantBeam'])
+
+
 def dress():
     actors=u.get_editor_subsystem(u.EditorActorSubsystem)
     items=list(actors.get_all_level_actors())
@@ -30,7 +59,7 @@ def dress():
     rose.static_mesh_component.set_material(0,u.load_asset('/Game/WC/Materials/M_PhoneBrass'))
     rose.static_mesh_component.set_collision_profile_name('NoCollision')
     rose.set_actor_scale3d(u.Vector(.19,.19,.023))
-    # Handled by the same room circuit as the other first-floor hall fitting.
+    # The moving beam has its own switch on the hall side of the kitchen wall.
     light=part('HallPendantBeam',u.SpotLight,(1200,30,225))
     c=light.light_component
     c.set_mobility(u.ComponentMobility.MOVABLE)
@@ -50,4 +79,4 @@ def dress():
     light.set_actor_location(u.Vector(1200,30,225),False,False)
     light.set_actor_rotation(u.Rotator(pitch=-68,yaw=-90),False)
     light.attach_to_actor(shade,'',u.AttachmentRule.KEEP_WORLD,u.AttachmentRule.KEEP_WORLD,u.AttachmentRule.KEEP_WORLD,False)
-    light.set_editor_property('tags',['RoomLight','Room_hall','HallPendantBeam'])
+    wire_switch()

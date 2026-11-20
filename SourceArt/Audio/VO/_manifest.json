@@ -520,9 +520,9 @@
  {
   "id": "m_whyleave",
   "who": "mabel",
-  "text": "WHY DID YOU LEAVE ME!",
-  "fx": "ghost",
-  "style": "A very old, frail woman in her late eighties. Thin, dry, trembling voice, slow, breathy, barely above a whisper, lonely and eerily gentle. Rural American. Not a whisper: SCREAMED at full force, raw, furious and heartbroken, right in the listener's face, the last word drawn out into a shriek."
+  "text": "YOU LEFT MEEEEEEEEEE!",
+  "fx": "scream",
+  "style": "Horror game vocal performance. Explode immediately into a ferocious, guttural, full-voice SCREAM. Bark YOU LEFT in two short, harsh attacks. Bite into the M and sustain the same open, ripping EEEEE vowel at screaming intensity for four full seconds on one breath. Gravel and distortion in the throat, ragged low chest resonance under the shriek. End when the breath tears out. No pleading, no melodic pitch slide, no conversational reading. One take, three words."
  },
  {
   "id": "m_laugh1",

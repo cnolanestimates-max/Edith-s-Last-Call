@@ -208,6 +208,7 @@ void AWCEntity::Vanish()
 	EyeGlint->SetIntensity(0.f);
 	FarLight->SetIntensity(0.f);
 	FarGlow = DefaultFarGlow;
+	FarLight->SetLightColor(FLinearColor(.72f,.82f,1.f));
 	if (IrisMID) IrisMID->SetScalarParameterValue(TEXT("Glow"), 0.06f);
 	Eye->SetRelativeScale3D(FVector(1.f));
 	ScreamTarget = ScreamAlpha = 0.f;

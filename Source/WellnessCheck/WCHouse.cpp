@@ -93,13 +93,18 @@ void AWCDirector::HouseBegin()
 	BathChair = Find(TEXT("BathWheelchair"));
 	if (BathChair.IsValid()) BathChairHome = BathChair->GetActorTransform();
 	if (AActor* Fixture = Find(TEXT("HallPendant"))) HallPendant = Fixture->FindComponentByClass<UStaticMeshComponent>();
-	if (AActor* Beam = Find(TEXT("HallPendantBeam"))) PendantBeam = Beam->FindComponentByClass<USpotLightComponent>();
+	if (AActor* Beam = Find(TEXT("HallPendantBeam")))
+	{
+		PendantBeam = Beam->FindComponentByClass<USpotLightComponent>();
+		if (PendantBeam.IsValid()) PendantBeam->SetRelativeRotation(FRotator(-68.f,90.f,0.f));
+	}
 	if (HallPendant.IsValid())
 	{
 		PendantBulbSlot = HallPendant->GetMaterialIndex(TEXT("M_GlowBulb"));
 		if (PendantBulbSlot != INDEX_NONE) PendantLit = HallPendant->GetMaterial(PendantBulbSlot);
 		PendantDark = LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/WC/Materials/M_BulbOff.M_BulbOff"));
 	}
+	if (!bPowerOut && !Has(TEXT("pendant_off"))) SwitchRoom(TEXT("pendant"), true, false);
 	NextStalkAt = Clock + 300.0 / 1.15;
 	UE_LOG(LogWCHouse, Display, TEXT("WCHOUSE %d lit rooms, %d nav points, car %d"), Rooms.Num(), NavPts.Num(), Car.IsValid() ? 1 : 0);
 }
@@ -144,8 +149,27 @@ void AWCDirector::SetReturnBlackout(bool bActive)
 			SwitchRoom(Room, false, false);
 		if (AWCDoor* Master = Door(TEXT("up_master"))) Master->SetOpen(true, .2f, true);
 	}
-	for (const TCHAR* Window : {TEXT("W_U_hall"), TEXT("W_U_master"), TEXT("W_U_living")})
-		SetLightsTagged(Window, bActive ? 0.f : 1.f);
+	SetLightsTagged(TEXT("W_U_master"), bActive ? 4.f : 1.f);
+	SetLightsTagged(TEXT("W_U_hall"), bActive ? 3.f : 1.f);
+	if (bActive && !PeekMoonKey)
+	{
+		const FVector Doorway = Pos(TEXT("Her_Peek"));
+		const FVector Source = Doorway + FVector(160,-60,230);
+		const FVector Chest = Doorway + FVector(0,0,150);
+		PeekMoonKey = NewObject<USpotLightComponent>(this);
+		PeekMoonKey->SetWorldLocationAndRotation(Source,(Chest-Source).Rotation());
+		PeekMoonKey->SetIntensityUnits(ELightUnits::Lumens);
+		PeekMoonKey->SetIntensity(3584.f);
+		PeekMoonKey->SetLightColor(FLinearColor(.33f,.54f,1.f));
+		PeekMoonKey->SetInnerConeAngle(19.f);
+		PeekMoonKey->SetOuterConeAngle(34.f);
+		PeekMoonKey->SetAttenuationRadius(385.f);
+		PeekMoonKey->SetSourceRadius(12.f);
+		PeekMoonKey->SetLightingChannels(false,true,false);
+		PeekMoonKey->RegisterComponent();
+	}
+	if (PeekMoonKey) PeekMoonKey->SetVisibility(bActive);
+	SetLightsTagged(TEXT("W_U_living"), bActive ? 0.f : 1.f);
 }
 
 static bool AnyRoomOn(const TMap<FName, AWCDirector::FRoomLights>& Rooms)
@@ -163,6 +187,7 @@ void AWCDirector::TickHouseLights(float Dt)
 	for (const auto& Pair : Rooms)
 	{
 		const FRoomLights& Room = Pair.Value;
+		if (Pair.Key == TEXT("pendant") && !Has(TEXT("pendant_seen"))) continue;
 		if (!bMayKill || Clock < NextLightKill || !Room.bOn || Clock < Room.KillAt) continue;
 		const float Weight = Rng.FRandRange(.5f, 1.5f) / (1.f + Room.Kills);
 		if (Weight > Best) { Best = Weight; NextRoom = Pair.Key; }
@@ -228,6 +253,11 @@ bool AWCDirector::HouseEvent(FName Id)
 			return true;
 		}
 		SwitchRoom(Room, !R->bOn);
+		if (Room == TEXT("pendant"))
+		{
+			if (R->bOn) Flags.Remove(TEXT("pendant_off"));
+			else Set(TEXT("pendant_off"));
+		}
 		if (R->bOn && !Has(TEXT("lights_tried")))
 		{
 			Set(TEXT("lights_tried"));
@@ -950,8 +980,9 @@ void AWCDirector::TickBinTurn(float Dt)
 {
 	if (!IsBinTurnActive()) return;
 	AWCCharacter* Deputy = Player();
-	if (!Deputy || !Deputy->GetController()) { BinTurnStarted = -1.; return; }
-	const double Age = Clock - BinTurnStarted;
+	if (!Deputy || !Deputy->GetController()) { BinTurnAt = -1.; return; }
+	const double Age = Clock - BinTurnAt;
+	if (Age < 0.) return;
 	const FVector Target = BinFocusPoint();
 	const FVector From = Deputy->GetActorLocation();
 	if (bStepToShedDoor && Age > .12)
@@ -967,12 +998,12 @@ void AWCDirector::TickBinTurn(float Dt)
 	}
 	const FRotator Want = (Target - Deputy->EyeLocation()).Rotation();
 	BinTargetYaw += FMath::FindDeltaAngleDegrees(BinTargetYaw, float(Want.Yaw));
-	const float Turn = FMath::SmoothStep(.09f,.94f,float(Age));
+	const float Turn = FMath::SmoothStep(0.f, 1.95f, float(Age));
 	Deputy->GetController()->SetControlRotation(FRotator(FMath::Lerp(BinViewStart.Pitch,Want.Pitch,Turn),
 		FMath::Lerp(BinViewStart.Yaw,double(BinTargetYaw),double(Turn)),0.));
 	if (Age >= 2.44)
 	{
-		BinTurnStarted = -1.;
+		BinTurnAt = -1.;
 		UE_LOG(LogWCHouse, Display, TEXT("WCBIN camera finished alignment=%.3f sight=%d"),
 			FVector::DotProduct(Deputy->EyeForward(), (Target-Deputy->EyeLocation()).GetSafeNormal()),
 			PlayerSees(Target, .8f, 1800.f));
@@ -1107,7 +1138,19 @@ void AWCDirector::ScareBook()
 	const FVector Out = (P->GetActorLocation() - From).GetSafeNormal2D();
 	// he draws the book out...
 	for (int32 i = 1; i <= 14; ++i) After(i * 0.035f, [Book, From, Out, i]() { if (IsValid(Book)) Book->SetActorLocation(From + Out * (26.f * i / 14.f)); });
-	if (EyeW) EyeW->Reveal();
+	TWeakObjectPtr<UStaticMeshComponent> Backing;
+	if (EyeW)
+	{
+		UStaticMeshComponent* Dark = NewObject<UStaticMeshComponent>(this);
+		Dark->SetStaticMesh(LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Cube.Cube")));
+		Dark->SetMaterial(0,LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/WC/Materials/M_Void.M_Void")));
+		Dark->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		Dark->SetCastShadow(false);
+		Dark->SetWorldLocationAndRotation(EyeW->GetActorLocation()-EyeW->GetActorForwardVector()*14.,EyeW->GetActorRotation());
+		Dark->SetWorldScale3D(FVector(.012,.17,.26));
+		Dark->RegisterComponent();
+		Backing = Dark;
+	}
 	// while his hands are on the book his eyes settle on the gap it is leaving
 	{
 		const FVector Gap = EyeW ? EyeW->GetActorLocation() : From;
@@ -1129,7 +1172,6 @@ void AWCDirector::ScareBook()
 	if (EyeW)
 	{
 		UPointLightComponent* G = NewObject<UPointLightComponent>(EyeW);
-		G->SetupAttachment(EyeW->GetRootComponent());
 		G->RegisterComponent();
 		G->SetWorldLocation(EyeW->GetActorLocation() + Out * 10.f);
 		G->SetIntensityUnits(ELightUnits::Lumens);
@@ -1140,25 +1182,26 @@ void AWCDirector::ScareBook()
 		Glim = G;
 	}
 	// ...and she is looking at him through the wall
-	After(0.62f, [this, EyeW, Book, From, Out, Glim]()
+	After(0.62f, [this, EyeW, Book, From, Out, Glim, Backing]()
 	{
-		if (Glim.IsValid()) Glim->SetIntensity(70.f);
-		AWCCharacter* Pl = Player();
-		Play2D(TEXT("sting_hit"), 0.9f, EWCSnd::Music);
-		Play2D(TEXT("breath_near"), 0.9f);
-		if (Pl) { Pl->AddShake(0.9f); Pl->SetLightScale(1.f); }
-		Tension = 1.f;
+		Tension = .65f;
 		// the book goes out of his hand
 		const FVector Start = From + Out * 26.f;
 		// The living-room floor dressing over the structural slab reaches Z=8 here.
 		const float FloorZ = FMath::FloorToFloat((From.Z + 20.f) / 350.f) * 350.f + 8.3f;
 		StageSettlersPickup(Book, Start, Out, FloorZ);
-		After(.5f, [this]() { PlayAt(TEXT("thump_far"), SettlersFloor, 1.f, 1.5f, 900.f); });
-		// she holds his eye for two seconds; then she is gone from the hole and running up the stairs behind the wall
-		After(2.1f, [this, EyeW, Glim]()
+		After(.8f, [this, From]() { PlayAt(TEXT("shelf_violin"), From, .77f); });
+		After(1.05f, [EyeW, Glim]()
 		{
-			if (Glim.IsValid()) Glim->SetIntensity(0.f);
-			if (EyeW) EyeW->Withdraw(true);
+			if (IsValid(EyeW)) EyeW->Reveal();
+			if (Glim.IsValid()) Glim->SetIntensity(52.f);
+		});
+		// Hold the stare after the pupil stops, then let the treads carry her away.
+		After(6.4f, [this, EyeW, Glim, Backing]()
+		{
+			if (Glim.IsValid()) Glim->DestroyComponent();
+			if (IsValid(EyeW)) EyeW->Withdraw(true);
+			After(.4f, [Backing]() { if (Backing.IsValid()) Backing->DestroyComponent(); });
 			const FVector A = Pos(TEXT("StairRunA")), B = Pos(TEXT("StairRunB")), C = Pos(TEXT("StairRunC"));
 			if (A.IsNearlyZero() || B.IsNearlyZero()) return;
 			UE_LOG(LogWCHouse, Display, TEXT("WCSCARE t=%.1f S10_book she runs up the stairs"), PlaySeconds);

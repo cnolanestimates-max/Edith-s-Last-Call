@@ -200,9 +200,10 @@ public:
 	void KillLights(float DeadSeconds, bool bPop = false);
 	bool IsInsideHouse(const FVector& At) const { return SpaceAt(At) != EListeningSpace::Exterior; }
 	bool HasActiveEncounter() const { return bBusy || bEventBusy || StalkState != 0; }
-	bool IsPeekFlashOut() const { return PeekLightAt >= 0. && Clock - PeekLightAt < .85 && Has(TEXT("peek_started")) && !Has(TEXT("peek_done")); }
+	bool IsPeekFlashOut() const { return Has(TEXT("peek_started")) && !Has(TEXT("peek_done")); }
 	FVector BinFocusPoint() const;
-	bool IsBinTurnActive() const { return BinTurnStarted >= 0.; }
+	bool IsBinTurnActive() const { return BinTurnAt >= 0.; }
+	bool IsTurningToBin() const { return IsBinTurnActive() && Clock >= BinTurnAt; }
 	bool IsDriving() const { return bDriving; }
 	bool bPowerOut = false;
 	int32 StalkState = 0;     // 0 none, 1 she has appeared, 2 she is coming
@@ -228,8 +229,8 @@ private:
 	TMap<FName,FMovingProp> Furniture;
 	TWeakObjectPtr<class UPointLightComponent> FridgeBulb;
 	double PhoneRingAgainAt = 0.;
-	double PeekSeenAt = -1., PeekLightAt = -1.;
-	bool bPeekRelit = false;
+	double PeekSeenAt = -1.;
+	UPROPERTY(Transient) TObjectPtr<class USpotLightComponent> PeekMoonKey;
 	void BeginEnding();
 	// scares
 	void ScarePeek();
@@ -260,7 +261,7 @@ private:
 	/** She has him: she screams in his face for Hold seconds (the view is pulled to her), then Then() runs. */
 	void Grab(float Hold, TFunction<void()> Then);
 	double GrabHoldUntil = 0.0;
-	double BinTurnStarted = -1.;
+	double BinTurnAt = -1.;
 	bool bStepToShedDoor = false;
 	FRotator BinViewStart;
 	FVector BinStartPos;
@@ -361,7 +362,7 @@ private:
 	int32 PendantBulbSlot = INDEX_NONE;
 	bool bPendantLit = true, bPendantReveal = false;
 	double LastPendantWave = 0.;
-	double PendantWakeUntil = -1.;
+	bool bPendantWatching = false;
 	void TickYardCrows();
 	int32 YardCawsLeft = -1;
 	double NextYardCaw = -1.;

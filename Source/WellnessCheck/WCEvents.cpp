@@ -175,13 +175,12 @@ void AWCDirector::LeftScare()
 	// then all at once
 	After(18.0f, [this]()
 	{
-		Play2D(TEXT("bell_toll"), 1.f);
-		if (!Snd(TEXT("VO/m_whyleave"))) Play2D(TEXT("her_scream"), 1.f);       // until the line itself is recorded (speech quota ran out on 2026-11-19)
+		Play2D(TEXT("bell_toll"), .30f);
 		Say(TEXT("m_whyleave"));
 		if (AWCCharacter* Pl = Player()) { Pl->AddShake(1.f); Pl->FlickerLight(1.6f, 0.9f); }
 		Tension = 1.f;
 	});
-	After(22.5f, [this]()
+	After(18.f + LineSeconds(TEXT("m_whyleave")) + .55f, [this]()
 	{
 		ApplyWorldState();
 		bEventBusy = false;

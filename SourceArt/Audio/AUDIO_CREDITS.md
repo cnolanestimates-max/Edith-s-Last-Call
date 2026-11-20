@@ -41,6 +41,10 @@ The four `yard_caw` one-shots are separate calls from Mish7913’s 2018 field re
 ## Voices
 Dialogue generated with Google Gemini TTS (see VO/_manifest.json). Radio and phone treatment: Cheyenne's Forklight Voice Effects v1 (voice_effects.py).
 
+- Edith's "You left me!" climax uses a dedicated Google Gacrux performance. The held vowel blends the original voice, pitched doubles and the game's existing `her_scream_02` recording. Mastering is in `Scripts/audio/gen_vo.py`.
+- The hall pendant's two-direction creak uses a short, lowered excerpt of Epic Stock Media's *HD Game Materials*, “Dry Ice High Metal Squeal Groan Bright Squeak Dissonant Short 13,” from volume 2 of the licensed Sonniss GDC 2026 bundle.
+- The bookshelf violin layers four solo bowed violin recordings (A6 forte and piano, G6 forte, and E6 piano) from Versilian Studios’ VS Chamber Orchestra Community Edition, recorded by Sam Gossner and Simon Dalzell under CC0. [Original samples](https://github.com/sgossner/VSCO-2-CE/tree/master/Strings/Solo%20Violin/Arco%20Vib) · [License](https://github.com/sgossner/VSCO-2-CE/blob/master/LICENSE). The mix is reproducible with `Scripts/audio/make_shelf_violin.py`.
+
 ## From Cheyenne's Sonniss GDC 2026 Game Audio Bundle and Night Shift package (royalty-free, no attribution required)
 
 - The wheelchair's rolling tread and axle rub are original procedural Foley. Its baseboard tap uses the game's wood footstep and chair scrape. Its landing blends the wood recording with a shortened, damped layer from `trash_crash`, which includes 344 Audio's *Haunting Ambiences Vol. 3* metal impacts from the licensed Sonniss GDC 2026 bundle. The four sounds can be rebuilt with `Scripts/audio/make_bath_wheel.py`.
@@ -110,7 +114,7 @@ Dialogue generated with Google Gemini TTS (see VO/_manifest.json). Radio and pho
 ## Yard and rear shed
 
 - `amb_yard` and `amb_dawn` are original synthesized wind and insect beds. `Scripts/audio/make_exterior_beds.py` masters both loops.
-- The falling trash can uses *Light Metal Crash* by DieselsiselMedia. The four-second positional cue starts 0.145 s into the recording, mixes to mono and fades over the last 0.45 s. Its original creator released the recording under CC0. [Original recording and license](https://freesound.org/people/DieselsiselMedia/sounds/387139/) · [Pixabay download](https://pixabay.com/sound-effects/film-special-effects-light-metal-crash-6765/).
+- The falling trash can uses *Light Metal Crash* by DieselsiselMedia. The 2.5-second positional cue starts 0.145 s into the recording, mixes to mono and fades over the last 0.35 s. Its original creator released the recording under CC0. [Original recording and license](https://freesound.org/people/DieselsiselMedia/sounds/387139/) · [Pixabay download](https://pixabay.com/sound-effects/film-special-effects-light-metal-crash-6765/).
 - The earlier `trash_crash` master remains a source for the wheelchair Foley. It uses two edited hits from 344 Audio, *Haunting Ambiences Vol. 3*, "Metal Bangs, Metal Hits, Banging On Doors," from the Sonniss GDC 2026 Game Audio Bundle 1 of 5 under the included GDC Game Audio license. Its mastering recipe is in `Scripts/audio/make_trash.py`.
 
 ## Ruth's door

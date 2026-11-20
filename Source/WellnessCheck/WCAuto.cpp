@@ -58,8 +58,9 @@ void AWCDirector::AutoBegin()
 			else
 			{
 				Do(TEXT("record_mix")); Do(TEXT("flag:inside")); Do(TEXT("at:552,-319,92,90,-5")); Wait(1.f);
-				Do(TEXT("look_at_settlers")); Do(TEXT("pull_settlers")); Wait(1.f); Shot(TEXT("01_eye"));
-				Wait(3.6f); Shot(TEXT("02_reaching")); Wait(1.1f); Shot(TEXT("03_lifting"));
+				Do(TEXT("look_at_settlers")); Do(TEXT("pull_settlers")); Wait(1.15f); Shot(TEXT("00_black_hole"));
+				Wait(2.25f); Shot(TEXT("01a_eye_turning")); Wait(2.5f); Shot(TEXT("01_eye"));
+				Wait(2.75f); Shot(TEXT("02_reaching")); Wait(1.1f); Shot(TEXT("03_lifting"));
 				Wait(1.f); Do(TEXT("check_visible_desk_key")); Shot(TEXT("04_key_in_book"));
 				Flag(TEXT("book_done"),4.f); Shot(TEXT("05_return")); Wait(1.25f); Do(TEXT("check_automatic_desk_key"));
 			}
@@ -90,12 +91,30 @@ void AWCDirector::AutoBegin()
 			Do(TEXT("wait_wheel_stop")); Do(TEXT("check_bath_finished"));
 			Do(TEXT("finish_bath_mix"));
 		}
+		else if (FParse::Param(FCommandLine::Get(),TEXT("WCUpstairsProof")))
+		{
+			Do(TEXT("record_mix")); Do(TEXT("flag:inside"));
+			Do(TEXT("at:875,100,442,87,-22")); Do(TEXT("flag:heard_upstairs")); Flag(TEXT("peek_started"),3.f);
+			Touch(TEXT("sw_uphall")); Wait(.55f); Do(TEXT("check_peek_dark")); Shot(TEXT("01_dead_switch"));
+			LookHer(1.15f); Wait(1.45f); Shot(TEXT("02_moonlit_doorway")); Do(TEXT("check_peek_dark"));
+			Do(TEXT("walk_to_peek")); Flag(TEXT("peek_done"),3.f); Wait(.65f);
+			Do(TEXT("check_peek_clear")); Shot(TEXT("03_empty_doorway")); Do(TEXT("finish_mix")); Wait(.5f);
+		}
+		else if (FParse::Param(FCommandLine::Get(),TEXT("WCScreamProof")))
+		{
+			Do(TEXT("flag:inside")); Do(TEXT("flag:peek_done")); Do(TEXT("at:1970,-420,442,175,0"));
+			Do(TEXT("record_mix")); Do(TEXT("daniel_entry")); Flag(TEXT("left_done"),6.f); Wait(25.f);
+			Do(TEXT("finish_mix")); Wait(.5f);
+		}
 		else if (FParse::Param(FCommandLine::Get(),TEXT("WCHallPendant")))
 		{
-			Do(TEXT("flag:inside")); Do(TEXT("at:852,68,92,-13,-3")); Do(TEXT("flag:book_done"));
-			Flag(TEXT("pendant_seen"),17.f); Wait(.53f); Shot(TEXT("01_lamp_finds_edith"));
-			Wait(4.55f); Shot(TEXT("02_same_swing_empty")); Do(TEXT("check_pendant_gone"));
-			Do(TEXT("pendant_switch")); Do(TEXT("at:1110,60,92,-18,37")); Wait(.5f); Shot(TEXT("03_brass_lantern"));
+			Do(TEXT("record_mix")); Do(TEXT("flag:inside")); Do(TEXT("at:265,105,92,0,-1")); Do(TEXT("lamp_only"));
+			Do(TEXT("pendant_visible")); Wait(.5f); Shot(TEXT("01_lamp_finds_edith"));
+			Do(TEXT("pendant_empty")); Wait(.48f); Shot(TEXT("02_swing_empty"));
+			Do(TEXT("pendant_visible")); Wait(.55f); Shot(TEXT("03_edith_returns"));
+			Do(TEXT("walk_to_pendant")); Wait(1.8f); Do(TEXT("check_pendant_gone")); Shot(TEXT("04_close_hall_empty"));
+			Do(TEXT("at:1092,103,92,90,-21")); Touch(TEXT("sw_pendant")); Do(TEXT("check_pendant_off"));
+			Touch(TEXT("sw_pendant")); Wait(.95f); Do(TEXT("check_pendant_on")); Do(TEXT("finish_mix")); Wait(.5f);
 		}
 		else if (FParse::Param(FCommandLine::Get(),TEXT("WCBinAngles")))
 		{
@@ -103,8 +122,8 @@ void AWCDirector::AutoBegin()
 			for (const TCHAR* Start : {TEXT("at:3770,-743,59,0,-27"),TEXT("at:3730,-783,59,90,-8"),TEXT("at:3440,-740,60,-165,10")})
 			{
 				Do(Start); Wait(.55f); Do(TEXT("replay_bin"));
-				Wait(2.32f); Shot(*FString::Printf(TEXT("turn_%d_mid"),AutoSteps.Num()));
-				Wait(1.55f); Shot(*FString::Printf(TEXT("turn_%d_end"),AutoSteps.Num())); Wait(2.6f);
+				Wait(5.15f); Shot(*FString::Printf(TEXT("turn_%d_mid"),AutoSteps.Num()));
+				Wait(1.65f); Shot(*FString::Printf(TEXT("turn_%d_end"),AutoSteps.Num())); Wait(1.f);
 			}
 			Do(TEXT("finish_mix"));
 		}
@@ -143,7 +162,7 @@ void AWCDirector::AutoBegin()
 		{
 			Do(TEXT("flag:inside")); Do(TEXT("at:820,64,92,0,0")); Wait(.65f); Shot(TEXT("01_company")); Flag(TEXT("company_foyer"),4.f);
 			Do(TEXT("flag:heard_upstairs")); Do(TEXT("at:700,80,442,0,0")); Wait(.45f);
-			Do(TEXT("at:475,114,442,163,-1")); Wait(.35f); Shot(TEXT("02_dead_light")); Wait(.75f); Shot(TEXT("03_doorway")); Flag(TEXT("peek_done"),5.f);
+			Do(TEXT("at:475,114,442,163,-1")); Wait(.35f); Shot(TEXT("02_dead_light")); Wait(.75f); Shot(TEXT("03_doorway")); Do(TEXT("walk_to_peek")); Flag(TEXT("peek_done"),5.f);
 			Do(TEXT("at:150,56,442,0,0")); Wait(.45f); Shot(TEXT("04_company_upstairs")); Flag(TEXT("company_landing"),4.f);
 			Do(TEXT("at:2120,457,442,-10,-32")); Touch(TEXT("pick_tape2"));
 			Do(TEXT("at:361,-600,92,-90,-30")); Touch(TEXT("tv")); Wait(2.2f);
@@ -276,7 +295,7 @@ void AWCDirector::AutoBegin()
 		Do(TEXT("finish_mix")); Wait(.5f);
 		Do(TEXT("at:1400,310,92,-90,-12")); Do(TEXT("vent_test")); Wait(.7f); Shot(TEXT("vent_driver")); Wait(1.5f);
 		Do(TEXT("return_key")); Wait(7.1f); Do(TEXT("at:960,96,442,174,-5")); Do(TEXT("switch_test")); Wait(.5f);
-		Shot(TEXT("dark_landing")); Do(TEXT("at:475,114,442,163,-1")); Wait(.16f); Shot(TEXT("doorway_glimpse")); Wait(1.5f);
+		Shot(TEXT("dark_landing")); Do(TEXT("at:475,114,442,163,-1")); Wait(.16f); Shot(TEXT("doorway_glimpse")); Do(TEXT("walk_to_peek")); Wait(1.5f);
 		Do(TEXT("at:716,373,442,-90,-40")); Do(TEXT("box_test")); Wait(1.2f); Shot(TEXT("jewelry_box")); Wait(.3f);
 		Use(TEXT("pick_keep_eye"));
 		Do(TEXT("haunt_test")); Wait(.3f); Do(TEXT("light_test")); Wait(.3f);
@@ -498,7 +517,7 @@ void AWCDirector::AutoBegin()
 			AutoSteps.Add({ A_Do, TEXT("peek"), 0.f }); Wait(1.2f);
 			AutoSteps.Add({ A_Do, TEXT("at:900,60,442,174,2"), 0.f }); Wait(1.0f); Shot(TEXT("peek_1_from_the_stairs"));
 			AutoSteps.Add({ A_Do, TEXT("at:640,80,442,165,4"), 0.f }); Wait(1.0f); Shot(TEXT("peek_2_from_4m"));
-			AutoSteps.Add({ A_Do, TEXT("at:520,90,442,160,5"), 0.f }); Wait(0.12f); Shot(TEXT("peek_3_from_3m_first_instant")); Wait(0.35f); Shot(TEXT("peek_4_sliding_away")); Wait(1.2f); Shot(TEXT("peek_5_gone"));
+			AutoSteps.Add({ A_Do, TEXT("at:520,90,442,160,5"), 0.f }); Wait(.12f); Shot(TEXT("peek_3_from_3m_first_instant")); AutoSteps.Add({ A_Do, TEXT("walk_to_peek"), 0.f }); Wait(.2f); Shot(TEXT("peek_4_sliding_away")); Wait(1.2f); Shot(TEXT("peek_5_gone"));
 			Wait(3.f);
 		}
 		else if (FParse::Param(FCommandLine::Get(), TEXT("WCEyeOnly")))
@@ -1043,10 +1062,54 @@ void AWCDirector::AutoTick(float Dt)
 			if (!DoLoad() || !Has(TEXT("bath_chair_rolled")) || bEventBusy || P->IsInputLocked() || (Her() && Her()->IsShown()))
 				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL bath exit or persistent completion"));
 		}
-		else if (S.Arg == TEXT("pendant_switch")) SwitchRoom(TEXT("hall"),true,false);
+		else if (S.Arg == TEXT("daniel_entry")) Event(TEXT("trig:t_daniel"));
+		else if (S.Arg == TEXT("lamp_only")) P->SetFlashlight(false,false);
+		else if (S.Arg == TEXT("walk_to_pendant") && HallPendant.IsValid())
+		{
+			const FVector Mark = HallPendant->GetComponentLocation() + FVector(6,72,-327);
+			if (!Has(TEXT("pendant_seen")) && In < 14.) {
+				AimAt(P, Mark + FVector(0,0,145), Dt);
+				P->AddMovementInput((Mark-P->GetActorLocation()).GetSafeNormal2D(), .95f);
+				return;
+			}
+		}
+		else if (S.Arg == TEXT("pendant_visible") || S.Arg == TEXT("pendant_empty"))
+		{
+			if (bPendantReveal != (S.Arg == TEXT("pendant_visible"))) {
+				if (In < 6.) return;
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL missed pendant sweep %s"),*S.Arg.ToString());
+			}
+		}
+		else if (S.Arg == TEXT("check_pendant_off") || S.Arg == TEXT("check_pendant_on"))
+		{
+			const FRoomLights* Circuit = Rooms.Find(TEXT("pendant"));
+			if (!Circuit || Circuit->bOn != (S.Arg == TEXT("check_pendant_on")))
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL pendant switch %s"),*S.Arg.ToString());
+		}
+		else if (S.Arg == TEXT("check_peek_dark"))
+		{
+			P->ToggleFlashlight();
+			if (P->IsFlashlightOn() || !Her() || Her()->IsHidden() || Rooms.FindChecked(TEXT("uphall")).bOn)
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL upstairs blackout or silhouette"));
+		}
+		else if (S.Arg == TEXT("walk_to_peek") && Her())
+		{
+			if (!Has(TEXT("peek_leaving")) && In < 12.) {
+				AimAt(P,Her()->HeadLocation(),Dt);
+				const FVector Goal = Pos(TEXT("Her_Peek")) - FVector(0,62,0);
+				P->AddMovementInput((Goal - P->GetActorLocation()).GetSafeNormal2D(), .78f);
+				return;
+			}
+			UE_LOG(LogWCAuto,Display,TEXT("WCPEEK approach ended distance=%.0f torch=%d position=%s"),FVector::Dist2D(P->GetActorLocation(),Pos(TEXT("Her_Peek"))),P->IsFlashlightOn(),*P->GetActorLocation().ToCompactString());
+		}
+		else if (S.Arg == TEXT("check_peek_clear"))
+		{
+			if (!P->IsFlashlightOn() || !Has(TEXT("peek_done")) || (Her() && Her()->IsShown()))
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL flashlight after retreat"));
+		}
 		else if (S.Arg == TEXT("check_pendant_gone"))
 		{
-			if (bPendantReveal || (Her() && Her()->IsShown())) UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL pendant second swing occupied"));
+			if (!Has(TEXT("pendant_seen")) || bPendantReveal || (Her() && Her()->IsShown())) UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL pendant stayed after close approach"));
 		}
 		else if (S.Arg == TEXT("beam"))
 		{
@@ -1304,7 +1367,7 @@ void AWCDirector::AutoTick(float Dt)
 			{
 				P->TeleportToCheckpoint(FVector(FCString::Atof(*V[0]), FCString::Atof(*V[1]), FCString::Atof(*V[2])), FCString::Atof(*V[3]));
 				if (AController* C = P->GetController()) C->SetControlRotation(FRotator(FCString::Atof(*V[4]), FCString::Atof(*V[3]), 0.f));
-				P->SetFlashlight(true, false);
+				if (!IsPeekFlashOut()) P->SetFlashlight(true, false);
 				{
 					// anything, whether or not it has collision: trace against the visible meshes themselves
 					const FVector Eye(FCString::Atof(*V[0]), FCString::Atof(*V[1]), FCString::Atof(*V[2]) + 66.f);

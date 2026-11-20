@@ -739,7 +739,7 @@ UAudioComponent* AWCDirector::PlayAt(const FString& Name, const FVector& Where, 
 	USoundBase* S = Snd(Name);
 	if (!S) return nullptr;
 	static const bool bSndLogAt = FParse::Param(FCommandLine::Get(), TEXT("WCSndLog"));
-	if (bSndLogAt && !Name.StartsWith(TEXT("step_"))) UE_LOG(LogWC, Display, TEXT("WCSND t=%.1f at %s vol %.2f, %.0f cm away"), PlaySeconds, *Name, Volume, Player() ? FVector::Dist(Player()->GetActorLocation(), Where) : -1.f);
+	if (bSndLogAt && (bShedImpact || !Name.StartsWith(TEXT("step_")))) UE_LOG(LogWC, Display, TEXT("WCSND t=%.1f at %s vol %.2f, %.0f cm away"), PlaySeconds, *Name, Volume, Player() ? FVector::Dist(Player()->GetActorLocation(), Where) : -1.f);
 	if (!Atten)
 	{
 		Atten = NewObject<USoundAttenuation>(this);

@@ -30,7 +30,7 @@ STYLE = {
 # per-line direction (added to the speaker style)
 DIRECT = {
     "m_left": "Whispered very fast, breathless, the same three words over and over without a pause, hurt and accusing, getting more urgent. An old woman, close to the microphone.",
-    "m_whyleave": "Not a whisper: SCREAMED at full force, raw, furious and heartbroken, right in the listener's face, the last word drawn out into a shriek.",
+    "m_whyleave": "Horror game vocal performance. Explode immediately into a ferocious, guttural, full-voice SCREAM. Bark YOU LEFT in two short, harsh attacks. Bite into the M and sustain the same open, ripping EEEEE vowel at screaming intensity for four full seconds on one breath. Gravel and distortion in the throat, ragged low chest resonance under the shriek. End when the breath tears out. No pleading, no melodic pitch slide, no conversational reading. One take, three words.",
     "m_laugh1": "No words at all: only laughter. A very old woman giggling quietly to herself, dry, breathy and childlike, as if at a private joke. Eerie.",
     "m_laugh2": "No words at all: only a soft, pleased, slightly unhinged little laugh, under her breath.",
     "m_cry1": "No real words: a very old woman crying softly, alone, thin wet hopeless sobs.",
@@ -107,7 +107,7 @@ DIRECT = {
 }
 SPEAK_AS = {"r_static": "mabel", "m_post": "mabel"}
 TEXT = {"r_static": "Stay.", "m_whisper1": "Who's there?", "m_whisper2": "Is that you, Danny?", "m_post": "Come back and visit."}
-EFFECT = {"r_static": "radio", "m_post": "radio"}
+EFFECT = {"r_static": "radio", "m_post": "radio", "m_whyleave": "scream"}
 
 
 def key():
@@ -125,7 +125,8 @@ def lines():
         lid, speaker, text, kind = m.group(1), m.group(2), m.group(3).replace('\\"', '"'), int(m.group(4))
         who = SPEAK_AS.get(lid) or ("dispatch" if lid.startswith("r_") else ("mabel" if lid.startswith("m_") else "deputy"))
         fx = EFFECT.get(lid) or ("radio" if kind == 1 else ("phone" if kind == 4 else ("ghost" if who == "mabel" else "dry")))
-        out.append({"id": lid, "who": who, "text": TEXT.get(lid, text), "fx": fx, "style": (STYLE[who] + " " + DIRECT.get(lid, "")).strip()})
+        style = DIRECT[lid] if lid == "m_whyleave" else (STYLE[who] + " " + DIRECT.get(lid, "")).strip()
+        out.append({"id": lid, "who": who, "text": TEXT.get(lid, text), "fx": fx, "style": style})
     return out
 
 
@@ -168,6 +169,21 @@ def process(line):
         subprocess.run([PY, FX, tmp, tmp2, "--device-line", "--preset", fx, "--intensity", "standard"], check=True, capture_output=True)
         ff(["-i", tmp2, "-af", "loudnorm=I=-18:TP=-2.0", "-ac", "1", "-ar", "48000", "-c:a", "pcm_s16le", dst])
         os.remove(tmp2)
+    elif fx == "scream":
+        # Keep the spoken attack clear above a lower throat double and a strained upper voice.
+        graph = ("[0:a]asplit[front][end];[front]atrim=end=0.86[attack];"
+                 "[end]atrim=start=0.82,asetpts=PTS-STARTPTS,rubberband=tempo=0.69:pitch=0.96[held];"
+                 "[attack][held]acrossfade=d=0.04,asplit=3[lead][low][high];"
+                 "[lead]highpass=f=110,equalizer=f=2500:g=3[voice];"
+                 "[low]rubberband=pitch=0.69:pitchq=quality,lowpass=f=3200,adelay=24,volume=0.56[throat];"
+                 "[high]rubberband=pitch=1.07:pitchq=quality,highpass=f=1200,adelay=41,volume=0.13[edge];"
+                 "[1:a]atrim=start=0.16:end=3.80,asetpts=PTS-STARTPTS,highpass=f=350,lowpass=f=3700,"
+                 "afade=t=in:d=0.22,afade=t=out:st=3.05:d=0.59,volume=0.75,adelay=1050[rasp];"
+                 "[voice][throat][edge][rasp]amix=inputs=4:duration=first:normalize=0,aecho=0.9:0.72:87|147:0.18|0.09,"
+                 "acompressor=threshold=0.10:ratio=4:attack=2:release=65:makeup=2,"
+                 "alimiter=limit=0.68:latency=1,loudnorm=I=-13:TP=-1.5:LRA=7")
+        ff(["-i", tmp, "-i", ROOT + "/SourceArt/Audio/her_scream_02.wav", "-filter_complex", graph,
+            "-ac", "1", "-ar", "48000", "-c:a", "pcm_s16le", dst])
     elif fx == "ghost":
         # she is not quite in the room: a little lower, a close whispering double and a cold tail
         ff(["-i", tmp, "-af", "asetrate=48000*0.94,aresample=48000,atempo=1.04,highpass=f=140,"

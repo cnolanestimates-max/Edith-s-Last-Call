@@ -62,7 +62,9 @@ void AWCDirector::TickSettlersPickup()
 {
 	AWCCharacter* P = Player();
 	if (!P || !P->GetController()) { FinishSettlersPickup(); return; }
-	const double T = Clock - SettlersDropAt;
+	const double Elapsed = Clock - SettlersDropAt;
+	// The book falls immediately but his gaze stays on the hole through her slow turn and retreat.
+	const double T = FMath::Min(Elapsed,.5) + FMath::Max(0., Elapsed-4.6);
 	auto Ease = [T](double Begin, double End) { return FMath::SmoothStep(Begin, End, T); };
 	const FQuat Facing = SettlersFacing.Quaternion();
 	const FVector Forward = Facing.GetForwardVector(), Right = Facing.GetRightVector();

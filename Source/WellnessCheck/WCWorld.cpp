@@ -318,6 +318,14 @@ void AWCWatcher::Reveal()
 {
 	if (bGone) return;
 	SetActorLocationAndRotation(Home, HomeQuat);
+	if (WCId == TEXT("book_eye"))
+	{
+		ShelfEyeAge = 0.f;
+		if (AWCDirector* D = AWCDirector::Get(this); D && D->Player())
+			ShelfEyeGaze = HomeQuat.UnrotateVector(D->Player()->EyeLocation()-Home).Rotation();
+		Turn->SetRelativeLocation(FVector(-1.3f*Radius, 2.3f*Radius, 0.f));
+		Turn->SetRelativeRotation(FRotator(-8.f, 84.f, 0.f));
+	}
 	SetActorHiddenInGame(false);
 	bOut = true;
 	LeaveT = -1.f;
@@ -363,6 +371,16 @@ void AWCWatcher::Tick(float Dt)
 		return;
 	}
 	const FVector Eye = P->EyeLocation();
+	if (WCId == TEXT("book_eye"))
+	{
+		if (ShelfEyeAge >= 3.8f) return;
+		ShelfEyeAge = FMath::Min(ShelfEyeAge + Dt, 3.8f);
+		const float Move = FMath::SmoothStep(0.f, 3.15f, ShelfEyeAge);
+		const float Look = FMath::SmoothStep(.35f, 3.8f, ShelfEyeAge);
+		Turn->SetRelativeLocation(FVector(-1.3f*Radius, 2.3f*Radius, 0.f) * (1.f-Move));
+		Turn->SetRelativeRotation(FQuat::Slerp(FRotator(-8.f,84.f,0.f).Quaternion(), ShelfEyeGaze.Quaternion(), Look));
+		return;
+	}
 	const float Dist = FVector::Dist(Eye, Home);
 	if (Kind == 2)
 	{
