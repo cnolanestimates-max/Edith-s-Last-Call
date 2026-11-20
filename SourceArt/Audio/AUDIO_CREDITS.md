@@ -36,16 +36,16 @@ Joseph Sardin recorded both breathing takes. The resting take uses 14.8–25.8 s
 ## Music (credit required)
 
 - `music_house` crossfades edited excerpts of “Apprehension” by Kevin MacLeod and “She's Watching Me” by Darren Curtis. [Apprehension](https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100327) · [Creative Commons Attribution 4.0](https://creativecommons.org/licenses/by/4.0/) · [Darren Curtis](https://www.darrencurtismusic.com/) · [Composer's permission](https://www.darrencurtismusic.com/faqs)
-- `scare_bump` uses a trimmed, level-adjusted excerpt of “Bump in the Night” by Kevin MacLeod. [Track](https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100789) · [Creative Commons Attribution 4.0](https://creativecommons.org/licenses/by/4.0/)
+- `scare_bump` and the shorter upstairs accent `scare_left_bump` use trimmed, level-adjusted excerpts of “Bump in the Night” by Kevin MacLeod. [Track](https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100789) · [Creative Commons Attribution 4.0](https://creativecommons.org/licenses/by/4.0/)
 - The legacy `music_drone` is synthesized. An archived earlier version used “Long Note Four” by Kevin MacLeod (CC BY 4.0).
 - music_menu: "Ossuary 6 - Air" Kevin MacLeod (incompetech.com), CC BY 4.0
 - music_finale: "Gathering Darkness" Kevin MacLeod (incompetech.com), CC BY 4.0
 - music_dawn: "Sanctuary" Scott Buckley (scottbuckley.com.au), CC BY 4.0
 
 ## Voices
-Dialogue generated with Google Gemini TTS (see VO/_manifest.json). Radio and phone treatment: Cheyenne's Forklight Voice Effects v1 (voice_effects.py).
+Synthesized dialogue uses Google Gemini TTS (see VO/_manifest.json). Radio and phone treatment: Cheyenne's Forklight Voice Effects v1 (voice_effects.py).
 
-- Edith's "You left me!" climax uses a dedicated Google Gacrux performance. The held vowel blends the original voice, pitched doubles and the game's existing `her_scream_02` recording. Mastering is in `Scripts/audio/gen_vo.py`.
+- Cheyenne performed Edith's “You left me!” scream. The approved master in `VO/m_whyleave.wav` carries a lower vocal double and rasp through the line. Its Sound Wave adds 9.5 dB in the upstairs scene.
 - The hall pendant's two-direction creak uses a short, lowered excerpt of Epic Stock Media's *HD Game Materials*, “Dry Ice High Metal Squeal Groan Bright Squeak Dissonant Short 13,” from volume 2 of the licensed Sonniss GDC 2026 bundle.
 - The bookshelf violin layers four solo bowed violin recordings (A6 forte and piano, G6 forte, and E6 piano) from Versilian Studios’ VS Chamber Orchestra Community Edition, recorded by Sam Gossner and Simon Dalzell under CC0. [Original samples](https://github.com/sgossner/VSCO-2-CE/tree/master/Strings/Solo%20Violin/Arco%20Vib) · [License](https://github.com/sgossner/VSCO-2-CE/blob/master/LICENSE). The mix is reproducible with `Scripts/audio/make_shelf_violin.py`.
 

@@ -521,8 +521,8 @@
   "id": "m_whyleave",
   "who": "mabel",
   "text": "YOU LEFT MEEEEEEEEEE!",
-  "fx": "scream",
-  "style": "Horror game vocal performance. Explode immediately into a ferocious, guttural, full-voice SCREAM. Bark YOU LEFT in two short, harsh attacks. Bite into the M and sustain the same open, ripping EEEEE vowel at screaming intensity for four full seconds on one breath. Gravel and distortion in the throat, ragged low chest resonance under the shriek. End when the breath tears out. No pleading, no melodic pitch slide, no conversational reading. One take, three words."
+  "fx": "recorded",
+  "style": "Performed by Cheyenne"
  },
  {
   "id": "m_laugh1",

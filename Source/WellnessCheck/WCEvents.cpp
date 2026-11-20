@@ -176,7 +176,7 @@ void AWCDirector::LeftScare()
 	// then all at once
 	After(18.0f, [this]()
 	{
-		Play2D(TEXT("bell_toll"), .30f);
+		Play2D(TEXT("scare_left_bump"), .375f, EWCSnd::Music);
 		Say(TEXT("m_whyleave"));
 		StartleDeputy(1.f);
 		if (AWCCharacter* Pl = Player()) { Pl->AddShake(1.f); Pl->FlickerLight(1.6f, 0.9f); }

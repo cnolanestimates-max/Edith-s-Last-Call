@@ -91,7 +91,11 @@ void AWCDirector::HouseBegin()
 	}
 	bPowerOut = Has(TEXT("power_out")) && !Has(TEXT("fuse_done"));
 	BathChair = Find(TEXT("BathWheelchair"));
-	if (BathChair.IsValid()) BathChairHome = BathChair->GetActorTransform();
+	if (BathChair.IsValid())
+	{
+		BathChairHome = BathChair->GetActorTransform();
+		InitializeBathMirror();
+	}
 	if (AActor* Fixture = Find(TEXT("HallPendant"))) HallPendant = Fixture->FindComponentByClass<UStaticMeshComponent>();
 	if (AActor* Beam = Find(TEXT("HallPendantBeam")))
 	{

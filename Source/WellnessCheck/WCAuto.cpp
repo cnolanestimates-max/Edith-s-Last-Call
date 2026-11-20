@@ -82,17 +82,23 @@ void AWCDirector::AutoBegin()
 		}
 		else if (FParse::Param(FCommandLine::Get(),TEXT("WCBathMirror")))
 		{
-			Do(TEXT("record_mix")); Do(TEXT("flag:inside")); Do(TEXT("at:2564,-392,92,173,3")); Wait(2.f);
+			Do(TEXT("record_mix")); Do(TEXT("flag:inside")); Do(TEXT("at:2588,-146,92,-115,-3")); Wait(.5f);
+			Do(TEXT("check_glass_from_hall")); Shot(TEXT("00_mirror_from_hall"));
+			Do(TEXT("at:2564,-392,92,173,3")); Wait(2.f);
 			Shot(TEXT("01_mirror_from_sink")); Do(TEXT("at:2517,-382,92,172,-4")); Wait(1.6f);
 			Shot(TEXT("02_edith_in_glass")); Do(TEXT("at:2540,-371,92,14,-29")); Wait(.8f);
-			Flag(TEXT("bath_mirror_seen"),3.f); Shot(TEXT("03_empty_bath_and_note"));
+			Flag(TEXT("bath_mirror_first_turn"),3.f); Do(TEXT("check_first_empty_chair")); Shot(TEXT("03_empty_bath"));
+			Do(TEXT("at:2517,-382,92,172,-4")); Wait(1.2f); Do(TEXT("check_second_reflection")); Shot(TEXT("03b_second_reflection"));
+			Do(TEXT("at:2540,-371,92,14,-29")); Flag(TEXT("bath_mirror_seen"),3.f); Shot(TEXT("03c_second_turn_note"));
 			Do(TEXT("at:2517,-382,92,172,-4")); Wait(.7f); Shot(TEXT("04_same_mirror_empty"));
 			Do(TEXT("at:2540,-371,92,18,-48")); Wait(.3f); Touch(TEXT("note_bath_mirror"));
 			Wait(.6f); Shot(TEXT("05_note"));
 			Touch(TEXT("__close")); Do(TEXT("check_bath_note_reload"));
 			if (FParse::Param(FCommandLine::Get(),TEXT("WCChairListener"))) Do(TEXT("flag:bath_chair_done"));
 			Do(TEXT("face_bath_exit")); Wait(1.f); Do(TEXT("check_chair_still"));
-			Do(TEXT("walk_out_of_bath")); Do(TEXT("walk_beside_chair"));
+			Do(TEXT("walk_to_bath_threshold")); Wait(1.4f); Do(TEXT("check_chair_held")); Shot(TEXT("05b_chair_tipped_at_exit"));
+			Do(TEXT("look_back_at_chair")); Do(TEXT("back_out_of_bath")); Wait(1.f); Do(TEXT("check_chair_held"));
+			Shot(TEXT("05c_watching_tipped_chair")); Do(TEXT("walk_beside_chair"));
 			Shot(TEXT("06_chair_passing")); Do(TEXT("watch_baseboard_contact")); Shot(TEXT("07_wall_contact"));
 			Do(TEXT("watch_raised_wheel")); Shot(TEXT("08_sideways"));
 			Do(TEXT("check_wheel_coasts")); Shot(TEXT("09_wheel_still_turning"));
@@ -1000,33 +1006,64 @@ void AWCDirector::AutoTick(float Dt)
 			if (ChairBeat!=EBathChairBeat::Waiting || P->IsInputLocked() || !BathChair->GetActorTransform().Equals(BathChairHome))
 				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL chair moved when player only turned towards exit"));
 		}
-		else if (S.Arg == TEXT("walk_out_of_bath"))
+		else if (S.Arg==TEXT("check_glass_from_hall"))
 		{
-			const FVector Target(2588.,-150.,P->GetActorLocation().Z);
-			if (P->GetActorLocation().Y<-165. && In<6.)
+			if (!BathTarget || !BathCapture || !BathGlass.IsValid() || NextMirrorCapture<=0. || MirrorShownAt>=0.)
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL permanent mirror on approach"));
+			AutoMirrorMaterial=BathGlass.IsValid() ? BathGlass->GetMaterial(1) : nullptr;
+		}
+		else if (S.Arg==TEXT("check_first_empty_chair") || S.Arg==TEXT("check_second_reflection"))
+		{
+			const bool Second=S.Arg==TEXT("check_second_reflection");
+			const auto* Note=Thing(TEXT("note_bath_mirror"));
+			if (!BathGlass.IsValid() || BathGlass->GetMaterial(1)!=AutoMirrorMaterial.Get() || !Has(TEXT("bath_mirror_first_turn")) ||
+				Has(TEXT("bath_mirror_seen")) || !Note || !Note->IsHidden() || (MirrorShownAt>=0.)!=Second ||
+				(Second && (!Her() || !Her()->IsShown())) || (!Second && Her() && Her()->IsShown()))
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL mirror stage %s"),*S.Arg.ToString());
+		}
+		else if (S.Arg==TEXT("look_back_at_chair"))
+		{
+			AimAt(P,BathChair->GetActorLocation()+FVector(0,0,32),Dt,6.f);
+			if (In<1.) return;
+		}
+		else if (S.Arg==TEXT("walk_to_bath_threshold") || S.Arg==TEXT("back_out_of_bath"))
+		{
+			const bool Backing=S.Arg==TEXT("back_out_of_bath");
+			const FVector Loc=P->GetActorLocation();
+			const double TargetY=Backing ? -133. : -247.;
+			if (Backing) AimAt(P,BathChair->GetActorLocation()+FVector(0,0,32),Dt,6.f);
+			if (Loc.Y<TargetY && In<6.)
 			{
-				P->AddMovementInput((Target-P->GetActorLocation()).GetSafeNormal2D());
+				P->AddMovementInput((FVector(2588.,TargetY+8.,Loc.Z)-Loc).GetSafeNormal2D());
 				return;
 			}
-			if (ChairBeat!=EBathChairBeat::Leaving && ChairBeat!=EBathChairBeat::Rolling)
-				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL actual bathroom departure at %s"),*P->GetActorLocation().ToCompactString());
+			if (Loc.Y<TargetY) UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL walking bathroom threshold"));
+		}
+		else if (S.Arg==TEXT("check_chair_held"))
+		{
+			if (ChairBeat!=EBathChairBeat::WaitingForLookAway || ChairTravel!=0.f || BathChair->GetActorRightVector().Z<.98 || P->IsInputLocked())
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL chair rolled inside or while watched at %s"),*P->GetActorLocation().ToCompactString());
 		}
 		else if (S.Arg == TEXT("walk_beside_chair") || S.Arg==TEXT("watch_baseboard_contact"))
 		{
 			const FVector Loc=P->GetActorLocation();
-			const bool Listener=FParse::Param(FCommandLine::Get(),TEXT("WCChairListener"));
-			if (Loc.X>(Listener ? 2440. : 2150.))
+			const bool East=FParse::Param(FCommandLine::Get(),TEXT("WCChairListener"));
+			const FVector Lane=Loc.Y<-95. ? FVector(2588,-55,0) : (East ? FVector(2728,97,0) : FVector(1490,0,0));
+			if (!East || Loc.X<2700.) P->AddMovementInput((Lane-Loc).GetSafeNormal2D());
+			const FVector Ch=BathChair->GetActorLocation();
+			const bool InHall=ChairTravel>160.f;
+			if (InHall) AimAt(P,Ch+FVector(0,0,46.),Dt,3.3f);
+			else AimAt(P,Loc+FVector(East ? 260. : -270.,95.,50.),Dt,5.f);
+			if (InHall && FVector::Dist2D(Loc,Ch)<160.) bAutoChairBeside=true;
+			const bool Passed=bAutoChairBeside && (East ? Ch.X>Loc.X-35. : Ch.X<Loc.X-40.);
+			const bool Reached=S.Arg==TEXT("walk_beside_chair") ? Passed : ChairBeat==EBathChairBeat::Tipping || bChairLanded;
+			if (!Reached && In<23.) return;
+			if (!Reached || P->IsInputLocked() || (Her() && Her()->IsShown()) ||
+				(S.Arg==TEXT("watch_baseboard_contact") && ChairTravel<1550.f))
 			{
-				const FVector Lane=Loc.Y<-102. ? FVector(2554,-88,0) : (Listener ? FVector(2418,3,0) : FVector(2110,-87,0));
-				P->AddMovementInput((Lane-Loc).GetSafeNormal2D());
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL hall chair pass at %.0f cm, chair %s deputy %s"),ChairTravel,*Ch.ToCompactString(),*Loc.ToCompactString());
 			}
-			const FVector Target=BathChair->GetActorLocation()+FVector(0,0,46.);
-			if (ChairTravel>100.) AimAt(P,Target,Dt,3.3f);
-			else AimAt(P,Loc+FVector(-270.,130.,57.),Dt,4.f);
-			const bool Reached=S.Arg==TEXT("walk_beside_chair") ? ChairTravel>420.f : bChairLanded || ChairBeat==EBathChairBeat::Tipping;
-			if (!Reached && In<18.) return;
-			if (!Reached || P->IsInputLocked() || (Her() && Her()->IsShown()))
-				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL hall chair pass at %.0f cm"),ChairTravel);
+			else UE_LOG(LogWCAuto,Display,TEXT("WCAUTO chair %s at %.0f cm, separation %.0f cm"),*S.Arg.ToString(),ChairTravel,FVector::Dist2D(Ch,Loc));
 		}
 		else if (S.Arg==TEXT("watch_raised_wheel"))
 		{

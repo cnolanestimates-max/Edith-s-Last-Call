@@ -2,12 +2,13 @@
 #include "WCCharacter.h"
 #include "WCEntity.h"
 #include "WCWorld.h"
+#include "Components/AudioComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Components/SceneCaptureComponent2D.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/TextureRenderTarget2D.h"
-#include "Materials/MaterialInstanceDynamic.h"
+#include "Materials/MaterialInterface.h"
 
 namespace
 {
@@ -46,7 +47,12 @@ void AWCDirector::FinishBathMirror(bool bWitnessed)
 	MirrorWitnessSeconds = 0.f;
 	NextMirrorCapture = 0.;
 	bEventBusy = false;
-	if (bWitnessed)
+	if (bWitnessed && !Has(TEXT("bath_mirror_first_turn")))
+	{
+		RememberAtCheckpoint(TEXT("bath_mirror_first_turn"));
+		UE_LOG(LogTemp,Display,TEXT("WCMIRROR first turn: empty chair"));
+	}
+	else if (bWitnessed)
 	{
 		RememberAtCheckpoint(TEXT("bath_mirror_seen"));
 		RefreshBathLetter();
@@ -55,22 +61,101 @@ void AWCDirector::FinishBathMirror(bool bWitnessed)
 	}
 }
 
+void AWCDirector::InitializeBathMirror()
+{
+	if (BathCapture || !BathChair.IsValid()) return;
+	AActor* Frame=Find(TEXT("BathMirror"));
+	if (!Frame) return;
+	BathGlass=Frame->FindComponentByClass<UStaticMeshComponent>();
+	if (!BathGlass.IsValid() || !BathGlass->GetMaterial(1)) return;
+	// Use the texture actually bound to the glass in the house map, from its very first frame.
+	UTexture* Reflect=nullptr;
+	BathGlass->GetMaterial(1)->GetTextureParameterValue(FMaterialParameterInfo(TEXT("Reflect")),Reflect);
+	BathTarget=Cast<UTextureRenderTarget2D>(Reflect);
+	if (!ensureMsgf(BathTarget,TEXT("Bathroom glass has no authored render target"))) return;
+	const FVector ChairSeat=BathChairHome.GetLocation();
+	BathCapture = NewObject<USceneCaptureComponent2D>(this);
+	BathCapture->bCaptureEveryFrame = BathCapture->bCaptureOnMovement = false;
+	BathCapture->bAlwaysPersistRenderingState = true;
+	BathCapture->TextureTarget = BathTarget;
+	BathCapture->CaptureSource = ESceneCaptureSource::SCS_SceneColorHDR;
+	BathCapture->bUseCustomProjectionMatrix = true;
+	BathCapture->HiddenActors.Add(Frame);
+	if (AWCCharacter* P=Player()) BathCapture->HiddenActors.Add(P);
+	BathCapture->PostProcessSettings.bOverride_AutoExposureMethod = true;
+	BathCapture->PostProcessSettings.AutoExposureMethod = EAutoExposureMethod::AEM_Manual;
+	BathCapture->PostProcessSettings.bOverride_AutoExposureBias = true;
+	BathCapture->PostProcessSettings.AutoExposureBias = -1.f;
+	BathCapture->ShowFlags.SetMotionBlur(false);
+	BathCapture->ShowFlags.SetVolumetricFog(false);
+	BathCapture->RegisterComponent();
+	// A little cold bounce on the bath wall gives the glass depth with the room switch off.
+	BathBounce = NewObject<UPointLightComponent>(this);
+	BathBounce->SetWorldLocation(ChairSeat+FVector(-83.,-49.,165.));
+	// The bathroom and chair keep their fill; the seated apparition only catches the rim.
+	BathBounce->SetLightingChannels(false,true,false);
+	BathBounce->SetAttenuationRadius(295.f);
+	BathBounce->SetIntensityUnits(ELightUnits::Lumens);
+	BathBounce->SetIntensity(4200.f);
+	BathBounce->SetLightColor(FLinearColor(.54f,.68f,.76f));
+	BathBounce->SetCastShadows(false);
+	BathBounce->RegisterComponent();
+	BathRim = NewObject<UPointLightComponent>(this);
+	BathRim->SetWorldLocation(ChairSeat + FVector(25.,74.,111.));
+	BathRim->SetLightingChannels(true,true,false);
+	BathRim->SetAttenuationRadius(225.f);
+	BathRim->SetIntensityUnits(ELightUnits::Lumens);
+	BathRim->SetIntensity(1900.f);
+	BathRim->SetLightColor(FLinearColor(.84f,.66f,.47f));
+	BathRim->SetCastShadows(false);
+	BathRim->RegisterComponent();
+	CaptureBathMirror(FVector(2588.,-170.,155.));
+}
+
+void AWCDirector::CaptureBathMirror(const FVector& Eye)
+{
+	const double Depth=Eye.X-GlassCentre.X;
+	if (!BathCapture || Depth<=2.) return;
+	// Off-axis frustum through the four corners of the real glass. Depth also clips the wall behind it.
+	BathCapture->SetWorldLocationAndRotation(FVector(GlassCentre.X-Depth,Eye.Y,Eye.Z), FRotator::ZeroRotator);
+	BathCapture->CustomProjectionMatrix = FMatrix(FPlane(Depth/HalfWidth,0,0,0),FPlane(0,Depth/HalfHeight,0,0),
+		FPlane((Eye.Y-GlassCentre.Y)/HalfWidth,(Eye.Z-GlassCentre.Z)/HalfHeight,0,1),FPlane(0,0,Depth+.4,0));
+	BathCapture->CaptureScene();
+}
+
 void AWCDirector::TickBathMirror(float Dt)
 {
 	AWCCharacter* P = Player();
 	if (!P) return;
 	const FVector Eye = P->EyeLocation();
 	const bool bRoom = Eye.X > 2440 && Eye.X < 2786 && Eye.Y > -583 && Eye.Y < -214 && Eye.Z > 38 && Eye.Z < 270;
+	if (!BathChair.IsValid() || !BathCapture) return;
+	if (!bRoom || Has(TEXT("bath_mirror_seen")))
+	{
+		if (BathEdithBreath.IsValid()) BathEdithBreath->FadeOut(.18f,0.f);
+		BathEdithBreath.Reset();
+		NextBathBreath=0.;
+	}
+	else if (Clock>=NextBathBreath && (!BathEdithBreath.IsValid() || !BathEdithBreath->IsPlaying()))
+	{
+		BathEdithBreath=PlayAt(TEXT("her_breath"),BathChairHome.GetLocation()+FVector(0,0,112),.92f,.92f,1300.f);
+		NextBathBreath=Clock+6.9;
+	}
+	const FVector Gaze=P->EyeForward();
 	if (!bRoom)
 	{
-		if (BathBounce) BathBounce->SetVisibility(false);
-		if (BathRim) BathRim->SetVisibility(false);
 		FinishBathMirror(false);
-		MirrorDwell = 0.f;
+		MirrorDwell=0.f;
+		// Keep the reflection live on the hallway approach without drawing the bathroom across the house.
+		if (Clock>=NextMirrorCapture && Eye.Z>30. && Eye.Z<285. && Eye.X>GlassCentre.X+2. &&
+			FVector::DistSquared(Eye,GlassCentre)<FMath::Square(730.) &&
+			FVector::DotProduct(Gaze,(GlassCentre-Eye).GetSafeNormal())>-.1)
+		{
+			CaptureBathMirror(Eye);
+			NextMirrorCapture=Clock+1./16.;
+		}
 		return;
 	}
-	const FVector Gaze = P->EyeForward();
-	if (!BathChair.IsValid()) return;
 	const FVector ChairSeat = BathChairHome.GetLocation();
 	const double Depth = Eye.X - GlassCentre.X;
 	const FVector CentreRay = (GlassCentre - Eye).GetSafeNormal();
@@ -94,60 +179,11 @@ void AWCDirector::TickBathMirror(float Dt)
 		}
 	}
 	if (MirrorShownAt>=0. && bLookingAtHer) MirrorWitnessSeconds+=Dt;
-	if (MirrorShownAt >= 0. && (!bFacing || Gaze.X > .15 || bBusy || P->IsDown()))
-		FinishBathMirror(!bBusy && !P->IsDown() && MirrorWitnessSeconds>=.5f);
+	const FVector SeatDirection=(ChairSeat+FVector(0,0,65)-Eye).GetSafeNormal();
+	const bool bTurnedToChair=!bFacing && FVector::DotProduct(Gaze,SeatDirection)>.63;
+	if (MirrorShownAt>=0. && (bTurnedToChair || bBusy || P->IsDown()))
+		FinishBathMirror(bTurnedToChair && !bBusy && !P->IsDown() && MirrorWitnessSeconds>=.4f);
 	if (!bFacing) { MirrorDwell=0.f; return; }
-	if (!BathTarget)
-	{
-		AActor* Frame = Find(TEXT("BathMirror"));
-		if (!Frame) return;
-		BathGlass = Frame->FindComponentByClass<UStaticMeshComponent>();
-		if (!BathGlass.IsValid()) return;
-		UMaterialInstanceDynamic* Silver = BathGlass->CreateDynamicMaterialInstance(1);
-		if (!Silver) return;
-		BathTarget = NewObject<UTextureRenderTarget2D>(this);
-		BathTarget->RenderTargetFormat = RTF_RGBA16f;
-		BathTarget->InitAutoFormat(640, 440);
-		BathTarget->UpdateResourceImmediate(true);
-		Silver->SetTextureParameterValue(TEXT("Reflect"), BathTarget);
-		BathCapture = NewObject<USceneCaptureComponent2D>(this);
-		BathCapture->bCaptureEveryFrame = BathCapture->bCaptureOnMovement = false;
-		BathCapture->bAlwaysPersistRenderingState = true;
-		BathCapture->TextureTarget = BathTarget;
-		BathCapture->CaptureSource = ESceneCaptureSource::SCS_SceneColorHDR;
-		BathCapture->bUseCustomProjectionMatrix = true;
-		BathCapture->HiddenActors.Add(Frame);
-		BathCapture->HiddenActors.Add(P);
-		BathCapture->PostProcessSettings.bOverride_AutoExposureMethod = true;
-		BathCapture->PostProcessSettings.AutoExposureMethod = EAutoExposureMethod::AEM_Manual;
-		BathCapture->PostProcessSettings.bOverride_AutoExposureBias = true;
-		BathCapture->PostProcessSettings.AutoExposureBias = -1.f;
-		BathCapture->ShowFlags.SetMotionBlur(false);
-		BathCapture->ShowFlags.SetVolumetricFog(false);
-		BathCapture->RegisterComponent();
-		// A little cold bounce on the bath wall gives the glass depth with the room switch off.
-		BathBounce = NewObject<UPointLightComponent>(this);
-		BathBounce->SetWorldLocation(ChairSeat+FVector(-83.,-49.,165.));
-		// The bathroom and chair keep their fill; the seated apparition only catches the rim.
-		BathBounce->SetLightingChannels(false,true,false);
-		BathBounce->SetAttenuationRadius(295.f);
-		BathBounce->SetIntensityUnits(ELightUnits::Lumens);
-		BathBounce->SetIntensity(4200.f);
-		BathBounce->SetLightColor(FLinearColor(.54f,.68f,.76f));
-		BathBounce->SetCastShadows(false);
-		BathBounce->RegisterComponent();
-		BathRim = NewObject<UPointLightComponent>(this);
-		BathRim->SetWorldLocation(ChairSeat + FVector(25.,74.,111.));
-		BathRim->SetLightingChannels(true,true,false);
-		BathRim->SetAttenuationRadius(225.f);
-		BathRim->SetIntensityUnits(ELightUnits::Lumens);
-		BathRim->SetIntensity(1900.f);
-		BathRim->SetLightColor(FLinearColor(.84f,.66f,.47f));
-		BathRim->SetCastShadows(false);
-		BathRim->RegisterComponent();
-	}
-	BathBounce->SetVisibility(true);
-	BathRim->SetVisibility(true);
 	if (!Has(TEXT("bath_mirror_seen")) && MirrorShownAt < 0. && !HasActiveEncounter() &&
 		!P->IsDown() && !P->IsInputLocked() && !ActiveNote.IsValid() && Her() && !Her()->IsShown() && bLookingAtHer)
 	{
@@ -165,7 +201,7 @@ void AWCDirector::TickBathMirror(float Dt)
 			MirrorBodyChannels = H->Body->LightingChannels;
 			H->Body->SetLightingChannels(false,false,true);
 			BathRim->SetLightingChannels(true,true,true);
-			BathRim->SetIntensity(145.f);
+			BathRim->SetIntensity(Has(TEXT("bath_mirror_first_turn")) ? 175.f : 145.f);
 			H->SetFarGlow(0.f);
 			H->SetGlow(0.f);
 			H->SetEyeShine(.018f);
@@ -173,16 +209,12 @@ void AWCDirector::TickBathMirror(float Dt)
 			MirrorShownAt = Clock;
 			NextMirrorCapture = 0.;
 			bEventBusy = true;
-			UE_LOG(LogTemp, Display, TEXT("WCMIRROR reflection seated"));
+			UE_LOG(LogTemp, Display, TEXT("WCMIRROR reflection seated, appearance %d"),Has(TEXT("bath_mirror_first_turn")) ? 2 : 1);
 		}
 	}
 	else MirrorDwell = 0.f;
 	if (MirrorShownAt >= 0. && Her()) Her()->LookAtReflection(FVector(GlassCentre.X-Depth,Eye.Y,Eye.Z));
 	if (Clock < NextMirrorCapture) return;
 	NextMirrorCapture = Clock + 1./16.;
-	// Off-axis frustum through the four corners of the real glass. Depth also clips the wall behind it.
-	BathCapture->SetWorldLocationAndRotation(FVector(GlassCentre.X-Depth,Eye.Y,Eye.Z), FRotator::ZeroRotator);
-	BathCapture->CustomProjectionMatrix = FMatrix(FPlane(Depth/HalfWidth,0,0,0),FPlane(0,Depth/HalfHeight,0,0),
-		FPlane((Eye.Y-GlassCentre.Y)/HalfWidth,(Eye.Z-GlassCentre.Z)/HalfHeight,0,1),FPlane(0,0,Depth+.4,0));
-	BathCapture->CaptureScene();
+	CaptureBathMirror(Eye);
 }
