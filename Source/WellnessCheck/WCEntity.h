@@ -38,6 +38,9 @@ public:
 
 	void Appear(const FVector& Loc, float Yaw, FName Anim, bool bLoop = true, float Rate = 1.f);
 	void Vanish();
+	/** Called at the onset of the performed "You left me" line when Edith is physically present. */
+	void PerformAccusation() { AccusationAge = 0.f; }
+	bool IsMouthOpen() const;
 	bool IsShown() const { return bShown; }
 	void Play(FName Anim, bool bLoop = true, float Rate = 1.f);
 	/** Travel through the points at Speed cm/s playing Anim; OnDone fires at the last point. */
@@ -75,6 +78,9 @@ protected:
 
 private:
 	FVector RefPos(FName Bone) const;
+	UPROPERTY(Transient) TObjectPtr<class UWCEdithMouth> Mouth;
+	float AccusationAge = -1.f;
+	float TongueExtension = 0.f;
 	bool bShown = false;
 	bool bFacePlayer = false;
 	TArray<FVector> Path;

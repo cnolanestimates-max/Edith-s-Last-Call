@@ -1,4 +1,5 @@
 #include "WCEntity.h"
+#include "WCEdithMouth.h"
 #include "WCCharacter.h"
 #include "WCDirector.h"
 #include "Animation/AnimSequence.h"
@@ -29,6 +30,9 @@ AWCEntity::AWCEntity()
 	Body->bCastDynamicShadow = true;
 	Body->SetBoundsScale(2.f);
 
+	Mouth = CreateDefaultSubobject<UWCEdithMouth>(TEXT("Mouth"));
+	Mouth->SetupAttachment(Body);
+	Mouth->SetVisibility(false);
 	Eye = CreateDefaultSubobject<USceneComponent>(TEXT("Eye"));
 	Eye->SetupAttachment(Body);
 	Eye->SetUsingAbsoluteRotation(true);
@@ -106,6 +110,7 @@ void AWCEntity::BeginPlay()
 		for (int32 B = HeadIdx; B != INDEX_NONE; B = Ref.GetParentIndex(B)) RefHead = RefHead * Ref.GetRefBonePose()[B];
 		Eye->AttachToComponent(Body, FAttachmentTransformRules::KeepRelativeTransform, HeadBone);
 		Eye->SetRelativeLocation(RefHead.InverseTransformPosition(EyeMesh));
+		Mouth->Fit(Body, HeadBone, RefHead, Left, Fwd);
 		const float R = EyeRadius;
 		EyeBall->SetStaticMesh(Sphere);
 		EyeBall->SetRelativeScale3D(FVector(R / 50.f));
@@ -187,6 +192,9 @@ void AWCEntity::Play(FName Anim, bool bLoop, float Rate)
 
 void AWCEntity::Appear(const FVector& Loc, float Yaw, FName Anim, bool bLoop, float Rate)
 {
+	Mouth->Close();
+	TongueExtension = 0.f;
+	AccusationAge = -1.f;
 	StopMoving();
 	SetActorLocationAndRotation(Loc, FRotator(0.f, Yaw, 0.f));
 	CurrentAnim = NAME_None;
@@ -198,8 +206,13 @@ void AWCEntity::Appear(const FVector& Loc, float Yaw, FName Anim, bool bLoop, fl
 	EyeQuat = GetActorQuat();
 }
 
+bool AWCEntity::IsMouthOpen() const { return Mouth->IsOpen(); }
+
 void AWCEntity::Vanish()
 {
+	Mouth->Close();
+	TongueExtension = 0.f;
+	AccusationAge = -1.f;
 	GazeTarget.Reset();
 	StopMoving();
 	SetActorHiddenInGame(true);
@@ -295,6 +308,17 @@ bool AWCEntity::SegmentHits(const FVector& A, const FVector& B) const
 	return FVector::Dist(P1, P2) < 42.f;
 }
 
+// Aperture of the recorded vowels, the consonant before "me", and the final release.
+static float AccusationJaw(float T)
+{
+	static constexpr float Keys[][2] = {{0,.19f},{.19f,.14f},{.31f,.30f},{.4f,.63f},{.53f,.45f},{.69f,.58f},
+		{.86f,.69f},{1.02f,.27f},{1.12f,.12f},{1.23f,.49f},{1.40f,.88f},{1.58f,1.f},{2.18f,.94f},
+		{2.70f,.99f},{3.05f,.94f},{3.33f,.85f},{3.48f,.59f},{3.70f,.24f},{4.05f,.055f},{4.28f,0.f}};
+	for (int32 I = 1; I < UE_ARRAY_COUNT(Keys); ++I)
+		if (T <= Keys[I][0]) return FMath::Lerp(Keys[I-1][1], Keys[I][1], FMath::SmoothStep(Keys[I-1][0], Keys[I][0], T));
+	return 0.f;
+}
+
 void AWCEntity::Tick(float Dt)
 {
 	Super::Tick(Dt);
@@ -338,8 +362,29 @@ void AWCEntity::Tick(float Dt)
 		{
 			const float T = FMath::Clamp(FMath::Lerp(Want[k], FMath::Max(Scr[k], Want[k] * 0.6f), ScreamAlpha), 0.f, 1.f);
 			FaceNow[k] = FMath::FInterpTo(FaceNow[k], T, Dt, T > FaceNow[k] ? 16.f : 6.f);
-			Body->SetMorphTarget(GFaceNames[k], FaceNow[k]);
 		}
+		const bool SeatedReflection = CurrentAnim == TEXT("Wheelchair");
+		const bool Performing = AccusationAge >= 0.f && !SeatedReflection;
+		float Jaw = SeatedReflection ? 0.f : FMath::Clamp((FaceNow[F_Scream] - .07f) / .93f, 0.f, 1.f);
+		if (Performing)
+		{
+			Jaw = AccusationJaw(AccusationAge);
+			TongueExtension = .72f * FMath::SmoothStep(1.12f, 2.1f, AccusationAge) * (1.f - FMath::SmoothStep(2.86f, 3.52f, AccusationAge));
+			AccusationAge += Dt;
+			if (AccusationAge > 4.28f) AccusationAge = -1.f;
+		}
+		else
+		{
+			const float Reach = FMath::SmoothStep(.49f, .91f, Jaw) * (.85f + .15f * FMath::Sin(FaceT * 1.8f));
+			TongueExtension = FMath::FInterpConstantTo(TongueExtension, Reach, Dt, Reach > TongueExtension ? 1.45f : 3.4f);
+		}
+		for (int32 K = 0; K < F_Num; ++K)
+		{
+			float V = FaceNow[K];
+			if (K == F_Scream || K == F_Unhinge || K == F_Stretch) V = Jaw;
+			Body->SetMorphTarget(GFaceNames[K], V);
+		}
+		Mouth->Pose(Jaw, TongueExtension, FaceT);
 
 	}
 

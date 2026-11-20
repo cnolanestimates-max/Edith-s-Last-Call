@@ -90,11 +90,13 @@ void AWCDirector::AutoBegin()
 			Do(TEXT("at:2564,-392,92,173,3")); Wait(2.f);
 			Shot(TEXT("01_mirror_from_sink")); Do(TEXT("at:2517,-382,92,172,-4")); Wait(1.6f);
 			Shot(TEXT("02_edith_in_glass")); Do(TEXT("check_mirror_skin"));
+			if (FParse::Param(FCommandLine::Get(), TEXT("WCMouthRegression"))) { Wait(.73f); Shot(TEXT("02b_first_ripple")); }
 			if (bStudySkin) Wait(5.f);
 			Do(TEXT("at:2540,-371,92,14,-29")); Wait(.8f);
 			Flag(TEXT("bath_mirror_first_turn"),3.f); Do(TEXT("check_first_empty_chair")); Shot(TEXT("03_empty_bath"));
 			Do(TEXT("at:2517,-382,92,172,-4")); Wait(1.2f); Do(TEXT("check_second_reflection")); Shot(TEXT("03b_second_reflection"));
 			Do(TEXT("check_mirror_skin"));
+			if (FParse::Param(FCommandLine::Get(), TEXT("WCMouthRegression"))) { Wait(.73f); Shot(TEXT("03b_ripple_later")); }
 			if (bStudySkin) Wait(5.f);
 			Do(TEXT("at:2540,-371,92,14,-29")); Flag(TEXT("bath_mirror_seen"),3.f); Shot(TEXT("03c_second_turn_note"));
 			Do(TEXT("at:2517,-382,92,172,-4")); Wait(.7f); Shot(TEXT("04_same_mirror_empty"));
@@ -114,6 +116,13 @@ void AWCDirector::AutoBegin()
 				Do(TEXT("wait_wheel_stop")); Do(TEXT("check_bath_finished"));
 			}
 			Do(TEXT("finish_bath_mix"));
+			if (FParse::Param(FCommandLine::Get(), TEXT("WCMouthRegression")))
+			{
+				Do(TEXT("at:1500,0,92,180,10")); Wait(.4f);
+				AutoSteps.Add({A_Her, TEXT("Idle"), 380.f}); Wait(.45f);
+				Do(TEXT("grab")); Wait(.65f); Do(TEXT("check_grab_mouth")); Shot(TEXT("10_mouth_after_mirror"));
+				Wait(3.f); Do(TEXT("check_closed_mouth"));
+			}
 		}
 		else if (FParse::Param(FCommandLine::Get(),TEXT("WCUpstairsProof")))
 		{
@@ -1052,9 +1061,17 @@ void AWCDirector::AutoTick(float Dt)
 		}
 		else if (S.Arg==TEXT("check_mirror_skin"))
 		{
-			if (!Her() || !BathWrithingSkin || !BathOriginalSkin || Her()->Body->GetMaterial(0) != BathWrithingSkin ||
+			if (!Her() || Her()->IsMouthOpen() || !BathWrithingSkin || !BathOriginalSkin || Her()->Body->GetMaterial(0) != BathWrithingSkin ||
 				Her()->GetActorScale3D().Equals(MirrorUnscaledTransform.GetScale3D()))
-				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL reflected figure or skin missing"));
+				{ UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL mirror scale, writhing skin or closed mouth")); }
+			else UE_LOG(LogWCAuto,Display,TEXT("WCAUTO mirror appearance %d: writhing skin active, mouth closed"), Has(TEXT("bath_mirror_first_turn")) ? 2 : 1);
+		}
+		else if (S.Arg == TEXT("check_grab_mouth") || S.Arg == TEXT("check_closed_mouth"))
+		{
+			const bool ExpectedOpen = S.Arg == TEXT("check_grab_mouth");
+			if (!Her() || Her()->IsMouthOpen() != ExpectedOpen)
+				{ UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL post-mirror mouth open expected %d"), ExpectedOpen); }
+			else UE_LOG(LogWCAuto,Display,TEXT("WCAUTO post-mirror mouth open=%d"), ExpectedOpen);
 		}
 		else if (S.Arg==TEXT("check_first_empty_chair") || S.Arg==TEXT("check_second_reflection"))
 		{

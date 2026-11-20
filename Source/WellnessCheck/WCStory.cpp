@@ -187,6 +187,7 @@ float AWCDirector::Say(FName LineId, float Delay)
 		DialogueUntil = FMath::Max(DialogueUntil, Clock + Len + .6);
 		if (Line.Kind == 0) HoldDeputyBreath(Len);
 		const FString Asset = FString::Printf(TEXT("VO/%s"), *LineId.ToString());
+		if (LineId == TEXT("m_whyleave") && Her() && Her()->IsShown()) Her()->PerformAccusation();
 		if (Line.Kind == 1) Play2D(TEXT("radio_click"), 0.5f);
 		if (Line.Kind == 3 && Her() && Her()->IsShown())
 		{
