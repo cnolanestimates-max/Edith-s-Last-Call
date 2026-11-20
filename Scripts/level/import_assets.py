@@ -316,6 +316,20 @@ def smoke_material():
     return m
 
 
+def hall_eye_glint_material():
+    # The viewer's 208-degree blue, converted from display RGB to linear colour.
+    m = new_material("M_HallEyeGlint")
+    m.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_UNLIT)
+    tint = const3(m, (0.00605, 0.279, 1.0), -620, 0)
+    glow = sparam(m, "Glow", 1.0, -620, 200)
+    product = mel.create_material_expression(m, unreal.MaterialExpressionMultiply, -320, 0)
+    mel.connect_material_expressions(tint, "", product, "A")
+    mel.connect_material_expressions(glow, "", product, "B")
+    mel.connect_material_property(product, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
+    mel.recompile_material(m)
+    eal.save_loaded_asset(m, False)
+
+
 def shelf_pupil_material():
     m = new_material("M_ShelfPupil")
     m.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_UNLIT)
@@ -369,6 +383,7 @@ def step_mats():
     smoke_material()
     flat_material("M_EyeBlack", (0.002, 0.002, 0.002), 0.05)
     flat_material("M_EyeIris", (0.30, 0.36, 0.40), 0.3, emissive=0.06)
+    hall_eye_glint_material()
     shelf_pupil_material()
     # the same iris with its glow on a dial (the eye in the dark, S14)
     mg = new_material("M_EyeIrisGlow")
@@ -560,7 +575,7 @@ exec(open(ROOT + "/Scripts/level/import_surfaces.py", encoding="utf-8").read())
 exec(open(ROOT + "/Scripts/level/import_variants.py", encoding="utf-8").read())
 exec(open(ROOT + "/Scripts/level/import_items.py", encoding="utf-8").read())
 
-for name, fn in (("kit", step_kit), ("her", step_her), ("her_skin", step_her_skin), ("mats", step_mats), ("shelf_pupil", shelf_pupil_material), ("audio", step_audio), ("tex", step_tex), ("props", step_props), ("decals", step_decals), ("extra", step_extra_mats), ("mega", step_mega), ("variants", step_variants), ("drawings", step_drawings), ("items", step_items)):
+for name, fn in (("kit", step_kit), ("her", step_her), ("her_skin", step_her_skin), ("mats", step_mats), ("hall_eye_glint", hall_eye_glint_material), ("shelf_pupil", shelf_pupil_material), ("audio", step_audio), ("tex", step_tex), ("props", step_props), ("decals", step_decals), ("extra", step_extra_mats), ("mega", step_mega), ("variants", step_variants), ("drawings", step_drawings), ("items", step_items)):
     if name in STEPS:
         try:
             fn()

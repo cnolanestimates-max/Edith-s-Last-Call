@@ -136,24 +136,32 @@ void AWCDirector::AutoBegin()
 			Do(TEXT("check_pendant_on")); Do(TEXT("check_quiet_pendant"));
 			Do(TEXT("flag:peek_done")); Do(TEXT("check_quiet_pendant"));
 			Do(TEXT("flag:phone_done")); Do(TEXT("flag:lockin_done")); Do(TEXT("flag:power_out"));
+			const bool bTestDoor = FParse::Param(FCommandLine::Get(),TEXT("WCPendantDoor"));
+			if (bTestDoor)
+			{
+				// Turn it off before the key makes the hallway apparition eligible.
+				Do(TEXT("at:1092,103,92,90,-21")); Touch(TEXT("sw_pendant")); Do(TEXT("check_pendant_off"));
+			}
 			Do(TEXT("at:1010,-406,442,-90,-42")); Touch(TEXT("look_upbath_tub")); Wait(3.f); Touch(TEXT("pick_key_sitting"));
 			Do(TEXT("at:2150,30,92,180,0")); Do(TEXT("check_quiet_pendant"));
-			if (FParse::Param(FCommandLine::Get(),TEXT("WCPendantDoor")))
+			if (bTestDoor)
 			{
-				Do(TEXT("at:1092,103,92,90,-21")); Touch(TEXT("sw_pendant")); Do(TEXT("check_pendant_off"));
 				Do(TEXT("at:265,105,92,0,-1")); Do(TEXT("check_quiet_pendant")); Do(TEXT("check_pendant_off"));
 				Do(TEXT("at:1390,-111,92,-90,0")); Touch(TEXT("sitting")); Do(TEXT("check_sitting_locked"));
-				Do(TEXT("at:1092,103,92,90,-21")); Touch(TEXT("sw_pendant")); Do(TEXT("check_pendant_on"));
+				Do(TEXT("at:1092,103,92,90,-21")); Touch(TEXT("sw_pendant")); Wait(1.f);
+				Touch(TEXT("sw_pendant")); Do(TEXT("check_pendant_off")); Do(TEXT("check_hall_blue_in_dark"));
+				Touch(TEXT("sw_pendant")); Do(TEXT("check_pendant_on"));
 				Do(TEXT("at:1390,-111,92,-90,0")); Touch(TEXT("sitting")); Flag(TEXT("sitting_open"),14.f); Do(TEXT("check_pendant_gone"));
 			}
 			else
 			{
 				Do(TEXT("at:265,105,92,0,-1"));
 				Do(TEXT("walk_past_stair_wall"));
-				Do(TEXT("pendant_empty"));
-				Do(TEXT("pendant_visible")); Wait(.5f); Shot(TEXT("01_lamp_finds_edith"));
-				Do(TEXT("pendant_empty")); Wait(.48f); Shot(TEXT("02_swing_empty"));
-				Do(TEXT("pendant_visible")); Wait(.55f); Shot(TEXT("03_edith_returns"));
+				Do(TEXT("at:831.4163,127.0449,92,-32.58102,-1.75130"));
+				Do(TEXT("pendant_warm")); Shot(TEXT("01_lamp_finds_edith"));
+				Do(TEXT("pendant_cool")); Shot(TEXT("02_blue_alone"));
+				Do(TEXT("pendant_warm")); Shot(TEXT("03_warm_returns"));
+				Wait(5.f);
 				Do(TEXT("walk_to_pendant")); Wait(1.8f); Do(TEXT("check_pendant_gone")); Shot(TEXT("04_close_hall_empty"));
 				Do(TEXT("at:1390,-111,92,-90,0")); Touch(TEXT("sitting")); Flag(TEXT("sitting_open"),3.f);
 			}
@@ -1165,12 +1173,18 @@ void AWCDirector::AutoTick(float Dt)
 		else if (S.Arg == TEXT("check_quiet_pendant"))
 		{
 			const FQuat Expected(FVector::ForwardVector,FMath::DegreesToRadians(20.*FMath::Sin(Clock*1.38)));
-			if (bPendantWatching || bPendantReveal || Has(TEXT("pendant_seen")) || !HallPendant.IsValid() ||
+			if (bPendantWatching || (HallBlueFill && HallBlueFill->IsVisible()) || Has(TEXT("pendant_seen")) || !HallPendant.IsValid() ||
 				!HallPendant->GetComponentQuat().Equals(Expected,.001f))
 			{
 				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL early apparition or halted swing"));
 			}
 			else if (In < 4.7) return;
+		}
+		else if (S.Arg == TEXT("check_hall_blue_in_dark"))
+		{
+			if (!bPendantWatching || !Her() || Her()->IsHidden() || !HallBlueFill || !HallBlueFill->IsVisible() ||
+				!HallEyeHighlight || !HallEyeHighlight->IsVisible())
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL the hall switch extinguished Edith's blue light"));
 		}
 		else if (S.Arg == TEXT("check_sitting_locked"))
 		{
@@ -1196,13 +1210,22 @@ void AWCDirector::AutoTick(float Dt)
 				return;
 			}
 		}
-		else if (S.Arg == TEXT("pendant_visible") || S.Arg == TEXT("pendant_empty"))
+		else if (S.Arg == TEXT("pendant_warm") || S.Arg == TEXT("pendant_cool"))
 		{
-			AimAt(P,PendantMark + FVector(0,0,137), Dt);
-			if (bPendantReveal != (S.Arg == TEXT("pendant_visible"))) {
+			if (!Her() || Her()->IsHidden() || !Her()->Body->IsPlaying() || !HallBlueFill || !HallBlueFill->IsVisible() ||
+				!HallEyeHighlight || !HallEyeHighlight->IsVisible() || !Her()->GetActorLocation().Equals(PendantMark,1.))
+			{
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL hallway figure, idle or steady blue missing"));
+				Next(); return;
+			}
+			if ((S.Arg == TEXT("pendant_warm") ? -LastPendantWave : LastPendantWave) < .92) {
 				if (In < 6.) return;
 				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL missed pendant sweep %s"),*S.Arg.ToString());
 			}
+			UE_LOG(LogWCAuto,Display,TEXT("WCHALLPOSE %s feet=%s yaw=%.1f blue=%s cd=%.1f eye=%s lamp=%.3f"),
+				*S.Arg.ToString(),*PendantMark.ToCompactString(),Her()->GetActorRotation().Yaw,
+				*HallBlueFill->GetComponentLocation().ToCompactString(),HallBlueFill->Intensity,
+				*Her()->EyeLocation().ToCompactString(),LastPendantWave);
 		}
 		else if (S.Arg == TEXT("check_pendant_off") || S.Arg == TEXT("check_pendant_on"))
 		{
@@ -1233,7 +1256,7 @@ void AWCDirector::AutoTick(float Dt)
 		}
 		else if (S.Arg == TEXT("check_pendant_gone"))
 		{
-			if (!Has(TEXT("pendant_seen")) || bPendantReveal || (Her() && Her()->IsShown())) UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL pendant stayed after close approach"));
+			if (!Has(TEXT("pendant_seen")) || HallBlueFill->IsVisible() || (HallEyeHighlight && HallEyeHighlight->IsVisible()) || (Her() && Her()->IsShown())) UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL pendant stayed after close approach"));
 		}
 		else if (S.Arg == TEXT("beam"))
 		{

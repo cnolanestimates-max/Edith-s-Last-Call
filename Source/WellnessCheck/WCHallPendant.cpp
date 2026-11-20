@@ -7,6 +7,44 @@
 #include "Components/PointLightComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Materials/MaterialInterface.h"
+#include "Materials/MaterialInstanceDynamic.h"
+
+void AWCDirector::InitializeHallPose()
+{
+	// Beyond the grandfather clock, with a fixed pool of blue low on her dress.
+	PendantMark = FVector(1429.,-125.,0.);
+	HallBlueFill = NewObject<UPointLightComponent>(this);
+	HallBlueFill->SetWorldLocation(FVector(1393.3,-90.2,126.6));
+	HallBlueFill->SetIntensityUnits(ELightUnits::Candelas);
+	HallBlueFill->SetIntensity(82.f);
+	HallBlueFill->SetAttenuationRadius(124.f);
+	HallBlueFill->SetLightColor(FLinearColor(.095f,.30f,1.f));
+	HallBlueFill->SetSpecularScale(.22f);
+	HallBlueFill->SetCastShadows(false);
+	HallBlueFill->SetVolumetricScatteringIntensity(0.f);
+	HallBlueFill->SetVisibility(false);
+	HallBlueFill->RegisterComponent();
+}
+
+void AWCDirector::ShowHallFigureLight(AWCEntity* H)
+{
+	HallBlueFill->SetVisibility(true);
+	if (!HallEyeHighlight)
+	{
+		HallEyeHighlight = NewObject<UStaticMeshComponent>(H);
+		HallEyeHighlight->SetupAttachment(H->Eye);
+		HallEyeHighlight->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		HallEyeHighlight->SetCastShadow(false);
+		HallEyeHighlight->SetStaticMesh(H->EyeBall->GetStaticMesh());
+		HallEyeHighlight->SetRelativeLocation(FVector(1.12f * H->EyeRadius,-.35f,.45f));
+		HallEyeHighlight->SetRelativeScale3D(FVector(.022f)); // 2.2 cm across on the eye sphere mesh.
+		UMaterialInterface* Material = LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/WC/Materials/M_HallEyeGlint.M_HallEyeGlint"));
+		if (UMaterialInstanceDynamic* Glint = HallEyeHighlight->CreateDynamicMaterialInstance(0,Material))
+			Glint->SetScalarParameterValue(TEXT("Glow"),36.f * .98f);
+		HallEyeHighlight->RegisterComponent();
+	}
+	HallEyeHighlight->SetVisibility(true);
+}
 
 bool AWCDirector::PendantScareDue() const
 {
@@ -79,11 +117,13 @@ void AWCDirector::TickHallPendant(float Dt)
 	const bool bSightInterrupted = bPendantGuiding && (!P->GetController() || !PlayerSees(Chest,-1.f,1650.f));
 	const bool bFinished = (Distance <= 295. && PendantSweepsSeen > 0 && !bPendantUnlockWaiting) ||
 		(PendantSweepsSeen >= 2 && bPendantUnlockWaiting);
-	if (bPendantWatching && (bFinished || bSightInterrupted || !bInHall || !bLit || P->IsDown() || bBusy ||
+	if (bPendantWatching && (bFinished || bSightInterrupted || !bInHall || P->IsDown() || bBusy ||
 		P->IsInputLocked() || !PendantScareDue()))
 	{
 		if (H) H->Vanish();
-		bPendantReveal = bPendantGuiding = bPendantWatching = bEventBusy = false;
+		HallBlueFill->SetVisibility(false);
+		if (HallEyeHighlight) HallEyeHighlight->SetVisibility(false);
+		bPendantGuiding = bPendantWatching = bEventBusy = false;
 		if (bFinished)
 		{
 			RememberAtCheckpoint(TEXT("pendant_seen"));
@@ -105,11 +145,12 @@ void AWCDirector::TickHallPendant(float Dt)
 		bPendantWatching = bEventBusy = true;
 		PendantSweepsSeen = 0;
 		PendantLitDwell = 0.f;
-		H->Appear(Mark, (Eye-Mark).Rotation().Yaw, TEXT("Idle"));
+		// The nine-second idle shifts her weight with both feet planted.
+		H->Appear(Mark, 149.9f, TEXT("Idle"));
 		H->FarLight->SetLightColor(PendantBeam->GetLightColor());
 		H->SetGlow(0.f);
 		H->SetMood(TEXT("watch"));
-		H->SetActorHiddenInGame(true);
+		ShowHallFigureLight(H);
 	}
 	// She is already waiting around the stair wall. Only a player who missed
 	// her and is trying the locked door needs the existing guided glance.
@@ -125,10 +166,6 @@ void AWCDirector::TickHallPendant(float Dt)
 		PendantLitDwell += Dt;
 		if (PendantLitDwell >= .32f) ++PendantSweepsSeen;
 	}
-	// A little reflected warmth lets the face register at the edge of the beam.
-	H->SetFarGlow(PendantBeam->Intensity * .15f * FMath::SmoothStep(.36f,.9f,float(ClockSideSweep)));
-	if (bSweepingOn == bPendantReveal) return;
-	bPendantReveal = bSweepingOn;
-	H->SetActorHiddenInGame(!bPendantReveal);
-	if (bPendantReveal) UE_LOG(LogTemp,Display,TEXT("WCPENDANT visible distance=%.0f"), Distance);
+	// Only the reflected warmth follows the moving pendant. Her blue pool is fixed to the room.
+	H->SetFarGlow(bLit ? PendantBeam->Intensity * .15f * FMath::SmoothStep(.36f,.9f,float(ClockSideSweep)) : 0.f);
 }
