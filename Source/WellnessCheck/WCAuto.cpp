@@ -54,8 +54,9 @@ void AWCDirector::AutoBegin()
 		auto Touch = [this](const TCHAR* Id) { AutoSteps.Add({A_Use,Id,0.f}); };
 		if (FParse::Param(FCommandLine::Get(),TEXT("WCBreathCheck")))
 		{
-			Do(TEXT("record_mix")); Wait(8.f); Do(TEXT("breath_end_drive")); Wait(12.f);
-			Do(TEXT("flag:inside")); Do(TEXT("at:552,-319,92,90,-5")); Wait(8.f);
+			Do(TEXT("record_mix")); Wait(8.f); Do(TEXT("breath_end_drive")); Wait(26.f);
+			Do(TEXT("at:145,0,92,0,0")); Flag(TEXT("inside"), 3.f); Wait(13.f);
+			Do(TEXT("at:552,-319,92,90,-5")); Wait(10.f);
 			Do(TEXT("look_at_settlers")); Do(TEXT("pull_settlers")); Flag(TEXT("book_done"),18.f);
 			Wait(16.f); Do(TEXT("breath_lockin")); Wait(23.f); Do(TEXT("finish_mix")); Wait(.65f);
 		}

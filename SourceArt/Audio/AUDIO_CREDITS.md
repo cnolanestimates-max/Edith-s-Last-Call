@@ -29,6 +29,10 @@ amb_cellar, amb_house, amb_night, body_fall, bulb_die, bullet_impact_01, car_doo
 
 The four `yard_caw` one-shots are separate calls from Mish7913’s 2018 field recording. Each was trimmed, filtered and level-matched for the exterior perches. [Hooded Crow: Panic Cawing](https://freesound.org/people/Mish7913/sounds/741365/) · [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
 
+## Deputy breathing
+
+Joseph Sardin recorded both breathing takes. The resting take uses 14.8–25.8 seconds of *Man Breathing*. The faster take uses 4.1–12.5 seconds of *Breathless Man*. Both recordings are CC0. The audition excerpts are in `FieldRecordings`. `Scripts/audio/make_deputy_breaths.py` cuts the six gameplay cues at natural pauses. [Man Breathing](https://bigsoundbank.com/man-breathing-s2195.html) · [Breathless Man](https://bigsoundbank.com/breathless-man-s1103.html)
+
 ## Music (credit required)
 
 - `music_house` crossfades edited excerpts of “Apprehension” by Kevin MacLeod and “She's Watching Me” by Darren Curtis. [Apprehension](https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100327) · [Creative Commons Attribution 4.0](https://creativecommons.org/licenses/by/4.0/) · [Darren Curtis](https://www.darrencurtismusic.com/) · [Composer's permission](https://www.darrencurtismusic.com/faqs)
@@ -50,7 +54,6 @@ Dialogue generated with Google Gemini TTS (see VO/_manifest.json). Radio and pho
 - The wheelchair's rolling tread and axle rub are original procedural Foley. Its baseboard tap uses the game's wood footstep and chair scrape. Its landing blends the wood recording with a shortened, damped layer from `trash_crash`, which includes 344 Audio's *Haunting Ambiences Vol. 3* metal impacts from the licensed Sonniss GDC 2026 bundle. The four sounds can be rebuilt with `Scripts/audio/make_bath_wheel.py`.
 
 - `deputy_pant` uses SoundBits, *Vox Hominis – Human Effort Voices*, “Panting Male 02 04” from volume 5 of the Sonniss GDC 2026 bundle. Edited to a 5.4-second close-mic breathing cue under the included Game Audio GDC Bundle license.
-- The six `deputy_steady` and `deputy_quick` takes use individual inhales and exhales from that same performance. Their timing, filtering and caught exhale are authored in `Scripts/audio/make_deputy_breaths.py`.
 
 - amb_car: InMotionAudio - Car Interior Driving Ambience/VEHCar_TownDrivingAmbience06_InMotionAudio_CarInteriorDrivingAmbience.wav
 - car_stop: SoundBits - Cars - Mad Mustang Mercury/VEHSkid_Tire Skids on Gravel 15 06_SNDBTS_CRS-MMM.wav

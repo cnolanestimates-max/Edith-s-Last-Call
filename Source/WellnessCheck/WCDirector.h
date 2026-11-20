@@ -462,7 +462,8 @@ private:
 	TWeakObjectPtr<UAudioComponent> DeputyBreath;
 	float DeputyBreathGain = 0.f;
 	FRandomStream BreathRandom{43817};
-	float BreathFear = 0.f, BreathPhase = .82f, BreathTempo = 1.f;
+	float BreathFear = 0.f;
+	double NextBreathAt = .55;
 	int32 LastBreathTake = INDEX_NONE;
 	double BreathResumeAt = 0.;
 	void TickLights(float Dt);

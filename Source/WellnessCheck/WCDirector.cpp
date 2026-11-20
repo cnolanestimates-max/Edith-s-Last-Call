@@ -912,12 +912,12 @@ void AWCDirector::PlayScareLead(float Seconds)
 void AWCDirector::StartleDeputy(float Strength)
 {
 	BreathFear = FMath::Max(BreathFear, Strength);
-	BreathPhase = FMath::Max(BreathPhase, .73f);
 }
 
 void AWCDirector::HoldDeputyBreath(float Seconds)
 {
 	BreathResumeAt = FMath::Max(BreathResumeAt, Clock + Seconds);
+	NextBreathAt = BreathResumeAt + .12;
 	if (DeputyBreath.IsValid()) DeputyBreath->FadeOut(.08f, 0.f);
 }
 
@@ -926,6 +926,7 @@ void AWCDirector::TickDeputyBreathing(float Dt)
 	if ((!IsPlaying() && Mode != EWCMode::Ending) || !Player() || bDoorSilence)
 	{
 		if (DeputyBreath.IsValid()) DeputyBreath->Stop();
+		NextBreathAt = Clock + .12;
 		return;
 	}
 
@@ -933,34 +934,29 @@ void AWCDirector::TickDeputyBreathing(float Dt)
 	const float Unease = .55f * FMath::SmoothStep(.24f, .95f, Tension);
 	const float Target = bChased ? 1.f : Unease;
 	BreathFear = FMath::FInterpConstantTo(BreathFear, Target, Dt, Target > BreathFear ? 1.1f : .047f);
-	if (Clock < BreathResumeAt)
-	{
-		BreathPhase = .85f;
-		return;
-	}
-	const float Period = FMath::Lerp(3.65f, 1.16f, BreathFear) * BreathTempo;
-	BreathPhase = FMath::Min(1.f, BreathPhase + Dt / Period);
-	if (BreathPhase < 1.f || (DeputyBreath.IsValid() && DeputyBreath->IsPlaying())) return;
+	if (Clock < NextBreathAt || Clock < BreathResumeAt || (DeputyBreath.IsValid() && DeputyBreath->IsPlaying())) return;
 
 	// Independent cadence and takes keep the breath from changing the house's random events.
 	LastBreathTake = (LastBreathTake + BreathRandom.RandRange(1, 2)) % 3;
 	const bool bQuick = BreathFear >= .52f;
 	const FString Cue = FString::Printf(TEXT("deputy_%s_%02d"), bQuick ? TEXT("quick") : TEXT("steady"), LastBreathTake + 1);
-	DeputyBreathGain = FMath::Lerp(.53f, .87f, BreathFear) * (Clock < DialogueUntil ? .78f : 1.f);
-	const float Pitch = BreathRandom.FRandRange(.96f,1.04f);
+	// Gain is relative to the auditioned recordings. The takes carry their own timing.
+	const float GainDb = FMath::Lerp(-18.f, 1.5f, FMath::SmoothStep(.22f, .82f, BreathFear));
+	DeputyBreathGain = FMath::Pow(10.f, GainDb / 20.f) * (Clock < DialogueUntil ? .78f : 1.f);
+	NextBreathAt = Clock + .5;  // avoid polling for a missing asset every frame
 	if (USoundBase* Clip = Snd(Cue))
 	{
-		DeputyBreath = UGameplayStatics::CreateSound2D(this, Clip, DeputyBreathGain * Vol(EWCSnd::SFX), Pitch);
+		DeputyBreath = UGameplayStatics::CreateSound2D(this, Clip, DeputyBreathGain * Vol(EWCSnd::SFX));
 		if (DeputyBreath.IsValid())
 		{
 			DeputyBreath->bIsUISound = false;
 			DeputyBreath->Play();
+			const float Rest = bQuick ? BreathRandom.FRandRange(.02f,.10f) : BreathRandom.FRandRange(.10f,.38f);
+			NextBreathAt = Clock + Clip->GetDuration() + Rest;
 			static const bool bLog = FParse::Param(FCommandLine::Get(), TEXT("WCSndLog"));
-			if (bLog) UE_LOG(LogWC,Display,TEXT("WCBREATH t=%.2f %s fear=%.2f pitch=%.3f gain=%.2f drive=%d chase=%d"), PlaySeconds, *Cue, BreathFear, Pitch, DeputyBreathGain, bDriving, bChased);
+			if (bLog) UE_LOG(LogWC,Display,TEXT("WCBREATH t=%.2f %s fear=%.2f pitch=1.000 gain=%.2f drive=%d chase=%d"), PlaySeconds, *Cue, BreathFear, DeputyBreathGain, bDriving, bChased);
 		}
 	}
-	BreathPhase = 0.f;
-	BreathTempo = BreathRandom.FRandRange(.90f,1.11f);
 }
 
 void AWCDirector::TickAudio(float Dt)
