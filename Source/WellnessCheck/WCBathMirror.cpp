@@ -4,6 +4,7 @@
 #include "WCWorld.h"
 #include "Components/PointLightComponent.h"
 #include "Components/SceneCaptureComponent2D.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/TextureRenderTarget2D.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -31,6 +32,7 @@ void AWCDirector::FinishBathMirror(bool bWitnessed)
 	if (AWCEntity* H = Her())
 	{
 		H->Vanish();
+		H->Body->SetLightingChannels(MirrorBodyChannels.bChannel0,MirrorBodyChannels.bChannel1,MirrorBodyChannels.bChannel2);
 		TInlineComponentArray<UPrimitiveComponent*> Parts(H);
 		for (UPrimitiveComponent* Part : Parts)
 		{
@@ -38,6 +40,7 @@ void AWCDirector::FinishBathMirror(bool bWitnessed)
 			Part->MarkRenderStateDirty();
 		}
 	}
+	if (BathRim) BathRim->SetIntensity(1900.f);
 	MirrorShownAt = -1.;
 	MirrorDwell = 0.f;
 	MirrorWitnessSeconds = 0.f;
@@ -125,7 +128,8 @@ void AWCDirector::TickBathMirror(float Dt)
 		// A little cold bounce on the bath wall gives the glass depth with the room switch off.
 		BathBounce = NewObject<UPointLightComponent>(this);
 		BathBounce->SetWorldLocation(ChairSeat+FVector(-83.,-49.,165.));
-		BathBounce->SetLightingChannels(true,true,false);
+		// The bathroom and chair keep their fill; the seated apparition only catches the rim.
+		BathBounce->SetLightingChannels(false,true,false);
 		BathBounce->SetAttenuationRadius(295.f);
 		BathBounce->SetIntensityUnits(ELightUnits::Lumens);
 		BathBounce->SetIntensity(4200.f);
@@ -158,9 +162,13 @@ void AWCDirector::TickBathMirror(float Dt)
 				Part->MarkRenderStateDirty();
 			}
 			H->Appear(ChairSeat, 183.f, TEXT("Wheelchair"));
+			MirrorBodyChannels = H->Body->LightingChannels;
+			H->Body->SetLightingChannels(false,false,true);
+			BathRim->SetLightingChannels(true,true,true);
+			BathRim->SetIntensity(145.f);
 			H->SetFarGlow(0.f);
-			H->SetGlow(65.f);
-			H->SetEyeShine(.19f);
+			H->SetGlow(0.f);
+			H->SetEyeShine(.018f);
 			H->SetMood(TEXT("watch"));
 			MirrorShownAt = Clock;
 			NextMirrorCapture = 0.;

@@ -52,7 +52,11 @@ void AWCDirector::AutoBegin()
 		Player()->SetInputLocked(false); Player()->SetFlashlight(true,false); Fade = FadeTarget = 0.f;
 		auto Do = [this](const TCHAR* Cmd) { AutoSteps.Add({A_Do,Cmd,0.f}); };
 		auto Touch = [this](const TCHAR* Id) { AutoSteps.Add({A_Use,Id,0.f}); };
-		if (FParse::Param(FCommandLine::Get(),TEXT("WCBathMirror")))
+		if (FParse::Param(FCommandLine::Get(),TEXT("WCBathMirror")) && FParse::Param(FCommandLine::Get(),TEXT("WCContinue")))
+		{
+			Wait(.5f); Do(TEXT("check_bath_continue"));
+		}
+		else if (FParse::Param(FCommandLine::Get(),TEXT("WCBathMirror")))
 		{
 			Do(TEXT("record_mix")); Do(TEXT("flag:inside")); Do(TEXT("at:2564,-392,92,173,3")); Wait(2.f);
 			Shot(TEXT("01_mirror_from_sink")); Do(TEXT("at:2517,-382,92,172,-4")); Wait(1.6f);
@@ -62,11 +66,13 @@ void AWCDirector::AutoBegin()
 			Do(TEXT("at:2540,-371,92,18,-48")); Wait(.3f); Touch(TEXT("note_bath_mirror"));
 			Wait(.6f); Shot(TEXT("05_note"));
 			Touch(TEXT("__close")); Do(TEXT("check_bath_note_reload"));
-			Do(TEXT("turn_to_bath_exit")); Wait(1.1f); Shot(TEXT("06_chair_fallen"));
-			Wait(.8f); Do(TEXT("check_bath_release")); Wait(.2f);
-			Do(TEXT("look_at_bath_door")); Wait(.08f); Shot(TEXT("07_doorway"));
-			Wait(.52f); Shot(TEXT("08_doorway_lunge"));
-			Flag(TEXT("bath_chair_done"),4.f); Do(TEXT("check_bath_finished"));
+			if (FParse::Param(FCommandLine::Get(),TEXT("WCChairListener"))) Do(TEXT("flag:bath_chair_done"));
+			Do(TEXT("face_bath_exit")); Wait(1.f); Do(TEXT("check_chair_still"));
+			Do(TEXT("walk_out_of_bath")); Do(TEXT("walk_beside_chair"));
+			Shot(TEXT("06_chair_passing")); Do(TEXT("watch_baseboard_contact")); Shot(TEXT("07_wall_contact"));
+			Do(TEXT("watch_raised_wheel")); Shot(TEXT("08_sideways"));
+			Do(TEXT("check_wheel_coasts")); Shot(TEXT("09_wheel_still_turning"));
+			Do(TEXT("wait_wheel_stop")); Do(TEXT("check_bath_finished"));
 			Do(TEXT("finish_bath_mix"));
 		}
 		else if (FParse::Param(FCommandLine::Get(),TEXT("WCHallPendant")))
@@ -900,22 +906,63 @@ void AWCDirector::AutoTick(float Dt)
 	case A_Aim: P->SetAiming(S.F > 0.5f); Next(); return;
 	case A_Crouch: if (S.F > 0.5f) P->Crouch(); else P->UnCrouch(); Next(); return;
 	case A_Do:
-		if (S.Arg == TEXT("turn_to_bath_exit"))
+		if (S.Arg == TEXT("face_bath_exit"))
 		{
-			if (ChairBeat==EBathChairBeat::Waiting && In<3.)
+			AimAt(P,FVector(2588,-200,145),Dt,4.f);
+			if (In<.85) return;
+		}
+		else if (S.Arg == TEXT("check_chair_still"))
+		{
+			if (ChairBeat!=EBathChairBeat::Waiting || P->IsInputLocked() || !BathChair->GetActorTransform().Equals(BathChairHome))
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL chair moved when player only turned towards exit"));
+		}
+		else if (S.Arg == TEXT("walk_out_of_bath"))
+		{
+			const FVector Target(2588.,-150.,P->GetActorLocation().Z);
+			if (P->GetActorLocation().Y<-165. && In<6.)
 			{
-				AimAt(P,FVector(2588,-204,148),Dt,4.f);
+				P->AddMovementInput((Target-P->GetActorLocation()).GetSafeNormal2D());
 				return;
 			}
+			if (ChairBeat!=EBathChairBeat::Leaving && ChairBeat!=EBathChairBeat::Rolling)
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL actual bathroom departure at %s"),*P->GetActorLocation().ToCompactString());
 		}
-		else if (S.Arg == TEXT("look_at_bath_door"))
+		else if (S.Arg == TEXT("walk_beside_chair") || S.Arg==TEXT("watch_baseboard_contact"))
 		{
-			if (ChairBeat==EBathChairBeat::AtDoor && Her() && In<3.)
+			const FVector Loc=P->GetActorLocation();
+			const bool Listener=FParse::Param(FCommandLine::Get(),TEXT("WCChairListener"));
+			if (Loc.X>(Listener ? 2440. : 2150.))
 			{
-				const FVector Face=Her()->EyeLocation();
-				AimAt(P,Face,Dt,5.5f);
-				if (FVector::DotProduct(P->EyeForward(),(Face-P->EyeLocation()).GetSafeNormal())<.985) return;
+				const FVector Lane=Loc.Y<-102. ? FVector(2554,-88,0) : (Listener ? FVector(2418,3,0) : FVector(2110,-87,0));
+				P->AddMovementInput((Lane-Loc).GetSafeNormal2D());
 			}
+			const FVector Target=BathChair->GetActorLocation()+FVector(0,0,46.);
+			if (ChairTravel>100.) AimAt(P,Target,Dt,3.3f);
+			else AimAt(P,Loc+FVector(-270.,130.,57.),Dt,4.f);
+			const bool Reached=S.Arg==TEXT("walk_beside_chair") ? ChairTravel>420.f : bChairLanded || ChairBeat==EBathChairBeat::Tipping;
+			if (!Reached && In<18.) return;
+			if (!Reached || P->IsInputLocked() || (Her() && Her()->IsShown()))
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL hall chair pass at %.0f cm"),ChairTravel);
+		}
+		else if (S.Arg==TEXT("watch_raised_wheel"))
+		{
+			AimAt(P,BathChair->GetActorLocation()+FVector(0,0,20),Dt,3.f);
+			if (ChairBeat!=EBathChairBeat::Coasting && In<4.) return;
+			AutoFallenChairPose=BathChair->GetActorTransform();
+			AutoRestWheelAngles=FVector2D(WheelRadians[0],WheelRadians[1]);
+		}
+		else if (S.Arg==TEXT("check_wheel_coasts"))
+		{
+			if (In<2.8) return;
+			if (ChairBeat!=EBathChairBeat::Coasting || !ChairWheels[0].IsValid() || !Has(TEXT("bath_chair_rolled")) ||
+				ChairWheels[0]->GetComponentLocation().Z < ChairWheels[1]->GetComponentLocation().Z+53. ||
+				!BathChair->GetActorTransform().Equals(AutoFallenChairPose,.01f) || WheelRadians[0]-AutoRestWheelAngles.X<4.f ||
+				!FMath::IsNearlyEqual(double(WheelRadians[1]),AutoRestWheelAngles.Y,.001))
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL upper wheel"));
+		}
+		else if (S.Arg==TEXT("wait_wheel_stop"))
+		{
+			if (ChairBeat!=EBathChairBeat::Finished && In<12.) return;
 		}
 		else if (S.Arg==TEXT("finish_bath_mix"))
 			UAudioMixerBlueprintLibrary::StopRecordingOutputToAnyPath(this,EAudioRecordingExportType::WavFile,TEXT("bath_encounter"),AutoShotDir);
@@ -925,14 +972,20 @@ void AWCDirector::AutoTick(float Dt)
 			if (!DoLoad() || !Has(TEXT("bath_mirror_seen")) || !NotesRead.Contains(TEXT("note_bath_mirror")) || !Note || Note->CanInteract())
 				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL bath note did not survive reload"));
 		}
-		else if (S.Arg == TEXT("check_bath_release"))
+		else if (S.Arg == TEXT("check_bath_continue"))
 		{
-			if (P->IsInputLocked() || ChairBeat!=EBathChairBeat::AtDoor || !Her() || !Her()->IsShown())
-				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL chair did not release to waiting doorway"));
+			AWCInteractable* Note=Thing(TEXT("note_bath_mirror"));
+			if (!Has(TEXT("bath_chair_rolled")) || ChairBeat!=EBathChairBeat::Finished || !BathChair.IsValid() ||
+				BathChair->GetActorRightVector().Z<.98 || FVector::Dist2D(BathChair->GetActorLocation(),BathChairHome.GetLocation())<500. ||
+				!NotesRead.Contains(TEXT("note_bath_mirror")) || !Note || Note->CanInteract() || P->IsInputLocked())
+			{
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL fallen wheelchair or note lost on Continue"));
+			}
+			else UE_LOG(LogWCAuto,Display,TEXT("WCAUTO Continue restored the fallen wheelchair and journal"));
 		}
 		else if (S.Arg == TEXT("check_bath_finished"))
 		{
-			if (!DoLoad() || !Has(TEXT("bath_chair_done")) || P->IsInputLocked() || (Her() && Her()->IsShown()))
+			if (!DoLoad() || !Has(TEXT("bath_chair_rolled")) || bEventBusy || P->IsInputLocked() || (Her() && Her()->IsShown()))
 				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL bath exit or persistent completion"));
 		}
 		else if (S.Arg == TEXT("pendant_switch")) SwitchRoom(TEXT("hall"),true,false);
