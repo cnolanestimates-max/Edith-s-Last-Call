@@ -65,7 +65,7 @@ return (1-smoothstep(.03,.94,shape))*(.35+.48*Seed)*smoothstep(22.,55.,Dist);
     finish(m)
 
 def build():
-    for name in ['amb_yard','amb_dawn','trash_crash']:
+    for name in ['amb_yard','amb_dawn','trash_can_fall']:
         s=imported(root/'SourceArt/Audio'/(name+'.wav'),'/Game/WC/Audio')
         s.set_editor_property('looping',name.startswith('amb_'))
         assert assets.save_loaded_asset(s,False)

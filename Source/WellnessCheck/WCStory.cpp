@@ -416,9 +416,9 @@ void AWCDirector::StoryEvent(FName Id)
 		After(1.85f, [this]()
 		{
 			ApplyWorldState();                                   // the bin is over now, everything in it across the yard
-			// One hollow impact at the bin, followed by retreating footsteps on the yard gravel.
+			// Metal hits the ground at the bin; the gravel steps retreat underneath its rattle.
 			const FVector Bin = Pos(TEXT("TrashPoint")) + FVector(0, 0, 24);
-			PlayAt(TEXT("trash_crash"), Bin, 1.f, 1.f, 2400.f, true);
+			PlayAt(TEXT("trash_can_fall"), Bin, 1.f, 1.f, 2400.f, true);
 			if (AWCCharacter* Deputy = Player())
 			{
 				Deputy->SetFlashlight(true, false);

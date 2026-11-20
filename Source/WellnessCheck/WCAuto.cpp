@@ -99,12 +99,14 @@ void AWCDirector::AutoBegin()
 		}
 		else if (FParse::Param(FCommandLine::Get(),TEXT("WCBinAngles")))
 		{
+			Do(TEXT("record_mix"));
 			for (const TCHAR* Start : {TEXT("at:3770,-743,59,0,-27"),TEXT("at:3730,-783,59,90,-8"),TEXT("at:3440,-740,60,-165,10")})
 			{
 				Do(Start); Wait(.55f); Do(TEXT("replay_bin"));
 				Wait(2.32f); Shot(*FString::Printf(TEXT("turn_%d_mid"),AutoSteps.Num()));
-				Wait(1.55f); Shot(*FString::Printf(TEXT("turn_%d_end"),AutoSteps.Num())); Wait(1.7f);
+				Wait(1.55f); Shot(*FString::Printf(TEXT("turn_%d_end"),AutoSteps.Num())); Wait(2.6f);
 			}
+			Do(TEXT("finish_mix"));
 		}
 		else if (FParse::Param(FCommandLine::Get(),TEXT("WCCryingDoor")))
 		{

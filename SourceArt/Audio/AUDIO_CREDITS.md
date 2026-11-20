@@ -110,7 +110,8 @@ Dialogue generated with Google Gemini TTS (see VO/_manifest.json). Radio and pho
 ## Yard and rear shed
 
 - `amb_yard` and `amb_dawn` are original synthesized wind and insect beds. `Scripts/audio/make_exterior_beds.py` masters both loops.
-- `trash_crash` uses two edited hits from 344 Audio, *Haunting Ambiences Vol. 3*, "Metal Bangs, Metal Hits, Banging On Doors." Source is the Sonniss GDC 2026 Game Audio Bundle 1 of 5, under the included GDC Game Audio license. The mastering recipe is in `Scripts/audio/make_trash.py`.
+- The falling trash can uses *Light Metal Crash* by DieselsiselMedia. The four-second positional cue starts 0.145 s into the recording, mixes to mono and fades over the last 0.45 s. Its original creator released the recording under CC0. [Original recording and license](https://freesound.org/people/DieselsiselMedia/sounds/387139/) · [Pixabay download](https://pixabay.com/sound-effects/film-special-effects-light-metal-crash-6765/).
+- The earlier `trash_crash` master remains a source for the wheelchair Foley. It uses two edited hits from 344 Audio, *Haunting Ambiences Vol. 3*, "Metal Bangs, Metal Hits, Banging On Doors," from the Sonniss GDC 2026 Game Audio Bundle 1 of 5 under the included GDC Game Audio license. Its mastering recipe is in `Scripts/audio/make_trash.py`.
 
 ## Ruth's door
 
