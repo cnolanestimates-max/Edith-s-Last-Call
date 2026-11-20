@@ -4,6 +4,7 @@
 #include "WCWorld.h"
 #include "Components/AudioComponent.h"
 #include "Components/PointLightComponent.h"
+#include "Components/SpotLightComponent.h"
 #include "Components/SceneCaptureComponent2D.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -13,6 +14,8 @@
 namespace
 {
 	const FVector GlassCentre(2430., -370., 185.8);
+	const FVector ApprovedEyeLight(2581.2, -340.0, 153.2);
+	constexpr double SeatedScale = 1.25;
 	constexpr double HalfWidth = 130., HalfHeight = 88.8;
 }
 
@@ -33,6 +36,12 @@ void AWCDirector::FinishBathMirror(bool bWitnessed)
 	if (AWCEntity* H = Her())
 	{
 		H->Vanish();
+		H->SetActorTransform(MirrorUnscaledTransform);
+		if (BathWrithingSkin)
+		{
+			H->Body->SetMaterial(0, BathOriginalSkin);
+			BathOriginalSkin = nullptr;
+		}
 		TInlineComponentArray<UPrimitiveComponent*> Parts(H);
 		for (UPrimitiveComponent* Part : Parts)
 		{
@@ -45,6 +54,7 @@ void AWCDirector::FinishBathMirror(bool bWitnessed)
 	}
 	if (BathRim) BathRim->SetIntensity(1900.f);
 	if (BathEyeFill) BathEyeFill->SetVisibility(false);
+	if (BathTorsoFill) BathTorsoFill->SetVisibility(false);
 	MirrorShownAt = -1.;
 	MirrorDwell = 0.f;
 	MirrorWitnessSeconds = 0.f;
@@ -76,6 +86,8 @@ void AWCDirector::InitializeBathMirror()
 	BathGlass->GetMaterial(1)->GetTextureParameterValue(FMaterialParameterInfo(TEXT("Reflect")),Reflect);
 	BathTarget=Cast<UTextureRenderTarget2D>(Reflect);
 	if (!ensureMsgf(BathTarget,TEXT("Bathroom glass has no authored render target"))) return;
+	BathBaseResolution = FIntPoint(BathTarget->SizeX,BathTarget->SizeY);
+	BathWrithingSkin = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/WC/Her/M_HerMirror.M_HerMirror"));
 	const FVector ChairSeat=BathChairHome.GetLocation();
 	BathCapture = NewObject<USceneCaptureComponent2D>(this);
 	BathCapture->bCaptureEveryFrame = BathCapture->bCaptureOnMovement = false;
@@ -115,7 +127,7 @@ void AWCDirector::InitializeBathMirror()
 
 	// The same moon blue as the upstairs doorway, grazing the good eye and the jaw below it.
 	BathEyeFill = NewObject<UPointLightComponent>(this);
-	BathEyeFill->SetWorldLocation(FVector(2581.2, -340.0, 153.2));
+	BathEyeFill->SetWorldLocation(ApprovedEyeLight);
 	BathEyeFill->SetLightingChannels(false,false,true);
 	BathEyeFill->SetIntensityUnits(ELightUnits::Candelas);
 	BathEyeFill->SetIntensity(9.45f);
@@ -125,6 +137,21 @@ void AWCDirector::InitializeBathMirror()
 	BathEyeFill->SetCastShadows(false);
 	BathEyeFill->SetVisibility(false);
 	BathEyeFill->RegisterComponent();
+
+	// A wider pool of reflected moonlight picks up the abdomen and the folds across her lap.
+	BathTorsoFill = NewObject<USpotLightComponent>(this);
+	BathTorsoFill->SetLightingChannels(false,false,true);
+	BathTorsoFill->SetIntensityUnits(ELightUnits::Candelas);
+	BathTorsoFill->SetIntensity(44.f);
+	BathTorsoFill->SetAttenuationRadius(116.f);
+	BathTorsoFill->SetInnerConeAngle(28.f);
+	BathTorsoFill->SetOuterConeAngle(52.f);
+	BathTorsoFill->SetSourceRadius(12.f);
+	BathTorsoFill->SetSpecularScale(.12f);
+	BathTorsoFill->SetLightColor(EdithMoonlight());
+	BathTorsoFill->SetCastShadows(false);
+	BathTorsoFill->SetVisibility(false);
+	BathTorsoFill->RegisterComponent();
 	CaptureBathMirror(FVector(2588.,-170.,155.));
 }
 
@@ -146,6 +173,15 @@ void AWCDirector::TickBathMirror(float Dt)
 	const FVector Eye = P->EyeLocation();
 	const bool bRoom = Eye.X > 2440 && Eye.X < 2786 && Eye.Y > -583 && Eye.Y < -214 && Eye.Z > 38 && Eye.Z < 270;
 	if (!BathChair.IsValid() || !BathCapture) return;
+	// The face occupies a small part of the glass. Resolve its moving relief at
+	// the sink, then return to the ordinary reflection budget when the encounter ends.
+	const FIntPoint Resolution = (bRoom && !Has(TEXT("bath_mirror_seen"))) ? BathBaseResolution * 2 : BathBaseResolution;
+	if (BathTarget->SizeX != Resolution.X || BathTarget->SizeY != Resolution.Y)
+	{
+		BathTarget->ResizeTarget(Resolution.X,Resolution.Y);
+		CaptureBathMirror(Eye);
+		NextMirrorCapture = Clock + 1./16.;
+	}
 	if (!bRoom || Has(TEXT("bath_mirror_seen")))
 	{
 		if (BathEdithBreath.IsValid()) BathEdithBreath->FadeOut(.18f,0.f);
@@ -176,7 +212,8 @@ void AWCDirector::TickBathMirror(float Dt)
 	const double Depth = Eye.X - GlassCentre.X;
 	const FVector CentreRay = (GlassCentre - Eye).GetSafeNormal();
 	// Her reflected head is behind the glass at the same depth as the real tub.
-	const FVector VirtualHead(2.*GlassCentre.X-ChairSeat.X, ChairSeat.Y, 171.);
+	constexpr double HeadHeight = 59. + (171.-59.) * SeatedScale;
+	const FVector VirtualHead(2.*GlassCentre.X-ChairSeat.X, ChairSeat.Y, ChairSeat.Z + HeadHeight);
 	const FVector Sight = (VirtualHead - Eye).GetSafeNormal();
 	const FVector OnGlass = Eye + Sight * (-Depth / Sight.X);
 	// The reflective oval sits inside the wider rectangle occupied by the gilt frame.
@@ -216,7 +253,24 @@ void AWCDirector::TickBathMirror(float Dt)
 				Part->MarkRenderStateDirty();
 			}
 			H->Appear(ChairSeat, 183.f, TEXT("Wheelchair"));
+			if (BathWrithingSkin)
+			{
+				BathOriginalSkin = H->Body->GetMaterial(0);
+				H->Body->SetMaterial(0, BathWrithingSkin);
+			}
+			// Enlarge her around the seated hips so the pelvis stays on the cushion.
+			MirrorUnscaledTransform = H->GetActorTransform();
+			const FVector Hips = H->BoneWorld(TEXT("Hips"));
+			const FVector EyeShift = (H->EyeLocation() - Hips) * (SeatedScale - 1.);
+			H->SetActorScale3D(MirrorUnscaledTransform.GetScale3D() * SeatedScale);
+			H->SetActorLocation(Hips + (ChairSeat - Hips) * SeatedScale);
+			BathEyeFill->SetWorldLocation(ApprovedEyeLight + EyeShift);
 			BathEyeFill->SetVisibility(true);
+			const FVector FillSource = Hips + H->GetActorForwardVector()*62. -
+				H->GetActorRightVector()*20. + FVector(0,0,77.);
+			const FVector FillTarget = Hips + H->GetActorForwardVector()*10. + FVector(0,0,53.);
+			BathTorsoFill->SetWorldLocationAndRotation(FillSource,(FillTarget-FillSource).Rotation());
+			BathTorsoFill->SetVisibility(true);
 			BathRim->SetLightingChannels(true,true,true);
 			BathRim->SetIntensity(Has(TEXT("bath_mirror_first_turn")) ? 175.f : 145.f);
 			H->SetFarGlow(0.f);

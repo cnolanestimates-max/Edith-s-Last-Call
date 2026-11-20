@@ -10,6 +10,8 @@
 #include "EngineUtils.h"
 #include "AudioMixerBlueprintLibrary.h"
 #include "Components/AudioComponent.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Materials/MaterialInterface.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/StaticMeshActor.h"
@@ -82,27 +84,35 @@ void AWCDirector::AutoBegin()
 		}
 		else if (FParse::Param(FCommandLine::Get(),TEXT("WCBathMirror")))
 		{
+			const bool bStudySkin = FParse::Param(FCommandLine::Get(),TEXT("WCMirrorSkinStudy"));
 			Do(TEXT("record_mix")); Do(TEXT("flag:inside")); Do(TEXT("at:2588,-146,92,-115,-3")); Wait(.5f);
 			Do(TEXT("check_glass_from_hall")); Shot(TEXT("00_mirror_from_hall"));
 			Do(TEXT("at:2564,-392,92,173,3")); Wait(2.f);
 			Shot(TEXT("01_mirror_from_sink")); Do(TEXT("at:2517,-382,92,172,-4")); Wait(1.6f);
-			Shot(TEXT("02_edith_in_glass")); Do(TEXT("at:2540,-371,92,14,-29")); Wait(.8f);
+			Shot(TEXT("02_edith_in_glass")); Do(TEXT("check_mirror_skin"));
+			if (bStudySkin) Wait(5.f);
+			Do(TEXT("at:2540,-371,92,14,-29")); Wait(.8f);
 			Flag(TEXT("bath_mirror_first_turn"),3.f); Do(TEXT("check_first_empty_chair")); Shot(TEXT("03_empty_bath"));
 			Do(TEXT("at:2517,-382,92,172,-4")); Wait(1.2f); Do(TEXT("check_second_reflection")); Shot(TEXT("03b_second_reflection"));
+			Do(TEXT("check_mirror_skin"));
+			if (bStudySkin) Wait(5.f);
 			Do(TEXT("at:2540,-371,92,14,-29")); Flag(TEXT("bath_mirror_seen"),3.f); Shot(TEXT("03c_second_turn_note"));
 			Do(TEXT("at:2517,-382,92,172,-4")); Wait(.7f); Shot(TEXT("04_same_mirror_empty"));
-			Do(TEXT("at:2540,-371,92,18,-48")); Wait(.3f); Touch(TEXT("note_bath_mirror"));
-			Wait(.6f); Shot(TEXT("05_note"));
-			Touch(TEXT("__close")); Do(TEXT("check_bath_note_reload"));
-			if (FParse::Param(FCommandLine::Get(),TEXT("WCChairListener"))) Do(TEXT("flag:bath_chair_done"));
-			Do(TEXT("face_bath_exit")); Wait(1.f); Do(TEXT("check_chair_still"));
-			Do(TEXT("walk_to_bath_threshold")); Wait(1.4f); Do(TEXT("check_chair_held")); Shot(TEXT("05b_chair_tipped_at_exit"));
-			Do(TEXT("look_back_at_chair")); Do(TEXT("back_out_of_bath")); Wait(1.f); Do(TEXT("check_chair_held"));
-			Shot(TEXT("05c_watching_tipped_chair")); Do(TEXT("walk_beside_chair"));
-			Shot(TEXT("06_chair_passing")); Do(TEXT("watch_baseboard_contact")); Shot(TEXT("07_wall_contact"));
-			Do(TEXT("watch_raised_wheel")); Shot(TEXT("08_sideways"));
-			Do(TEXT("check_wheel_coasts")); Shot(TEXT("09_wheel_still_turning"));
-			Do(TEXT("wait_wheel_stop")); Do(TEXT("check_bath_finished"));
+			if (!bStudySkin)
+			{
+				Do(TEXT("at:2540,-371,92,18,-48")); Wait(.3f); Touch(TEXT("note_bath_mirror"));
+				Wait(.6f); Shot(TEXT("05_note"));
+				Touch(TEXT("__close")); Do(TEXT("check_bath_note_reload"));
+				if (FParse::Param(FCommandLine::Get(),TEXT("WCChairListener"))) Do(TEXT("flag:bath_chair_done"));
+				Do(TEXT("face_bath_exit")); Wait(1.f); Do(TEXT("check_chair_still"));
+				Do(TEXT("walk_to_bath_threshold")); Wait(1.4f); Do(TEXT("check_chair_held")); Shot(TEXT("05b_chair_tipped_at_exit"));
+				Do(TEXT("look_back_at_chair")); Do(TEXT("back_out_of_bath")); Wait(1.f); Do(TEXT("check_chair_held"));
+				Shot(TEXT("05c_watching_tipped_chair")); Do(TEXT("walk_beside_chair"));
+				Shot(TEXT("06_chair_passing")); Do(TEXT("watch_baseboard_contact")); Shot(TEXT("07_wall_contact"));
+				Do(TEXT("watch_raised_wheel")); Shot(TEXT("08_sideways"));
+				Do(TEXT("check_wheel_coasts")); Shot(TEXT("09_wheel_still_turning"));
+				Do(TEXT("wait_wheel_stop")); Do(TEXT("check_bath_finished"));
+			}
 			Do(TEXT("finish_bath_mix"));
 		}
 		else if (FParse::Param(FCommandLine::Get(),TEXT("WCUpstairsProof")))
@@ -139,6 +149,8 @@ void AWCDirector::AutoBegin()
 			else
 			{
 				Do(TEXT("at:265,105,92,0,-1"));
+				Do(TEXT("walk_past_stair_wall"));
+				Do(TEXT("pendant_empty"));
 				Do(TEXT("pendant_visible")); Wait(.5f); Shot(TEXT("01_lamp_finds_edith"));
 				Do(TEXT("pendant_empty")); Wait(.48f); Shot(TEXT("02_swing_empty"));
 				Do(TEXT("pendant_visible")); Wait(.55f); Shot(TEXT("03_edith_returns"));
@@ -1030,9 +1042,18 @@ void AWCDirector::AutoTick(float Dt)
 				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL permanent mirror on approach"));
 			AutoMirrorMaterial=BathGlass.IsValid() ? BathGlass->GetMaterial(1) : nullptr;
 		}
+		else if (S.Arg==TEXT("check_mirror_skin"))
+		{
+			if (!Her() || !BathWrithingSkin || !BathOriginalSkin || Her()->Body->GetMaterial(0) != BathWrithingSkin ||
+				Her()->GetActorScale3D().Equals(MirrorUnscaledTransform.GetScale3D()))
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL reflected figure or skin missing"));
+		}
 		else if (S.Arg==TEXT("check_first_empty_chair") || S.Arg==TEXT("check_second_reflection"))
 		{
 			const bool Second=S.Arg==TEXT("check_second_reflection");
+			if (!Second && Her() && (Her()->Body->GetMaterial(0) == BathWrithingSkin ||
+				!Her()->GetActorScale3D().Equals(MirrorUnscaledTransform.GetScale3D())))
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL mirror skin or size persisted after turn"));
 			const auto* Note=Thing(TEXT("note_bath_mirror"));
 			if (!BathGlass.IsValid() || BathGlass->GetMaterial(1)!=AutoMirrorMaterial.Get() || !Has(TEXT("bath_mirror_first_turn")) ||
 				Has(TEXT("bath_mirror_seen")) || !Note || !Note->IsHidden() || (MirrorShownAt>=0.)!=Second ||
@@ -1144,17 +1165,28 @@ void AWCDirector::AutoTick(float Dt)
 			if (!Door(TEXT("sitting")) || !Door(TEXT("sitting"))->bLocked || Has(TEXT("pendant_seen")) || !HasItem(TEXT("key_sitting")))
 				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL sitting-room key or unlit approach"));
 		}
+		else if (S.Arg == TEXT("walk_past_stair_wall"))
+		{
+			// Follow the open side of the stair tower until the clock comes into view.
+			if (In < 9. && P->GetActorLocation().X < 830.) {
+				P->AddMovementInput((FVector(1130,148,0) - P->GetActorLocation()).GetSafeNormal2D(), .95f);
+				return;
+			}
+			if (!bPendantWatching || bPendantGuiding || !Her() || !Her()->GetActorLocation().Equals(PendantMark,1.))
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL clock-wall figure was not waiting on the free approach"));
+		}
 		else if (S.Arg == TEXT("walk_to_pendant") && HallPendant.IsValid())
 		{
-			const FVector Mark = HallPendant->GetComponentLocation() + FVector(6,72,-327);
 			if (!Has(TEXT("pendant_seen")) && In < 14.) {
-				AimAt(P, Mark + FVector(0,0,145), Dt);
-				P->AddMovementInput((Mark-P->GetActorLocation()).GetSafeNormal2D(), .95f);
+				AimAt(P, PendantMark + FVector(0,0,145), Dt);
+				const FVector Aisle(PendantMark.X, HallPendant->GetComponentLocation().Y, PendantMark.Z);
+				P->AddMovementInput((Aisle-P->GetActorLocation()).GetSafeNormal2D(), .95f);
 				return;
 			}
 		}
 		else if (S.Arg == TEXT("pendant_visible") || S.Arg == TEXT("pendant_empty"))
 		{
+			AimAt(P,PendantMark + FVector(0,0,137), Dt);
 			if (bPendantReveal != (S.Arg == TEXT("pendant_visible"))) {
 				if (In < 6.) return;
 				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL missed pendant sweep %s"),*S.Arg.ToString());

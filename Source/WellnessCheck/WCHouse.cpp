@@ -100,10 +100,14 @@ void AWCDirector::HouseBegin()
 	if (AActor* Beam = Find(TEXT("HallPendantBeam")))
 	{
 		PendantBeam = Beam->FindComponentByClass<USpotLightComponent>();
-		if (PendantBeam.IsValid()) PendantBeam->SetRelativeRotation(FRotator(-68.f,90.f,0.f));
+		if (PendantBeam.IsValid()) PendantBeam->SetRelativeRotation(FRotator(-68.f,-90.f,0.f));
 	}
 	if (HallPendant.IsValid())
 	{
+		// Against the plaster beyond the portrait, short of the sitting-room jamb.
+		const AActor* Cabinet = Find(TEXT("HallClockSource"));
+		PendantMark = Cabinet ? Cabinet->GetActorLocation() + FVector(204.,-7.,0.) :
+			HallPendant->GetComponentLocation() + FVector(104.,-205.,-327.);
 		PendantBulbSlot = HallPendant->GetMaterialIndex(TEXT("M_GlowBulb"));
 		if (PendantBulbSlot != INDEX_NONE) PendantLit = HallPendant->GetMaterial(PendantBulbSlot);
 		PendantDark = LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/WC/Materials/M_BulbOff.M_BulbOff"));

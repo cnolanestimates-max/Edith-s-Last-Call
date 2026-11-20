@@ -70,19 +70,19 @@ void AWCDirector::TickHallPendant(float Dt)
 	}
 
 	AWCEntity* H = Her();
-	const FVector Mark(Mount.X + 6., Mount.Y + 72., 0.);
+	const FVector& Mark = PendantMark;
 	const double Distance = FVector::Dist2D(Eye, Mark);
 	const FVector Chest = Mark + FVector(0,0,137);
 	AWCDoor* SittingDoor = bPendantUnlockWaiting ? Door(TEXT("sitting")) : nullptr;
 	if (bPendantUnlockWaiting && (!SittingDoor || FVector::Dist2D(Eye,SittingDoor->GetActorLocation()) > 255.))
 		bPendantUnlockWaiting = false;
-	const bool bLookingAway = FVector::DotProduct(P->EyeForward(), (Chest - Eye).GetSafeNormal()) < .15f;
 	const bool bSightInterrupted = bPendantGuiding && (!P->GetController() || !PlayerSees(Chest,-1.f,1650.f));
-	const bool bFinished = PendantSweepsSeen >= 2 && (Distance <= 295. || bLookingAway || !bInHall || bPendantUnlockWaiting);
+	const bool bFinished = (Distance <= 295. && PendantSweepsSeen > 0 && !bPendantUnlockWaiting) ||
+		(PendantSweepsSeen >= 2 && bPendantUnlockWaiting);
 	if (bPendantWatching && (bFinished || bSightInterrupted || !bInHall || !bLit || P->IsDown() || bBusy ||
 		P->IsInputLocked() || !PendantScareDue()))
 	{
-		if (H && bPendantReveal) H->Vanish();
+		if (H) H->Vanish();
 		bPendantReveal = bPendantGuiding = bPendantWatching = bEventBusy = false;
 		if (bFinished)
 		{
@@ -93,40 +93,42 @@ void AWCDirector::TickHallPendant(float Dt)
 		return;
 	}
 	if (!H) return;
-	const bool bSweepingOn = Wave > .36;
+	const double ClockSideSweep = -Wave;
+	const bool bSweepingOn = ClockSideSweep > .36;
 	if (!bPendantWatching)
 	{
 		if (!bInHall || !bLit || !PendantScareDue() || HasActiveEncounter() || H->IsShown() ||
 			ActiveNote.IsValid() || P->IsInputLocked() || P->IsDown() || !P->GetController()) return;
-		const bool bOnApproach = Eye.Z < 220. && FMath::Abs(Eye.Y) < 177. && Eye.X < Mark.X - 440. &&
-			(P->GetVelocity().X > 15. || FVector::DotProduct(P->EyeForward(),(Chest-Eye).GetSafeNormal()) > .80);
-		if ((!bOnApproach && !bPendantUnlockWaiting) || !PlayerSees(Chest,-1.f,1650.f)) return;
-		bPendantWatching = bEventBusy = bPendantGuiding = true;
+		const bool bOnApproach = Eye.Z < 220. && FMath::Abs(Eye.Y) < 177. && Eye.X < Mark.X - 155.;
+		if (!bOnApproach && !bPendantUnlockWaiting) return;
+		if (bPendantUnlockWaiting && !PlayerSees(Chest,-1.f,1650.f)) return;
+		bPendantWatching = bEventBusy = true;
 		PendantSweepsSeen = 0;
 		PendantLitDwell = 0.f;
-	}
-	if (bPendantGuiding)
-	{
-		AController* Controller = P->GetController();
-		if (Controller) Controller->SetControlRotation(FMath::RInterpTo(Controller->GetControlRotation(), (Chest-Eye).Rotation(), Dt, 3.2f));
-		if (!bSweepingOn) PendantLitDwell = 0.f;
-		else if (PendantLitDwell < .32f && PlayerSees(Chest,.90f,1650.f))
-		{
-			PendantLitDwell += Dt;
-			if (PendantLitDwell >= .32f && ++PendantSweepsSeen == 2) bPendantGuiding = false;
-		}
-	}
-	// Warm light reflected back from the floor brings her face out on the lit swing.
-	if (bSweepingOn) H->SetFarGlow(PendantBeam->Intensity * .26f * FMath::SmoothStep(.36f,.9f,float(Wave)));
-	if (bSweepingOn == bPendantReveal) return;
-	bPendantReveal = bSweepingOn;
-	if (bPendantReveal)
-	{
 		H->Appear(Mark, (Eye-Mark).Rotation().Yaw, TEXT("Idle"));
 		H->FarLight->SetLightColor(PendantBeam->GetLightColor());
 		H->SetGlow(0.f);
 		H->SetMood(TEXT("watch"));
-		UE_LOG(LogTemp,Display,TEXT("WCPENDANT visible distance=%.0f"), Distance);
+		H->SetActorHiddenInGame(true);
 	}
-	else H->Vanish();
+	// She is already waiting around the stair wall. Only a player who missed
+	// her and is trying the locked door needs the existing guided glance.
+	bPendantGuiding = bPendantUnlockWaiting && PendantSweepsSeen < 2;
+	if (bPendantGuiding)
+	{
+		AController* Controller = P->GetController();
+		if (Controller) Controller->SetControlRotation(FMath::RInterpTo(Controller->GetControlRotation(), (Chest-Eye).Rotation(), Dt, 3.2f));
+	}
+	if (!bSweepingOn) PendantLitDwell = 0.f;
+	else if (PendantLitDwell < .32f && PlayerSees(Chest,.80f,1650.f))
+	{
+		PendantLitDwell += Dt;
+		if (PendantLitDwell >= .32f) ++PendantSweepsSeen;
+	}
+	// A little reflected warmth lets the face register at the edge of the beam.
+	H->SetFarGlow(PendantBeam->Intensity * .15f * FMath::SmoothStep(.36f,.9f,float(ClockSideSweep)));
+	if (bSweepingOn == bPendantReveal) return;
+	bPendantReveal = bSweepingOn;
+	H->SetActorHiddenInGame(!bPendantReveal);
+	if (bPendantReveal) UE_LOG(LogTemp,Display,TEXT("WCPENDANT visible distance=%.0f"), Distance);
 }

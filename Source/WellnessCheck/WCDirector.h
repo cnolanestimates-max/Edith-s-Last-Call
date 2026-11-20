@@ -333,15 +333,20 @@ private:
 	void RefreshBathLetter();
 	TWeakObjectPtr<class UStaticMeshComponent> BathGlass;
 	UPROPERTY(Transient) TObjectPtr<class UTextureRenderTarget2D> BathTarget;
+	FIntPoint BathBaseResolution = FIntPoint::ZeroValue;
 	UPROPERTY(Transient) TObjectPtr<class USceneCaptureComponent2D> BathCapture;
 	UPROPERTY(Transient) TObjectPtr<class UPointLightComponent> BathBounce;
 	UPROPERTY(Transient) TObjectPtr<class UPointLightComponent> BathRim;
 	UPROPERTY(Transient) TObjectPtr<class UPointLightComponent> BathEyeFill;
+	UPROPERTY(Transient) TObjectPtr<class USpotLightComponent> BathTorsoFill;
+	UPROPERTY(Transient) TObjectPtr<class UMaterialInterface> BathWrithingSkin;
+	UPROPERTY(Transient) TObjectPtr<class UMaterialInterface> BathOriginalSkin;
 	TWeakObjectPtr<UAudioComponent> BathEdithBreath;
 	double NextBathBreath = 0.;
 	float MirrorDwell = 0.f;
 	float MirrorWitnessSeconds = 0.f;
 	TMap<TWeakObjectPtr<UPrimitiveComponent>, FLightingChannels> MirrorMeshChannels;
+	FTransform MirrorUnscaledTransform;
 	double MirrorShownAt = -1., NextMirrorCapture = 0.;
 	void TickBathChair(float Dt);
 	bool PrepareRollingChair();
@@ -365,6 +370,7 @@ private:
 	void TickHallPendant(float Dt);
 	bool PendantScareDue() const;
 	TWeakObjectPtr<class UStaticMeshComponent> HallPendant;
+	FVector PendantMark = FVector::ZeroVector;
 	TWeakObjectPtr<class USpotLightComponent> PendantBeam;
 	UPROPERTY(Transient) TObjectPtr<class UPointLightComponent> PendantSpill;
 	UPROPERTY(Transient) TObjectPtr<class UMaterialInterface> PendantLit;
