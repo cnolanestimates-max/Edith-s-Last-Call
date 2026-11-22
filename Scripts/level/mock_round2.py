@@ -1,10 +1,11 @@
-"""Round-two mock-ups on the saved House map, for Cheyenne to keep or trash (2026-11-22).  apply_polish.py step
-"mock_round2" puts them in; with WC_MOCK_UNDO=1 it takes them out again.
+"""Round two of the polish pass, shown to Cheyenne as mock-ups (2026-11-22) and kept (A kitchen, B floors with the white
+kept, C clutter, D yard; E puddles trashed).  At the end of the level build, or on the saved map with apply_polish.py step
+"mock_round2"; with WC_MOCK_UNDO=1 it takes them out again.
   - kitchen: 1950s paper on its walls (the wallpaper slot of each wall piece round the kitchen) and checker linoleum on
     its floor (KitchenTiles_0)
   - clutter: the dining-room dresser and the living-room side table dressed (Scripts/art/polish_furniture.py Mock sets)
   - yard: dead grass, leaves, needles, stones and branches over the yard ground, off the path and the house
-  - (puddles: the material change is in import_mock.py)"""
+  - floors: see below"""
 import json, os
 import unreal as u
 
@@ -46,18 +47,29 @@ def dress():
         tiles.static_mesh_component.set_material(0, eal.load_asset("/Game/WC/Materials/MI_MegaTilesOld") if undo else lino)
         n += 1
     # ---- the floors: the three trim bands of the outside (water table, band board, frieze) were laid as slabs right
-    # through the house, so indoors you see their painted tops, 2-8 cm above the real floors, the kitchen and bathroom tiles
-    # and the feet of every piece of furniture.  Hidden here and redone as strips round the outside only.
+    # through the house, and indoors their painted tops are the white boards you see, 2-8 cm above the real floor, so the
+    # feet of every piece of furniture sank into them.  Cheyenne kept the white (2026-11-22): the slabs indoors are dropped
+    # to 3 mm above the floor, the outside keeps its full-height trim as strips round the walls, and the other tile layers
+    # (never seen before) stay out of sight so only the kitchen's linoleum shows through.
+    LEVELS = {"WaterTable": (-6.0, 8.0, 0.3), "BandBoard": (328.0, 352.0, 350.3), "Frieze": (662.0, 702.0, 700.3)}
     bands = {}
     for a in actors:
         lab = a.get_actor_label()
-        for nm in ("WaterTable", "BandBoard", "Frieze"):
+        for nm in LEVELS:
             if lab.startswith(nm + "_"):
                 bands.setdefault(nm, []).append(a)
     for nm, parts in bands.items():
+        lo, hi, low_top = LEVELS[nm]
         for a in parts:
-            a.set_actor_hidden_in_game(not undo)
-            a.static_mesh_component.set_visibility(undo)
+            a.set_actor_hidden_in_game(False)
+            a.static_mesh_component.set_visibility(True)
+            o, e = a.get_actor_bounds(False)
+            top = hi if undo else low_top
+            sc = a.get_actor_scale3d()
+            a.set_actor_scale3d(u.Vector(sc.x, sc.y, sc.z * (top - lo) / max(0.01, 2 * e.z)))
+            o2, e2 = a.get_actor_bounds(False)
+            loc = a.get_actor_location()
+            a.set_actor_location(u.Vector(loc.x, loc.y, loc.z + (lo - (o2.z - e2.z))), False, True)
         for k in range(4):
             if undo and by.get(f"Mock_{nm}Strip_{k}"):
                 sub.destroy_actor(by[f"Mock_{nm}Strip_{k}"])
@@ -66,10 +78,24 @@ def dress():
         bb = [a.get_actor_bounds(False) for a in parts]
         x0, x1 = min(o.x - e.x for o, e in bb), max(o.x + e.x for o, e in bb)
         y0, y1 = min(o.y - e.y for o, e in bb), max(o.y + e.y for o, e in bb)
-        z0, z1 = min(o.z - e.z for o, e in bb), max(o.z + e.z for o, e in bb)
+        z0, z1 = lo, hi
         m = {"WaterTable": 64.0, "BandBoard": 58.0, "Frieze": 60.0}[nm] + 2.0
         src = parts[0].static_mesh_component
-        for k, (a0, a1, b0, b1) in enumerate(((x0, x1, y0, y0 + m), (x0, x1, y1 - m, y1), (x0, x0 + m, y0 + m, y1 - m), (x1 - m, x1, y0 + m, y1 - m))):
+        strips = [(x0, x1, y0, y0 + m), (x0, x1, y1 - m, y1), (x0, x0 + m, y0 + m, y1 - m), (x1 - m, x1, y0 + m, y1 - m)]
+        if nm == "BandBoard" and not undo:
+            # the band was cut round the old hole in the back bathroom: stretch the piece beside it back over the gap
+            if by.get("Mock_BandBoardStrip_4"):
+                sub.destroy_actor(by["Mock_BandBoardStrip_4"])
+            for a in parts:
+                o, e = a.get_actor_bounds(False)
+                if abs(o.x - e.x - 2480) < 2 and abs(o.x + e.x - 2600) < 2 and abs(o.y + e.y - 330) < 2:
+                    sc = a.get_actor_scale3d()
+                    a.set_actor_scale3d(u.Vector(sc.x, sc.y * (2 * e.y + 120.0) / (2 * e.y), sc.z))
+                    o2, e2 = a.get_actor_bounds(False)
+                    loc = a.get_actor_location()
+                    a.set_actor_location(u.Vector(loc.x, loc.y + ((o.y - e.y) - (o2.y - e2.y)), loc.z), False, True)
+        for k, (a0, a1, b0, b1) in enumerate(strips):
+            zz1 = low_top if k == 4 else z1
             lab = f"Mock_{nm}Strip_{k}"
             st = by.get(lab) or sub.spawn_actor_from_class(u.StaticMeshActor, u.Vector(0, 0, 0), u.Rotator(0, 0, 0))
             st.set_actor_label(lab)
@@ -78,30 +104,32 @@ def dress():
             c.set_static_mesh(src.static_mesh)
             c.set_material(0, src.get_materials()[0])
             c.set_collision_profile_name("NoCollision")
-            st.set_actor_scale3d(u.Vector((a1 - a0) / 100.0, (b1 - b0) / 100.0, (z1 - z0) / 100.0))
-            want = u.Vector((a0 + a1) / 2, (b0 + b1) / 2, (z0 + z1) / 2)
+            st.set_actor_scale3d(u.Vector((a1 - a0) / 100.0, (b1 - b0) / 100.0, (zz1 - z0) / 100.0))
+            want = u.Vector((a0 + a1) / 2, (b0 + b1) / 2, (z0 + zz1) / 2)
             st.set_actor_location(want, False, True)
             o_, e_ = st.get_actor_bounds(False)                                   # whatever the cube's pivot, centre it
             st.set_actor_location(want + (want - o_), False, True)
         n += 1
-    # with the floors uncovered, the patched square in the back bathroom needs its tiles too
-    t2 = by.get("Bath2Tiles_2")
-    if undo:
-        if by.get("Mock_Bath2TilesPatch"):
-            sub.destroy_actor(by["Mock_Bath2TilesPatch"])
-    elif False and t2 and by.get("UpperFloor_Bath2Patch"):            # (its tile layer does not show in the game; boards match)
-        p_ = by.get("Mock_Bath2TilesPatch") or sub.spawn_actor_from_class(u.StaticMeshActor, u.Vector(0, 0, 0), u.Rotator(0, 0, 0))
-        p_.set_actor_label("Mock_Bath2TilesPatch")
-        p_.set_folder_path("House/Mock/Trim")
-        p_.static_mesh_component.set_static_mesh(t2.static_mesh_component.static_mesh)
-        p_.static_mesh_component.set_material(0, t2.static_mesh_component.get_materials()[0])
-        o2, e2 = t2.get_actor_bounds(False)
-        p_.set_actor_scale3d(u.Vector(1.2, 1.2, (2 * e2.z) / 100.0))
-        want = u.Vector(2540.0, 390.0, o2.z)
-        p_.set_actor_location(want, False, True)
-        o_, e_ = p_.get_actor_bounds(False)
-        p_.set_actor_location(want + (want - o_), False, True)
-        n += 1
+    # the boards laid over the old hole in the back bathroom take the same white top, level with the rest
+    pb = by.get("UpperFloor_Bath2Patch")
+    if pb and not undo:
+        pb.static_mesh_component.set_material(0, eal.load_asset("/Game/WC/Materials/MI_TrimPaint"))
+        o, e = pb.get_actor_bounds(False)
+        sc = pb.get_actor_scale3d()
+        pb.set_actor_scale3d(u.Vector(sc.x, sc.y, sc.z * (350.3 - 330.0) / max(0.01, 2 * e.z)))
+        o2, e2 = pb.get_actor_bounds(False)
+        loc = pb.get_actor_location()
+        pb.set_actor_location(u.Vector(loc.x, loc.y, loc.z + (330.0 - (o2.z - e2.z))), False, True)
+    for i in range(3):                                                        # the grime laid over the patched boards
+        if not undo and by.get(f"Decal_Bath2Patch_{i}"):
+            sub.destroy_actor(by[f"Decal_Bath2Patch_{i}"])
+    if by.get("Mock_Bath2TilesPatch"):
+        sub.destroy_actor(by["Mock_Bath2TilesPatch"])
+    for a in actors:
+        lab = a.get_actor_label()
+        if any(lab.startswith(t) for t in ("BathTiles_", "BathGTiles_", "PantryTiles_", "Bath2Tiles_")):
+            a.set_actor_hidden_in_game(not undo)
+            a.static_mesh_component.set_visibility(undo)
     # ---- clutter on the bare tops
     for label, folder, mesh in (("Dresser_Drawers", "/Dining", "SM_MockClutterDresser"), ("SM_Table_Small_01a", "/Living", "SM_MockClutterTable")):
         top = next((a for a in actors if a.get_actor_label() == label and str(a.get_folder_path()).endswith(folder)), None)

@@ -56,7 +56,7 @@ def dress():
             if a.get_actor_label() == "Look_bath2_hole":
                 sub.destroy_actor(a)
         u.log_warning("WC_POLISH fixes: back bathroom floor patched")
-    if by.get("UpperFloor_Bath2Patch") and not by.get("Decal_Bath2Patch_0"):
+    if False:   # (the grime over the new boards: no longer wanted once the white trim covers it, mock_round2.py, 2026-11-22)
         # the same grime as the boards round it, so the new boards do not read as a clean square
         for i, (name, dx, dy, size, yaw) in enumerate((("MD_dirt_01", -10, 15, 95, 40), ("MD_filth_01", 25, -20, 80, 200), ("MD_mold_02", -30, -35, 70, 120))):
             d = sub.spawn_actor_from_class(u.DecalActor, u.Vector((x0 + x1) / 2 + dx, (y0 + y1) / 2 + dy, 351.0), u.Rotator(roll=0, pitch=-90, yaw=yaw))

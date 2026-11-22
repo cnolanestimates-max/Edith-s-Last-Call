@@ -2,7 +2,7 @@
   /Game/WC/Mock/T_MockKitchenPaper_*, T_MockLinoleum_*        Scripts/art/mock_surfaces.py
   /Game/WC/Mock/MI_MockKitchenPaper, MI_MockLinoleum          children of the house's surface material (world-mapped)
   /Game/WC/Mock/SM_MockYard_nn                                Scripts/art/mock_yard.py (vertex colour grass, stones, bark)
-  /Game/WC/Road/M_RoadWater                                   the puddles made glassier (WC_MOCK_PUDDLE=1)
+  /Game/WC/Road/M_RoadWater                                   the puddles made glassier (WC_MOCK_PUDDLE=1; trashed)
 UnrealEditor-Cmd WellnessCheck.uproject -run=pythonscript -script=<this> -AllowCommandletRendering -unattended -nosplash"""
 import json, os
 import unreal as u
@@ -91,7 +91,7 @@ for name in sorted(meta):
 log(f"{len(meta)} yard chunks imported")
 
 # the puddles: glassier, so they mirror the sky and the flashlight instead of reading as holes
-if os.environ.get("WC_MOCK_PUDDLE", "1") == "1":
+if os.environ.get("WC_MOCK_PUDDLE", "0") == "1":                 # (trashed by Cheyenne, 2026-11-22: off unless asked)
     m = eal.load_asset("/Game/WC/Road/M_RoadWater")
     mel.delete_all_material_expressions(m)
 
