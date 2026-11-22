@@ -725,6 +725,7 @@ namespace
 		{ TEXT("key_box"), TEXT("Small key"), TEXT("Small and fancy, with a heart worked into the bow. Too small for any door in this house."), TEXT("/Game/WC/Props/SM_Item_KeyHeart.SM_Item_KeyHeart") },
 		{ TEXT("piano_ivory"), TEXT("Loose ivory piano key"), TEXT("Ivory over wood. One end bears the same dent as the empty slot in the living-room piano."), TEXT("/Game/WC/Props/HouseDetails/SM_LoosePianoKey.SM_LoosePianoKey") },
 		{ TEXT("key_sitting"), TEXT("Downstairs sitting-room key"), TEXT("Two little scrolls in the bow. SITTING ROOM is stamped on its brass tag."), TEXT("/Game/WC/Props/SM_Item_Key.SM_Item_Key") },
+		{ TEXT("key_scullery"), TEXT("Scullery key"), TEXT("The old service key from the pantry. It fits both scullery doors."), TEXT("/Game/WC/Props/SM_Item_KeyDesk.SM_Item_KeyDesk") },
 		{ TEXT("key_prayer"), TEXT("Iron key on a ribbon"), TEXT("Heavy and old. The ribbon is stitched with the words UPSTAIRS PRAYER ROOM."), TEXT("/Game/WC/Props/SM_Item_KeyIron.SM_Item_KeyIron") },
 		{ TEXT("key_desk"), TEXT("Small desk key"), TEXT("A little barrel key from the hollow settlers' book. It fits Walter's writing desk in the downstairs den."), TEXT("/Game/WC/Props/SM_Item_KeyDesk.SM_Item_KeyDesk") },
 		{ TEXT("key_ell"), TEXT("Walter's keys"), TEXT("Three that do not match, on a split ring with a leather fob. W.H. From his desk."), TEXT("/Game/WC/Props/SM_Item_Keyring.SM_Item_Keyring") },

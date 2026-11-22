@@ -17,6 +17,8 @@
 #include "Engine/StaticMeshActor.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
+#include "Components/SpotLightComponent.h"
+#include "Engine/SpotLight.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Camera/PlayerCameraManager.h"
 #include "GameFramework/PlayerController.h"
@@ -55,7 +57,67 @@ void AWCDirector::AutoBegin()
 		Player()->SetInputLocked(false); Player()->SetFlashlight(true,false); Fade = FadeTarget = 0.f;
 		auto Do = [this](const TCHAR* Cmd) { AutoSteps.Add({A_Do,Cmd,0.f}); };
 		auto Touch = [this](const TCHAR* Id) { AutoSteps.Add({A_Use,Id,0.f}); };
-		if (FParse::Param(FCommandLine::Get(),TEXT("WCBreathCheck")))
+		if (FParse::Param(FCommandLine::Get(),TEXT("WCRoomConnections")))
+		{
+			Do(TEXT("flag:inside"));
+			Do(TEXT("at:746,-674,92,0,0")); Do(TEXT("room_walk:954,-674"));
+			Do(TEXT("at:1069,-817,92,-90,-20")); Touch(TEXT("music_lesson")); Shot(TEXT("01_music_note")); Touch(TEXT("__close"));
+			Do(TEXT("at:1014,-840,92,-75,-28")); Touch(TEXT("alcove_metronome")); Wait(.6f); Shot(TEXT("11_music_metronome"));
+			Do(TEXT("at:1000,-700,92,90,0")); Touch(TEXT("music_sitting")); Do(TEXT("music_locked"));
+			Do(TEXT("connections_brass_key")); Touch(TEXT("music_sitting")); Do(TEXT("music_locked"));
+			Do(TEXT("at:1390,-111,92,-90,0")); Touch(TEXT("sitting")); Flag(TEXT("sitting_open"),5.f);
+			Do(TEXT("at:1000,-700,92,90,0")); Touch(TEXT("music_sitting")); Wait(1.7f);
+			Do(TEXT("room_walk:1000,-490")); Shot(TEXT("02_music_to_sitting"));
+
+			Do(TEXT("at:1800,533,92,90,0")); Touch(TEXT("scullery_pantry")); Do(TEXT("scullery_locked"));
+			Do(TEXT("at:1740,487,92,169,-12")); Touch(TEXT("pick_key_scullery")); Do(TEXT("check_scullery_key"));
+			Do(TEXT("at:1800,533,92,90,0")); Touch(TEXT("scullery_pantry")); Flag(TEXT("scullery_open"),5.f);
+			Wait(1.7f); Do(TEXT("room_walk:1800,723")); Do(TEXT("room_walk:2316,715")); Shot(TEXT("03_scullery"));
+			Do(TEXT("at:2318,705,92,79,-24")); Touch(TEXT("scullery_service")); Shot(TEXT("15_scullery_note")); Touch(TEXT("__close"));
+			Touch(TEXT("scullery_washboard")); Wait(.6f); Shot(TEXT("12_scullery_washboard"));
+			Do(TEXT("at:2230,710,92,-90,0")); Touch(TEXT("scullery_sickroom")); Wait(1.7f);
+			Do(TEXT("room_walk:2230,485")); Shot(TEXT("04_scullery_to_sickroom"));
+
+			Do(TEXT("at:2306,443,442,0,0")); Touch(TEXT("aide_linen")); Wait(1.7f);
+			Do(TEXT("room_walk:2535,443")); Shot(TEXT("05_linen"));
+			Do(TEXT("at:2858,410,442,90,-20")); Touch(TEXT("linen_checkout")); Shot(TEXT("16_linen_note")); Touch(TEXT("__close"));
+			Touch(TEXT("linen_stack")); Wait(.6f); Shot(TEXT("13_linen_sorting_table"));
+			Do(TEXT("at:2693,-421,442,-90,-22")); Touch(TEXT("boxroom_patterns")); Shot(TEXT("17_box_room_note")); Touch(TEXT("__close"));
+			Touch(TEXT("boxroom_pattern_stack")); Wait(.6f); Shot(TEXT("14_box_room_patterns"));
+			Do(TEXT("at:2928,-343,442,0,0")); Touch(TEXT("boxes_sewing")); Wait(1.7f);
+			Do(TEXT("room_walk:3118,-343")); Shot(TEXT("06_boxes_to_sewing"));
+			Do(TEXT("connections_reload"));
+		}
+		else if (FParse::Param(FCommandLine::Get(),TEXT("WCCorner24")))
+		{
+			Do(TEXT("record_mix")); Do(TEXT("flag:inside")); Do(TEXT("corner24_light"));
+			Do(TEXT("at:2080,0,92,0,9")); Wait(1.f); Do(TEXT("corner24_absent"));
+			Do(TEXT("at:1518,0,442,0,0")); Touch(TEXT("up_ell")); Do(TEXT("corner24_locked"));
+			// Start at Walter's desk with the prior puzzle key and earn the rear-hall keys by interaction.
+			Do(TEXT("corner24_desk_key")); Do(TEXT("at:2190,-330,92,0,-19")); Touch(TEXT("walter_drawer"));
+			Wait(1.f); Touch(TEXT("pick_key_ell")); Do(TEXT("check_desk_unlocked"));
+			Do(TEXT("at:1518,0,442,0,0")); Wait(.55f); Shot(TEXT("00_before_unlock"));
+			Touch(TEXT("up_ell")); Do(TEXT("corner24_waiting")); Do(TEXT("corner24_open"));
+			Do(TEXT("walk_corner24_first_rooms")); Do(TEXT("corner24_waiting"));
+			Do(TEXT("walk_corner24")); Wait(.9f); Shot(TEXT("02_crawl")); Wait(1.5f); Shot(TEXT("03_jamb"));
+			Flag(TEXT("rear_bath_ceiling_seen"),8.f); Wait(1.f); Shot(TEXT("04_empty"));
+			Do(TEXT("corner24_light"));
+			if (FParse::Param(FCommandLine::Get(),TEXT("WCRearWingRooms")))
+			{
+				Go(TEXT("N_linen")); Shot(TEXT("07_linen")); Go(TEXT("N_boxroom")); Shot(TEXT("08_boxroom"));
+				Go(TEXT("A_Bath2")); Shot(TEXT("09_bath2"));
+			}
+			Do(TEXT("corner24_reload")); Do(TEXT("at:1740,5,442,9,7")); Wait(1.5f); Do(TEXT("corner24_absent"));
+			if (FParse::Param(FCommandLine::Get(),TEXT("WCCorner24Detail")))
+			{
+				Do(TEXT("corner24_retake")); Do(TEXT("at:2640,-45,442,178,0"));
+				Wait(1.7f); Do(TEXT("corner24_waiting")); Do(TEXT("at:2970,-122,442,37,14"));
+				Wait(.95f); Shot(TEXT("05_face")); Do(TEXT("watch_corner24_jamb"));
+				Flag(TEXT("rear_bath_ceiling_seen"),6.f); Wait(1.f); Shot(TEXT("06_clear"));
+			}
+			Do(TEXT("finish_mix")); Wait(.6f);
+		}
+		else if (FParse::Param(FCommandLine::Get(),TEXT("WCBreathCheck")))
 		{
 			Do(TEXT("record_mix")); Wait(8.f); Do(TEXT("breath_end_drive")); Wait(26.f);
 			Do(TEXT("at:145,0,92,0,0")); Flag(TEXT("inside"), 3.f); Wait(13.f);
@@ -1051,7 +1113,51 @@ void AWCDirector::AutoTick(float Dt)
 	case A_Aim: P->SetAiming(S.F > 0.5f); Next(); return;
 	case A_Crouch: if (S.F > 0.5f) P->Crouch(); else P->UnCrouch(); Next(); return;
 	case A_Do:
-		if (S.Arg == TEXT("breath_end_drive")) EndDrive();
+		if (S.Arg == TEXT("connections_reload"))
+		{
+			if (!DoLoad() || !HasItem(TEXT("key_scullery")) || !Has(TEXT("scullery_open")) ||
+				Door(TEXT("scullery_pantry"))->bLocked || Door(TEXT("scullery_sickroom"))->bLocked ||
+				!Has(TEXT("sitting_open")) || Door(TEXT("music_sitting"))->bLocked)
+			{
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL new door state or scullery key lost on Continue"));
+			}
+			Next(); return;
+		}
+		if (S.Arg.ToString().StartsWith(TEXT("room_walk:")))
+		{
+			TArray<FString> XY;
+			S.Arg.ToString().Mid(10).ParseIntoArray(XY,TEXT(","));
+			check(XY.Num() == 2);
+			const FVector At = P->GetActorLocation();
+			const FVector Goal(FCString::Atod(*XY[0]),FCString::Atod(*XY[1]),At.Z);
+			const double Remaining = FVector::Dist2D(At,Goal);
+			if (Remaining > 28. && In < 10.)
+			{
+				AimAt(P,Goal+FVector(0,0,57),Dt,5.f);
+				P->AddMovementInput((Goal-At).GetSafeNormal2D(),1.f);
+				return;
+			}
+			if (Remaining > 28. || !IsInsideHouse(At))
+			{
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL room connection from %s to %s"),*At.ToCompactString(),*Goal.ToCompactString());
+			}
+			else
+			{
+				UE_LOG(LogWCAuto,Display,TEXT("WCCONNECTIONS reached %s"),*At.ToCompactString());
+			}
+		}
+		else if (S.Arg == TEXT("connections_brass_key")) Items.Add(TEXT("key_sitting"));
+		else if (S.Arg == TEXT("music_locked") || S.Arg == TEXT("scullery_locked"))
+		{
+			const AWCDoor* D = Door(S.Arg == TEXT("music_locked") ? TEXT("music_sitting") : TEXT("scullery_pantry"));
+			if (!D || !D->bLocked || D->IsOpen())
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL connection bypass %s"),*S.Arg.ToString());
+		}
+		else if (S.Arg == TEXT("check_scullery_key") && !HasItem(TEXT("key_scullery")))
+		{
+			UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL pantry service key pickup"));
+		}
+		else if (S.Arg == TEXT("breath_end_drive")) EndDrive();
 		else if (S.Arg == TEXT("breath_lockin")) ScareLockIn();
 		else if (S.Arg == TEXT("look_at_settlers"))
 		{
@@ -1363,6 +1469,72 @@ void AWCDirector::AutoTick(float Dt)
 			P->ToggleFlashlight();
 			if (P->IsFlashlightOn() || !Her() || Her()->IsHidden() || Rooms.FindChecked(TEXT("uphall")).bOn)
 				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL upstairs blackout or silhouette"));
+		}
+		else if (S.Arg == TEXT("corner24_desk_key"))
+		{
+			Items.Add(TEXT("key_desk"));
+		}
+		else if (S.Arg == TEXT("corner24_locked") || S.Arg == TEXT("corner24_open"))
+		{
+			const AWCDoor* Wing = Door(TEXT("up_ell"));
+			const bool Open = S.Arg == TEXT("corner24_open");
+			if (Open && Wing && !Wing->bLocked && Wing->IsOpen() && !Wing->IsSwungClear() && In < 3.)
+				return;
+			if (!Wing || (Open ? Wing->bLocked || !Wing->IsSwungClear() || LastCheckpoint != TEXT("ell")
+			                 : !Wing->bLocked || Wing->IsOpen() || HasItem(Wing->KeyId)))
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL Walter's rear hall door lock or swing"));
+		}
+		else if (S.Arg == TEXT("corner24_reload"))
+		{
+			if (!DoLoad() || !Has(TEXT("rear_bath_ceiling_seen")) || !HasItem(TEXT("key_ell")))
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL rear hall encounter was not saved"));
+		}
+		else if (S.Arg == TEXT("corner24_light"))
+		{
+			const ASpotLight* Lamp = Cast<ASpotLight>(Find(TEXT("RearWingCornerLight")));
+			if (!Lamp || Lamp->IsHidden() || !Lamp->GetLightComponent()->IsVisible() ||
+		                 !FMath::IsNearlyEqual(Lamp->GetLightComponent()->Intensity,1050.f))
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL rear wing light is not on at full strength"));
+		}
+		else if (S.Arg == TEXT("corner24_absent") && CornerEdith)
+		{
+			UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL rear ceiling figure outside the wing or on replay"));
+		}
+		else if (S.Arg == TEXT("corner24_waiting") && (!CornerEdith || bCornerMoving))
+		{
+			UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL rear ceiling figure did not wait for sight and distance"));
+		}
+		else if (S.Arg == TEXT("walk_corner24_first_rooms") || S.Arg == TEXT("walk_corner24"))
+		{
+			const bool FirstRooms = S.Arg == TEXT("walk_corner24_first_rooms");
+			const AWCDoor* Bath = CornerBath.IsValid() ? CornerBath.Get() : Door(TEXT("up_bath2"));
+			const FVector BathAt = Bath->GetActorLocation();
+			const bool Reached = FirstRooms ? P->GetActorLocation().X >= 1895. : bCornerMoving;
+			if (!Reached && In < 13.)
+			{
+				AimAt(P,CornerEdith ? CornerEdith->EyeLocation() : BathAt + FVector(71.5,-126.,224.),Dt,3.f);
+				if (P->GetActorLocation().X < BathAt.X - 883.5)
+					P->AddMovementInput(FVector::ForwardVector,.83f);
+				return;
+			}
+			if (!Reached)
+			{
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL rear ceiling approach"));
+			}
+			else if (!FirstRooms && FVector::Dist(P->EyeLocation(),CornerEdith->EyeLocation()) < 900.)
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL rear ceiling retreat started too close"));
+		}
+		else if (S.Arg == TEXT("corner24_retake"))
+		{
+			Flags.Remove(TEXT("rear_bath_ceiling_seen"));
+			SetFilter(0);
+		}
+		else if (S.Arg == TEXT("watch_corner24_jamb") && In < 4.7)
+		{
+			const FVector Jamb = Door(TEXT("up_bath2"))->GetActorLocation() + FVector(56.5,5.,205.);
+			const FVector Eye = CornerEdith ? CornerEdith->EyeLocation() : Jamb;
+			AimAt(P, Eye.Y < Jamb.Y ? Eye : Jamb,Dt,4.f);
+			return;
 		}
 		else if (S.Arg == TEXT("walk_to_peek") && Her())
 		{

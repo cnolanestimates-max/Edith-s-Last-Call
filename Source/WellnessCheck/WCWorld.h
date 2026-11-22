@@ -57,6 +57,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WC") bool bStartOpen = false;
 
 	bool IsOpen() const { return bOpen; }
+	bool IsSwungClear() const { return bOpen && FMath::Abs(Angle) >= 77.f && FMath::Abs(Target) >= 77.f; }
 	bool IsAjar() const { return bOpen && FMath::Abs(Target) < FMath::Abs(OpenAngle) * 0.7f; }
 	void OpenAwayFrom(const FVector& From, float Seconds = -1.f);
 	void SetOpen(bool bNewOpen, float Seconds = -1.f, bool bSilent = false);

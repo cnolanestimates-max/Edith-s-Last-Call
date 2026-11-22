@@ -452,7 +452,9 @@ void AWCEntity::Tick(float Dt)
 	// the eye finds the player, but cannot turn further than an eye can
 	if (bEyeReady)
 	{
-		const FQuat HeadFwd = GetActorQuat();
+		// In the doorway performance the spine turns the whole body around a stationary root.
+		const FQuat HeadFwd = CurrentAnim == TEXT("CeilingCorner")
+			? (BoneWorld(TEXT("headfront")) - BoneWorld(HeadBone)).ToOrientationQuat() : GetActorQuat();
 		FQuat Want = HeadFwd;
 		if (const AWCCharacter* P = Cast<AWCCharacter>(UGameplayStatics::GetPlayerPawn(this, 0)))
 		{

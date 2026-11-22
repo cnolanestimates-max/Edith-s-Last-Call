@@ -893,8 +893,8 @@ void AWCDirector::TickCues(float Dt)
 		return;
 	}
 	if (WhisperAt < 0.) WhisperAt = Clock + Rng.FRandRange(28.f, 64.f);
-	if (Clock < WhisperAt || Clock < CueFreeAt || Clock < DialogueUntil || bBusy || bEventBusy ||
-		StalkState != 0 || ActiveNote.IsValid() || Mode != EWCMode::Playing || (Has(TEXT("heard_upstairs")) && !Has(TEXT("peek_done")))) return;
+	if (Clock < WhisperAt || Clock < CueFreeAt || Clock < DialogueUntil || HasActiveEncounter() ||
+		ActiveNote.IsValid() || Mode != EWCMode::Playing || (Has(TEXT("heard_upstairs")) && !Has(TEXT("peek_done")))) return;
 	// Keep the pause at the empty chair quiet even if the player lingers between reflections.
 	if (!Has(TEXT("bath_mirror_seen")) && IsInMirrorBathroom(P->EyeLocation())) return;
 	WhisperAt = Clock + Rng.FRandRange(43.f, 102.f);

@@ -152,7 +152,7 @@ public:
 	/** A line of on-screen text with no voice: what he notices. */
 	void Think(const FString& Text, float Seconds = -1.f);      // his thoughts: no longer shown (kept in the code as a record of what each moment is)
 	void Feedback(const FString& Text, float Seconds = -1.f);   // bare feedback on something he tried, and what he sees when the player chooses to look
-		bool Gate() const { return Clock >= NextScareAt && StalkState == 0 && !bDriving && !bEventBusy; }
+		bool Gate() const { return Clock >= NextScareAt && StalkState == 0 && !bDriving && !bEventBusy && !bCornerMoving; }
 	void Rest(float Seconds) { NextScareAt = FMath::Max(NextScareAt, Clock + Seconds * 1.6f * TestPace); }       // 1.6: she asked for them further apart
 	/** Run Go at the next quiet stretch (now, if it is quiet). If Valid turns false first, run Skip instead. */
 	void WhenQuiet(TFunction<void()> Go, TFunction<bool()> Valid, TFunction<void()> Skip, float MaxWait);
@@ -200,7 +200,7 @@ public:
 	/** Every house light out, and the switches dead for a while. */
 	void KillLights(float DeadSeconds, bool bPop = false);
 	bool IsInsideHouse(const FVector& At) const { return SpaceAt(At) != EListeningSpace::Exterior; }
-	bool HasActiveEncounter() const { return bBusy || bEventBusy || StalkState != 0; }
+	bool HasActiveEncounter() const { return bBusy || bEventBusy || StalkState != 0 || bCornerMoving; }
 	bool IsPeekFlashOut() const { return Has(TEXT("peek_started")) && !Has(TEXT("peek_done")); }
 	bool IsShedPickupActive() const { return ShedPickupAt >= 0.; }
 	void StartShedPickup(AWCPickup* Tape);
@@ -209,6 +209,7 @@ public:
 	bool DeferSittingRoomUnlock();
 	static FLinearColor EdithMoonlight() { return FLinearColor(.33f,.54f,1.f); }
 	bool IsDriving() const { return bDriving; }
+	bool IsCrawlingThroughRearBath() const;
 	bool bPowerOut = false;
 	int32 StalkState = 0;     // 0 none, 1 she has appeared, 2 she is coming
 	TSet<FName> LooksSeen;
@@ -375,6 +376,14 @@ private:
 	float ChairBypassStart = 0.f, ChairBypassMiddle = 0.f, ChairBypassEnd = 0.f, ChairBypassOffset = 0.f;
 	bool bChairExitArmed = false, bChairLanded = false;
 	void TickHallPendant(float Dt);
+	void PrepareCeilingCorner();
+	void TickCeilingCorner(float Dt);
+	bool CornerEyeInView() const;
+	UPROPERTY(Transient) TObjectPtr<AWCEntity> CornerEdith;
+	TWeakObjectPtr<AWCDoor> CornerBath, CornerWing;
+	float CornerWitness = 0.f;
+	int32 NextCornerFootfall = 0;
+	bool bCornerMoving = false;
 	void InitializeHallPose();
 	void ShowHallFigureLight(AWCEntity* H);
 	bool PendantScareDue() const;

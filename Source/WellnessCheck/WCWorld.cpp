@@ -73,6 +73,8 @@ FString AWCDoor::GetPrompt() const
 		if (WCId == TEXT("sitting")) return TEXT("Try the sitting-room door");
 		if (WCId == TEXT("up_prayer")) return TEXT("Try the prayer-room door");
 		if (WCId == TEXT("up_ell")) return TEXT("Try the rear upstairs hall");
+		if (WCId == TEXT("music_sitting")) return TEXT("Try the door latched from the sitting room");
+		if (WCId == TEXT("scullery_pantry") || WCId == TEXT("scullery_sickroom")) return TEXT("Try the scullery door");
 		return TEXT("Try the door");
 	}
 	return bOpen ? TEXT("Close") : TEXT("Open");
@@ -131,6 +133,13 @@ void AWCDoor::Interact(AWCCharacter* By)
 {
 	AWCDirector* D = AWCDirector::Get(this);
 	if (!D) return;
+	if (WCId == TEXT("up_bath2") && D->IsCrawlingThroughRearBath()) return;
+	if (WCId == TEXT("music_sitting") && !D->Has(TEXT("sitting_open")))
+	{
+		D->PlayAt(TEXT("door_locked"), GetActorLocation() + FVector(0, 0, 100), 0.9f);
+		D->Feedback(TEXT("A bolt on the sitting-room side. I'll need to unlock its hall door first."));
+		return;
+	}
 	if (bLocked)
 	{
 		if (!KeyId.IsNone() && D->HasItem(KeyId))

@@ -780,7 +780,102 @@ def clip_lunge(t):
         hand(side, down.lerp(out, k), elbow=(sx * 0.6, 0.6, -0.6), rot=(8.0 - 60.0 * k, 0, 0))
 
 
+# Corner 24. Author in the house's centimetres so each wrist or ankle can stay
+# planted while the spine changes direction. FBX maps (local Y, X, Z) to the hall.
+def corner_point(x, y, z):
+    return Vector((y - 200., x - 2600., z - 350.))
+
+
+def corner_rail(s):
+    # Plan view: from the back window toward the deputy, then a quarter-turn into the bath.
+    radius, straight = 52., 44.
+    a = max(0., min(math.pi / 2., (s - straight) / radius))
+    x = 2652. - radius * math.sin(a) + max(0., straight - s)
+    y = 106. - radius * math.cos(a) + max(0., s - straight - radius * math.pi / 2.)
+    y += 35. * (1.-smooth((s+32.)/84.))
+    return x, y, a
+
+
+def corner_basis(a, pitch=0., bank=0.):
+    # On her back relative to gravity, belly toward the boards, crown hanging down.
+    return (Matrix.Rotation(a, 3, 'Z') @ Matrix.Rotation(math.pi, 3, 'Y')
+            @ Matrix.Rotation(rad(pitch), 3, 'X') @ Matrix.Rotation(rad(bank), 3, 'Y'))
+
+
+def corner_contact(s, side, palm):
+    x, y, a = corner_rail(s)
+    tuck = smooth((s - 59.) / 62.)
+    width = (59. if palm else 57.) * (1. - tuck) + (26. if palm else 24.) * tuck
+    # Local left is toward the middle of the hallway in the upside-down pose.
+    x -= side * math.sin(a) * width
+    y -= side * math.cos(a) * width
+    # Fingers go down the hall face of the header, under its soffit, then
+    # up the inside face. The render mesh measures 238 cm clear in its throat.
+    if y < 109.:
+        surface = 676.
+    elif y < 156.:
+        surface = 676. - 89. * smooth((y - 109.) / 47.)
+        y = 109. + 38. * smooth(min(1., (y - 109.) / 18.))
+    elif y < 263.:
+        surface = 587.
+        y = 147. + (y - 156.) * 117. / 107.
+    elif y < 300.:
+        surface = 587. + 89. * smooth((y - 263.) / 37.)
+        y = 264. + 36. * smooth(max(0., (y - 284.) / 16.))
+    else:
+        surface = 676.
+    # Her fingers extend a forearm's length past the wrist. Keep that reach folded
+    # below the moulding even when the wrist itself is still in the hall.
+    throat = smooth((y-86.)/52.) * (1.-smooth((y-267.)/47.))
+    surface = min(surface, 676. - (98. if palm else 93.)*throat)
+    return corner_point(x, y, surface - (29. + 18.*throat if palm else 33. + 14.*throat))
+
+
+def clip_corner(t):
+    # A head turn releases the first hand; the pelvis follows a fraction later.
+    u = max(0., t - .18)
+    s = (u*u/(2.*.40) if u < .40 else u - .20) * 151.
+    reach = 7.1*(1.-smooth((s-24.)/36.)) + 4.*smooth((s-315.)/48.)
+    x, y, a = corner_rail(s)
+    drop = smooth((s-82.)/51.)  # hip folds before it reaches the trim
+    drop *= 1. - smooth((y - 262.) / 58.)
+    hip = corner_point(x, y, 617. + reach - 104.*drop + 1.9*math.sin(s*.098))
+    hips(*(hip - HIP0))
+    upd()
+    set_world_rot('Hips', corner_basis(a, 48., 3.*math.sin(s*.071)) @ RROT['Hips'])
+    for bone, lead, pitch in [('Spine02',12.,67.),('Spine01',27.,78.),('Spine',43.,80.)]:
+        turn = corner_rail(s + lead)[2]
+        set_world_rot(bone, corner_basis(turn,pitch) @ RROT[bone])
+    # Let the eye hang facing the length of the hall, then look around the jamb first.
+    gaze = corner_rail(s + 68.)[2] * smooth(t/.48)
+    for bone, pitch in [('neck',40.),('Head',-10. + 17.*smooth(t/.7))]:
+        set_world_rot(bone,corner_basis(gaze,pitch,-7.*(1.-smooth(t/.6))) @ RROT[bone])
+    for side, sign in [('Left',1.),('Right',-1.)]:
+        for palm in (True, False):
+            # A diagonal pair supports the body while the other pair reaches.
+            phase = (.46 if (sign > 0.) == palm else .0)
+            step = 68.
+            n = math.floor(s/step + phase)
+            frac = s/step + phase - n
+            station = (n-phase)*step + (76. if palm else -52.) + 14.
+            swing = max(0., (frac-.43)/.57)
+            contact = corner_contact(station,sign,palm).lerp(corner_contact(station+step,sign,palm), smooth(swing))
+            contact.z += reach - (13. if palm else 11.) * math.sin(math.pi*swing)
+            direction = corner_basis(corner_rail(s+(48. if palm else -18.))[2])
+            wide = 1. - smooth((s-67.)/52.) if palm else 1. - smooth((s-114.)/52.)
+            pole = direction @ Vector((sign*((.15 if palm else -.37)+.78*wide), .78 if palm else -.9, .32 if palm else .72))
+            if palm:
+                two_bone(side+'Arm',side+'ForeArm',contact,pole)
+                # Fold the long fingers forward, nearly tangent to the support surface.
+                rot = direction @ Euler((rad(-76.),0.,rad(sign*8.)),'ZYX').to_matrix()
+                set_world_rot(side+'Hand',rot @ RROT[side+'Hand'])
+            else:
+                two_bone(side+'UpLeg',side+'Leg',contact,pole)
+                set_world_rot(side+'Foot',direction @ Matrix.Rotation(rad(10.),3,'X') @ RROT[side+'Foot'])
+
+
 CLIPS = {
+    "CeilingCorner": (clip_corner, 3.55, False, 0.0),
     # name: (function, seconds, loop, ground speed cm/s or 0)
     "Idle": (clip_idle, 9.0, True, 0.0),
     "Walk": (clip_walk, WALK_T, True, WALK_S / (WALK_ST * WALK_T)),

@@ -192,6 +192,10 @@ void AWCDirector::BeginPlay()
 	bAuto = FParse::Param(FCommandLine::Get(), TEXT("WCAuto")) || FParse::Param(FCommandLine::Get(), TEXT("WCTour")) || FParse::Param(FCommandLine::Get(), TEXT("WCHerLook")) || FParse::Param(FCommandLine::Get(), TEXT("WCItems"));
 	if (bAuto && FParse::Param(FCommandLine::Get(), TEXT("WCListeningCheck")))
 		SaveSlot = TEXT("WCListeningCheck");
+	if (bAuto && FParse::Param(FCommandLine::Get(), TEXT("WCCorner24")))
+		SaveSlot = TEXT("WCCorner24Check");
+	if (bAuto && FParse::Param(FCommandLine::Get(), TEXT("WCRoomConnections")))
+		SaveSlot = TEXT("WCRoomConnectionsCheck");
 	if (bAuto && FParse::Param(FCommandLine::Get(), TEXT("WCSettlersCheck")))
 		SaveSlot = TEXT("WCSettlersCheck");
 	if (bAuto && FParse::Param(FCommandLine::Get(), TEXT("WCBreathCheck")))
@@ -289,6 +293,7 @@ void AWCDirector::Tick(float Dt)
 			TickBathMirror(Dt);
 			TickBathChair(Dt);
 			TickHallPendant(Dt);
+			TickCeilingCorner(Dt);
 			StoryTick(Dt);
 			if (BedCamera.IsValid()) TickUnderBed(Dt);
 			if (SettlersDropAt >= 0.) TickSettlersPickup();
@@ -575,6 +580,7 @@ bool AWCDirector::DoLoad()
 	YardCawsLeft = FMath::Clamp(S->YardCawsLeft,-1,8);
 	NextYardCaw = -1.;
 	Items = TSet<FName>(S->Items);
+	if (Has(TEXT("scullery_key_found"))) Items.Add(TEXT("key_scullery"));
 	NotesRead = S->NotesRead;
 	Objective = S->Objective;
 	PlaySeconds = S->PlaySeconds;
@@ -582,7 +588,18 @@ bool AWCDirector::DoLoad()
 	for (TActorIterator<AWCDoor> It(GetWorld()); It; ++It)
 	{
 		It->bLocked = S->UnlockedDoors.Contains(It->WCId);
-		It->SetOpen(S->OpenDoors.Contains(It->WCId), 0.01f, true);
+		bool bOpen = S->OpenDoors.Contains(It->WCId);
+		if (It->WCId == TEXT("music_sitting"))
+		{
+			It->bLocked = !Has(TEXT("sitting_open"));
+			bOpen &= !It->bLocked;
+		}
+		else if (It->WCId == TEXT("scullery_pantry") || It->WCId == TEXT("scullery_sickroom"))
+		{
+			It->bLocked = !Has(TEXT("scullery_open"));
+			bOpen &= !It->bLocked;
+		}
+		It->SetOpen(bOpen, 0.01f, true);
 		It->Snap();
 	}
 	if (AWCDoor* Ruth = Door(TEXT("up_kids")))
@@ -776,11 +793,11 @@ UAudioComponent* AWCDirector::PlayAt(const FString& Name, const FVector& Where, 
 		}
 		Profile = BinAtten;
 	}
-	else if (Name == TEXT("shelf_stair_step"))
+	else if (Name == TEXT("shelf_stair_step") || Name == TEXT("ceiling_boot_step"))
 	{
 		if (!StairRunAtten)
 		{
-			// The shelf backs directly onto the flight. The boards transmit the low impacts through the wall.
+			// The timber carries impacts from the stair treads and ceiling joists.
 			StairRunAtten = DuplicateObject<USoundAttenuation>(Atten, this);
 			StairRunAtten->Attenuation.AttenuationShapeExtents = FVector(320.f);
 			StairRunAtten->Attenuation.FalloffDistance = 1680.f;
@@ -878,7 +895,12 @@ void AWCDirector::ApplyVolumes()
 // House coordinates match build_house.py and the ground-floor living-room extension.
 AWCDirector::EListeningSpace AWCDirector::SpaceAt(const FVector& P)
 {
-	if (P.X <= 0 || P.X >= 2800 || P.Y >= 600) return EListeningSpace::Exterior;
+	if (P.Z >= -22. && P.Z < 312. && ((P.X > 1690. && P.X < 2510. && P.Y >= 600. && P.Y < 892.) ||
+		(P.X > 550. && P.X < 1205. && P.Y > -1015. && P.Y <= (P.X < 800. ? -750. : -600.))))
+		return EListeningSpace::House;
+	// The upstairs extension is over the open rear porch.
+	const bool bUpperExtension = P.X < 3420. && P.Z >= 329. && P.Z < 1026.;
+	if (P.X <= 0 || (P.X >= 2800 && !bUpperExtension) || P.Y >= 600) return EListeningSpace::Exterior;
 	if (P.Y <= -600 && !(P.X < 800 && P.Y > -750 && P.Z >= 0 && P.Z < 330)) return EListeningSpace::Exterior;
 	return P.Z < -25 && P.X < 1620 ? EListeningSpace::Cellar : EListeningSpace::House;
 }

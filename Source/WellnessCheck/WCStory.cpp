@@ -691,13 +691,25 @@ void AWCDirector::StoryEvent(FName Id)
 	if (Is(Id, TEXT("unlock:sitting")))
 	{
 		Set(TEXT("sitting_open"));
+		if (AWCDoor* Shortcut = Door(TEXT("music_sitting"))) Shortcut->SetLocked(false);
 		Say(TEXT("d_sitting"), 3.f);
 		if (!HasItem(TEXT("fuse")) && !Has(TEXT("fuse_done"))) SetObjective(TEXT("Find the spare fuse on the sitting-room side table"));
 		Checkpoint(TEXT("sitting"));
 		return;
 	}
 		if (Is(Id, TEXT("take:key_prayer"))) { SetObjective(TEXT("Take the piano drawer's iron key to the upstairs prayer room")); Checkpoint(TEXT("prayer_key")); return; }
-	if (Is(Id, TEXT("unlock:up_ell"))) { Checkpoint(TEXT("ell")); return; }
+	if (Is(Id, TEXT("unlock:up_ell"))) { PrepareCeilingCorner(); Checkpoint(TEXT("ell")); return; }
+	if (Is(Id, TEXT("door:up_ell"))) { PrepareCeilingCorner(); return; }
+	if (Is(Id, TEXT("unlock:scullery_pantry")) || Is(Id, TEXT("unlock:scullery_sickroom")))
+	{
+		Set(TEXT("scullery_open"));
+		for (const FName DoorId : { FName(TEXT("scullery_pantry")), FName(TEXT("scullery_sickroom")) })
+			if (AWCDoor* ServiceDoor = Door(DoorId)) ServiceDoor->SetLocked(false);
+		RememberAtCheckpoint(TEXT("scullery_open"));
+		RememberAtCheckpoint(TEXT("scullery_key_found"));
+		return;
+	}
+	if (Is(Id, TEXT("take:key_scullery"))) { RememberAtCheckpoint(TEXT("scullery_key_found")); return; }
 	if (Is(Id, TEXT("closed:note_prayer")) && !Has(TEXT("placed"))) { SetObjective(TEXT("Find what was theirs, and something to cut with")); return; }
 
 	// ================================================================= act 3: upstairs again, the attic
