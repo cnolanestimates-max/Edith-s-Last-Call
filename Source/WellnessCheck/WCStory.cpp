@@ -54,7 +54,7 @@ static const FWCLine GLines[] = {
 	{ TEXT("d_photos"), TEXT("Deputy Brandt"), TEXT("Every face scratched out. Every one but hers."), 0 },
 	{ TEXT("d_cellar_locked"), TEXT("Deputy Brandt"), TEXT("Padlocked. From this side."), 0 },
 	{ TEXT("d_locked"), TEXT("Deputy Brandt"), TEXT("Locked."), 0 },
-	{ TEXT("d_thump"), TEXT("Deputy Brandt"), TEXT("Mrs. Harrow? ...I'm coming upstairs. Stay where you are."), 0 },
+	{ TEXT("d_thump"), TEXT("Deputy Brandt"), TEXT("What was that? ...Sounded like it came from upstairs."), 0 },
 	{ TEXT("m_whisper1"), TEXT(""), TEXT("[a whisper] ...who's there?"), 3 },
 	{ TEXT("d_peek"), TEXT("Deputy Brandt"), TEXT("Ma'am? It's alright. I'm here to help you."), 0 },
 	{ TEXT("d_getout"), TEXT("Deputy Brandt"), TEXT("Screw this. I'm getting out of here."), 0 },
@@ -229,8 +229,9 @@ void AWCDirector::ApplyWorldState()
 	// The moving desk drawer exposes its keys only once it has cleared the apron.
 	ShowTagged(TEXT("Show_jewel"), Has(TEXT("box_open")));
 	ShowTagged(TEXT("Show_vent"), Has(TEXT("vent_open")));
-	ShowTagged(TEXT("Show_trash"), Has(TEXT("tape1_taken")));
-	ShowTagged(TEXT("Hide_trash"), !Has(TEXT("tape1_taken")));
+	const bool bBinDown = bShedImpactPlayed || Has(TEXT("tape1_taken"));
+	ShowTagged(TEXT("Show_trash"), bBinDown);
+	ShowTagged(TEXT("Hide_trash"), !bBinDown);
 	ShowTagged(TEXT("Show_framefall"), Has(TEXT("frame_fell")));
 	ShowTagged(TEXT("Hide_framefall"), !Has(TEXT("frame_fell")));
 	if (AWCInteractable* Fr = Thing(TEXT("frame"))) Fr->bEnabled = Has(TEXT("frame_fell")) && !Has(TEXT("frame_seen"));
@@ -320,7 +321,7 @@ void AWCDirector::StoryBegin(bool bFromSave)
 	After(3.f, [this]()
 	{
 		if (AWCCharacter* Pl = Player()) Pl->SetInputLocked(false);
-		ShowHint(TEXT("WASD move    Mouse look    F flashlight    E use / examine    Shift hurry    C crouch"), 9.f);
+		ShowHint(TEXT("WASD move    Mouse look    F flashlight    E use / examine    Space / Shift hurry    C crouch"), 9.f);
 		DriveDone();
 	});
 }
@@ -374,13 +375,8 @@ void AWCDirector::UpstairsThump()
 		if (AWCCharacter* Pl = Player()) Pl->AddShake(0.53f);
 		After(1.25f, [this, Up]()
 		{
-			if (Has(TEXT("peek_started"))) return;
-			PlayAt(TEXT("drag_floor"), Up, .85f);
-			if (Player() && Player()->GetActorLocation().Z < 320.f)
-			{
-				Say(TEXT("d_thump"));
-				SetObjective(TEXT("Check upstairs"));
-			}
+			if (!Has(TEXT("peek_started"))) PlayAt(TEXT("drag_floor"), Up, .85f);
+			Say(TEXT("d_thump"));
 		});
 		Tension = 0.3f;
 	});
@@ -407,55 +403,6 @@ void AWCDirector::StoryEvent(FName Id)
 	if (Is(Id, TEXT("trig:t_yard_edge")))
 	{
 		if (!Has(TEXT("dawn")) && Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 12.0; Feedback(TEXT("Not yet.")); }
-		return;
-	}
-	// the tape on the shed bench: taking it is what brings the trash can over behind him, and what opens the house
-	if (Is(Id, TEXT("take:tape1")) && !Has(TEXT("tape1_taken")))
-	{
-		Set(TEXT("tape1_taken"));
-		Set(TEXT("shed_seen"));
-		UE_LOG(LogWCStory, Display, TEXT("WCTAPE t=%.1f the shed tape is taken"), PlaySeconds);
-		PlayScareLead(1.85f);
-		After(1.85f, [this]()
-		{
-			ApplyWorldState();                                   // the bin is over now, everything in it across the yard
-			// Hold the current view through the impact and flinch. Turn as the last rattle fades.
-			const FVector Bin = Pos(TEXT("TrashPoint")) + FVector(0, 0, 24);
-			PlayAt(TEXT("trash_can_fall"), Bin, 1.f, 1.f, 2400.f, true);
-			StartleDeputy(.81f);
-			if (AWCCharacter* Deputy = Player())
-			{
-				Deputy->SetFlashlight(true, false);
-				FCollisionQueryParams Query(SCENE_QUERY_STAT(WCBinSight), false, Deputy);
-				FHitResult Hit;
-				bStepToShedDoor = GetWorld()->LineTraceSingleByChannel(Hit, Deputy->EyeLocation(), Bin, ECC_Visibility, Query) &&
-				                   Hit.Distance + 115.f < FVector::Dist(Deputy->EyeLocation(), Bin);
-				BinTurnAt = Clock + 2.40;
-				BinViewStart = Deputy->GetControlRotation();
-				BinStartPos = Deputy->GetActorLocation();
-				BinTargetYaw = BinViewStart.Yaw;
-			}
-			After(1.f, [this]()
-			{
-				if (AWCCharacter* Deputy = Player()) Deputy->AddShake(.48f);
-			});
-			Tension = 1.f;
-			// and whatever did it goes: heavy feet, fast, away along the back of the house and gone
-			const FVector From = Pos(TEXT("TrashPoint")), To = Pos(TEXT("TrashRunTo"));
-			if (!From.IsNearlyZero() && !To.IsNearlyZero())
-			{
-				const float Footfalls[] = {1.73f, 2.05f, 2.35f, 2.68f, 3.03f};
-				for (int32 k = 0; k < UE_ARRAY_COUNT(Footfalls); ++k)
-				{
-					const FVector At = FMath::Lerp(From, To, k / 4.f) + FVector(0, 0, 10);
-					After(Footfalls[k], [this, At, k]() { PlayAt(TEXT("step_gravel"), At, 2.1f - .17f * k, .94f + .035f * k, 2400.f, true); });
-				}
-			}
-			UE_LOG(LogWCStory, Display, TEXT("WCTRASH t=%.1f the bin goes over; something runs"), PlaySeconds);
-			const float T = Say(TEXT("d_shedcall"), 4.55f);
-			After(T + 1.2f, [this]() { OutsideProgress(); });
-
-		});
 		return;
 	}
 	if (Is(Id, TEXT("use:frame")))
@@ -944,12 +891,25 @@ void AWCDirector::StoryTick(float Dt)
 	// ---- S1: the peek is watching you back
 	if (Has(TEXT("peek_started")) && !Has(TEXT("peek_done")) && H->IsShown() && !Has(TEXT("peek_leaving")))
 	{
-		const bool bInView = PlayerSees(H->HeadLocation(), .57f, 900.f);
-		if (bInView && PeekSeenAt < 0.) { PeekSeenAt = Clock; StartleDeputy(.81f); }
-		const double Distance = FVector::Dist2D(P->GetActorLocation(), H->GetActorLocation());
-		if (bInView && PeekSeenAt >= 0. && Clock - PeekSeenAt >= .45 && Distance <= 150.)
+		const FVector At = P->GetActorLocation();
+		if (PeekSeenAt < 0. && !P->IsFlashlightOn() &&
+			(PlayerSees(H->EyeLocation(), .91f, 925.f) ||
+			 PlayerSees(H->HeadLocation() + H->GetActorForwardVector() * 17., .91f, 925.f)))
+		{
+			PeekSeenAt = Clock;
+			PeekSeenFrom = At;
+			StartleDeputy(.81f);
+			UE_LOG(LogWCStory, Display, TEXT("WCPEEK noticed at %s"), *At.ToCompactString());
+		}
+		// Count forward travel from the place the player actually saw her.
+		const double Advance = FVector::DotProduct(At - PeekSeenFrom, (Doorway - PeekSeenFrom).GetSafeNormal2D());
+		const double RoomLeft = FVector::Dist2D(PeekSeenFrom, Doorway);
+		const double RetreatDistance = FMath::Clamp(RoomLeft - 45., 42., 185.);
+		if (PeekSeenAt >= 0. && Clock - PeekSeenAt >= .30 && Advance >= RetreatDistance)
 		{
 			Set(TEXT("peek_leaving"));
+			UE_LOG(LogWCStory, Display, TEXT("WCPEEK retreat: advance=%.0f cm distance=%.0f cm"),
+				Advance, FVector::Dist2D(P->GetActorLocation(), Doorway));
 			PlayAt(TEXT("step_wood"), H->GetActorLocation(), .50f, .9f);
 			H->Slide(Pos(TEXT("Her_PeekBack")) - FVector(0,0,22), .52f, [this]()
 			{
@@ -1080,8 +1040,12 @@ void AWCDirector::ScarePeek()
 	H->SetFarGlow(0.f);
 	if (AWCCharacter* Deputy = Player())
 	{
-		Deputy->SetFlashlight(false, true);
-		Deputy->SetLightScale(0.f);
+		if (Deputy->IsFlashlightOn()) Deputy->FlickerLight(.72f, 1.f);
+		After(.72f, [this]()
+		{
+			if (Has(TEXT("peek_done"))) return;
+			if (AWCCharacter* P = Player()) P->SetFlashlight(false, false);
+		});
 	}
 	SetReturnBlackout(true);
 	PlayAt(TEXT("creak"), H->GetActorLocation(), .50f, .8f);

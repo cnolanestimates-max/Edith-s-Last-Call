@@ -58,7 +58,7 @@ DIRECT = {
     "d_knock": "Calling out loudly at a front door, projecting, official.",
     "d_dooropen": "Quiet, wary, then calling into the house.",
     "d_foyer": "Disgusted by a smell, muttering, then calling out.",
-    "d_thump": "Startled, calling up a staircase, trying to sound steady.",
+    "d_thump": "Startled at a noise above him, muttering to himself. A quick quiet question, then a short pause as he listens, then a low uncertain observation. Do not call out.",
     "d_peek": "Very soft and careful, as if to a frightened animal.",
     "d_masterempty": "Unsettled, thinking out loud.",
     "d_radio1": "Speaking into a shoulder radio, urgent but controlled.",

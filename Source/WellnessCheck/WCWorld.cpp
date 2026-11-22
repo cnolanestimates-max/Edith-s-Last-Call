@@ -192,6 +192,11 @@ void AWCPickup::Interact(AWCCharacter* By)
 {
 	if (AWCDirector* D = AWCDirector::Get(this))
 	{
+		if (ItemId == TEXT("tape1"))
+		{
+			D->StartShedPickup(this);
+			return;
+		}
 		D->GiveItem(ItemId, DisplayName);
 		SetActorHiddenInGame(true);
 		SetActorEnableCollision(false);

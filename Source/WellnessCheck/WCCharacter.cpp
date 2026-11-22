@@ -272,7 +272,7 @@ void AWCCharacter::Relocate(const FVector& Loc, float Yaw)
 bool AWCCharacter::Blocked() const
 {
 	const AWCDirector* D = AWCDirector::Get(this);
-	return bInputLocked || KDTime >= 0.f || !D || !D->IsPlaying() || D->IsBinTurnActive() || D->IsLookingAtPendant() || D->ActiveNote.IsValid();
+	return bInputLocked || KDTime >= 0.f || !D || !D->IsPlaying() || D->IsShedPickupActive() || D->IsLookingAtPendant() || D->ActiveNote.IsValid();
 }
 
 void AWCCharacter::BuildInput()
@@ -310,6 +310,7 @@ void AWCCharacter::BuildInput()
 	Mapping->MapKey(MoveAction, EKeys::Gamepad_Left2D).Modifiers.Add(Dead());
 	Mapping->MapKey(LookAction, EKeys::Mouse2D);
 	Mapping->MapKey(PadLookAction, EKeys::Gamepad_Right2D).Modifiers.Add(Dead());
+	Mapping->MapKey(SprintAction, EKeys::SpaceBar);
 	Mapping->MapKey(SprintAction, EKeys::LeftShift);
 	Mapping->MapKey(SprintAction, EKeys::Gamepad_LeftThumbstick);
 	Mapping->MapKey(CrouchAction, EKeys::C);
@@ -345,6 +346,7 @@ void AWCCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 		In->BindAction(PadLookAction, ETriggerEvent::Triggered, this, &AWCCharacter::Look);
 		In->BindAction(SprintAction, ETriggerEvent::Started, this, &AWCCharacter::StartSprint);
 		In->BindAction(SprintAction, ETriggerEvent::Completed, this, &AWCCharacter::StopSprint);
+		In->BindAction(SprintAction, ETriggerEvent::Canceled, this, &AWCCharacter::StopSprint);
 		In->BindAction(CrouchAction, ETriggerEvent::Started, this, &AWCCharacter::ToggleCrouch);
 		In->BindAction(FlashAction, ETriggerEvent::Started, this, &AWCCharacter::ToggleFlashlight);
 		In->BindAction(UseAction, ETriggerEvent::Started, this, &AWCCharacter::DoInteract);
@@ -367,7 +369,7 @@ void AWCCharacter::Move(const FInputActionValue& Value)
 void AWCCharacter::Look(const FInputActionValue& Value)
 {
 	const AWCDirector* D = AWCDirector::Get(this);
-	if (KDTime >= 0.f || !D || !D->IsPlaying() || D->IsBinTurnActive() || D->ActiveNote.IsValid()) return;
+	if (KDTime >= 0.f || !D || !D->IsPlaying() || D->IsShedPickupActive() || D->IsBathChairTurning() || D->ActiveNote.IsValid()) return;
 	const FVector2D Axis = Value.Get<FVector2D>();
 	const FWCSettings& S = AWCDirector::Settings;
 	const float K = 1.0f * S.Sensitivity * (bAiming ? 0.7f : 1.f);
@@ -410,7 +412,7 @@ void AWCCharacter::DoInteract()
 	AWCDirector* D = AWCDirector::Get(this);
 	if (!D || !D->IsPlaying()) return;
 	if (D->ActiveNote.IsValid()) { D->CloseNote(); return; }
-	if (bInputLocked || KDTime >= 0.f || D->IsBinTurnActive() || D->IsLookingAtPendant()) return;
+	if (bInputLocked || KDTime >= 0.f || D->IsShedPickupActive() || D->IsLookingAtPendant()) return;
 	if (AWCInteractable* T = Focus.Get()) T->Interact(this);
 }
 
@@ -609,13 +611,6 @@ void AWCCharacter::Tick(float Dt)
 		FaceAim = FMath::FInterpTo(FaceAim, FaceWant, Dt, 6.f);
 	}
 	FVector AimPoint = FMath::Lerp(Cam->GetComponentLocation() + Cam->GetForwardVector() * AimDist, FacePoint, FaceAim * 0.9f);
-	const bool bLookingAtBin = D && D->IsTurningToBin();
-	if (bLookingAtBin)
-	{
-		const FVector Bin = D->BinFocusPoint();
-		const float Facing = FVector::DotProduct(Cam->GetForwardVector(), (Bin-Cam->GetComponentLocation()).GetSafeNormal());
-		AimPoint = FMath::Lerp(AimPoint, Bin, FMath::SmoothStep(.96f,.998f,Facing));
-	}
 	const FQuat Target = (AimPoint - Flash->GetComponentLocation()).ToOrientationQuat();
 	AimQuat = FQuat::Slerp(AimQuat, Target, 1.f - FMath::Exp(-13.f * Dt)).GetNormalized();
 	const float Walk = FMath::Clamp(Speed / WalkSpeed, 0.f, 1.7f);
@@ -629,9 +624,7 @@ void AWCCharacter::Tick(float Dt)
 	}
 	Flash->SetIntensity(FlashLumens * FlashFluxScale * Level);
 	Spill->SetIntensity(FlashLumens * 0.11f * SpillFluxScale * Level);
-	BinBeam = FMath::FInterpTo(BinBeam, bLookingAtBin ? FMath::SmoothStep(.86f,.995f,float(FVector::DotProduct(Cam->GetForwardVector(),(D->BinFocusPoint()-Cam->GetComponentLocation()).GetSafeNormal()))) : 0.f, Dt, bLookingAtBin ? 7.5f : 2.f);
-	Throw->SetIntensity(FlashLumens * (0.24f + 2.3f * BinBeam) * ThrowFluxScale * Level);
-	Throw->SetAttenuationRadius(1000.f + 500.f * BinBeam);
+	Throw->SetIntensity(FlashLumens * .24f * ThrowFluxScale * Level);
 	FaceLight->SetIntensity(FaceLumens * FMath::Clamp(Level, 0.25f, 1.f));
 
 	// ---- pistol

@@ -688,15 +688,13 @@ namespace
 		// ---- the house only: before the thump
 		{ TEXT("enter:t_dining"), 1, TEXT("creak"), 0, 300.f, 600.f, 0.8f, 1.f, nullptr, 0 },
 		{ TEXT("enter:t_kitchen"), 1, TEXT(""), 0, 0.f, 0.f, 1.f, 1.f, nullptr, 5 },                    // something moves behind the wall vent
-		{ TEXT("enter:t_hall_mid"), 2, TEXT(""), 0, 0.f, 0.f, 1.f, 1.f, TEXT("locked_in"), 6 },          // a picture comes off the wall behind him
-		{ TEXT("enter:t_hall_mid"), 3, TEXT("steps_above"), 1, 100.f, 300.f, 0.9f, 1.f, nullptr, 0 },
-		{ TEXT("enter:t_dining"), 2, TEXT("thump_far"), 1, 200.f, 400.f, 0.9f, 0.95f, nullptr, 0 },
+		{ TEXT("enter:t_hall_mid"), 2, TEXT(""), 0, 0.f, 0.f, 1.f, 1.f, TEXT("peek_done"), 6 },          // a picture comes off the wall behind him
+		{ TEXT("enter:t_hall_mid"), 3, TEXT("steps_above"), 1, 100.f, 300.f, 0.9f, 1.f, TEXT("peek_done"), 0 },
 		{ TEXT("enter:t_living"), 2, TEXT(""), 0, 0.f, 0.f, 1.f, 1.f, nullptr, 1 },
 		{ TEXT("enter:t_den"), 1, TEXT(""), 0, 0.f, 0.f, 1.f, 1.f, nullptr, 3 },
 		{ TEXT("enter:t_sickroom"), 1, TEXT("VO/m_hum"), 1, 200.f, 500.f, 0.45f, 1.f, TEXT("locked_in"), 0 },
 		{ TEXT("enter:t_up_landing"), 1, TEXT("house_groan"), 0, 500.f, 900.f, 0.9f, 1.f, nullptr, 0 },
 		{ TEXT("take:screwdriver"), 1, TEXT("creak"), 3, 180.f, 260.f, 0.9f, 0.9f, nullptr, 0 },
-		{ TEXT("enter:t_foyer"), 3, TEXT("door_far"), 1, 400.f, 700.f, 0.9f, 1.f, nullptr, 2 },
 		{ TEXT("enter:t_kitchen"), 3, TEXT("scratch_wall"), 2, 150.f, 220.f, 0.9f, 1.f, nullptr, 0 },
 		// ---- after the first sight of her
 		{ TEXT("take:keep_eye"), 1, TEXT("VO/m_moan1"), 1, 500.f, 900.f, 0.75f, 1.f, nullptr, 0 },
@@ -770,10 +768,6 @@ void AWCDirector::CueEvent(FName Id)
 					After(3.2f, [this, Chair]() { if (IsValid(Chair)) PlayAt(TEXT("chair_creak"), Chair->GetActorLocation() + FVector(0, 0, 50), 0.9f, 0.94f, 2200.f); });
 				}
 			}
-			else if (Act == 2)
-			{
-				for (TPair<FName, FRoomLights>& Rm : Rooms) if (Rm.Value.bOn) { Rm.Value.KillAt = Clock; NextLightKill = 0.0; break; }
-			}
 			else if (Act == 3)
 			{
 				PlayAt(TEXT("radio_tune"), Pos(TEXT("RadioPoint")), 1.f, 1.f, 3200.f);
@@ -789,12 +783,7 @@ void AWCDirector::CueEvent(FName Id)
 			{
 				Set(TEXT("frame_fell"));
 				ApplyWorldState();
-				PlayAt(TEXT("frame_fall"), Pos(TEXT("FramePoint")), 1.f, 1.f, 5000.f);
-				Play2D(TEXT("sting_hit"), 0.75f, EWCSnd::Music);
-				Pl->AddShake(0.4f);
-				Tension = FMath::Max(Tension, 0.6f);
-				Rest(60.f);
-				UE_LOG(LogWCEvents, Display, TEXT("WCSCARE t=%.1f frame off the wall"), PlaySeconds);
+				UE_LOG(LogWCEvents, Display, TEXT("WCFRAME t=%.1f fallen photo available without hallway sting"), PlaySeconds);
 			}
 			else if (Act == 4)
 			{
@@ -811,33 +800,63 @@ void AWCDirector::CueEvent(FName Id)
 void AWCDirector::TickYardCrows()
 {
 	const AWCCharacter* P = Player();
-	if (!P || YardCawsLeft == 0 || !Has(TEXT("briefed")) || Has(TEXT("inside")) || Has(TEXT("dawn")) ||
-		IsInsideHouse(P->GetActorLocation()) || bEventBusy || IsBinTurnActive() || Clock < DialogueUntil) return;
-	if (YardCawsLeft < 0) YardCawsLeft = Rng.RandRange(4, 8);
-	if (NextYardCaw < 0.) NextYardCaw = Clock + Rng.FRandRange(5.f, 11.f);
-	if (Clock < NextYardCaw) return;
+	if (!P || P->IsInputLocked() || bDriving || !Has(TEXT("briefed")) || Has(TEXT("inside")) || Has(TEXT("dawn")) ||
+		IsInsideHouse(P->GetActorLocation()) || bEventBusy || IsShedPickupActive() || Clock < DialogueUntil) return;
 
-	const FName Perches[] = {TEXT("CrowGate"), TEXT("CrowBranch")};
-	const int32 First = Rng.RandRange(0, 1);
+	const FVector Here = P->GetActorLocation();
+	const bool bAlongLeft = Here.X > -540. && Here.X < 3350. && Here.Y < -630.;
+	const FName LeftMark = Has(TEXT("heard_left_crow_first")) ? TEXT("heard_left_crow_second") : TEXT("heard_left_crow_first");
+	const bool bLeftCue = bAlongLeft && !Has(LeftMark);
+	if (bLeftCue && !bWasAlongLeftYard)
+		NextYardCaw = FMath::Max(LastYardCaw + 4.5, Clock + 1.4);
+	bWasAlongLeftYard = bAlongLeft;
+	if (!bLeftCue && YardCawsLeft == 0) return;
+	if (YardCawsLeft < 0) YardCawsLeft = Rng.RandRange(5, 7);
+	if (NextYardCaw < 0.) NextYardCaw = Clock + Rng.FRandRange(2.f, 4.f);
+	if (Clock < NextYardCaw) return;
 	NextYardCaw = Clock + 4.;
-	for (int32 Offset = 0; Offset < 2; ++Offset)
+
+	if (bLeftCue)
 	{
-		const int32 Index = (First + Offset) % 2;
-		const AActor* Perch = Find(Perches[Index]);
-		if (!Perch) continue;
-		FVector Center, Extent;
-		Perch->GetActorBounds(false, Center, Extent);
-		const FVector At = Center + FVector(0, 0, Extent.Z * .8f);
-		if (FVector::DistSquared(At, P->GetActorLocation()) > FMath::Square(2200.f)) continue;
-		const float Pitch = (Index == 0 ? .94f : 1.02f) * Rng.FRandRange(.975f, 1.025f);
-		YardCrowVoice = PlayAt(TEXT("yard_caw"), At, .34f, Pitch);
+		// The gate and branch birds are across the house from this path.
+		const FVector Trees = Here.X < 1240. ? FVector(420,-1190,330) : FVector(2150,-1260,355);
+		const float Pitch = LeftMark == TEXT("heard_left_crow_first") ? .94f : 1.06f;
+		YardCrowVoice = PlayAt(TEXT("yard_caw"), Trees, .64f, Pitch);
 		if (YardCrowVoice.IsValid())
 		{
-			--YardCawsLeft;
-			NextYardCaw = Clock + Rng.FRandRange(13.f, 29.f);
-			UE_LOG(LogWCEvents, Verbose, TEXT("WCCROW at=%.1f perch=%s remaining=%d next=%.1f"),Clock,*Perches[Index].ToString(),YardCawsLeft,NextYardCaw);
+			Set(LeftMark);
+			LastYardCaw = Clock;
+			NextYardCaw = Clock + Rng.FRandRange(8.f, 12.f);
+			UE_LOG(LogWCEvents, Display, TEXT("WCCROW at=%.1f left path source %.0f cm away"), Clock, FVector::Dist(Here, Trees));
 		}
-		break;
+		return;
+	}
+
+	const FName Perches[] = {TEXT("CrowGate"), TEXT("CrowBranch")};
+	const AActor* Nearest = nullptr;
+	FVector Source = FVector::ZeroVector;
+	double Distance = FMath::Square(3700.);
+	for (const FName Perch : Perches)
+	{
+		const AActor* Actor = Find(Perch);
+		if (!Actor) continue;
+		FVector Center, Extent;
+		Actor->GetActorBounds(false, Center, Extent);
+		const FVector At = Center + FVector(0,0,Extent.Z*.8);
+		const double Range = FVector::DistSquared(At,Here);
+		if (Range >= Distance) continue;
+		Nearest = Actor;
+		Distance = Range;
+		Source = At;
+	}
+	if (!Nearest) return;
+	YardCrowVoice = PlayAt(TEXT("yard_caw"), Source, .46f, Rng.FRandRange(.93f,1.04f));
+	if (YardCrowVoice.IsValid())
+	{
+		--YardCawsLeft;
+		LastYardCaw = Clock;
+		NextYardCaw = Clock + Rng.FRandRange(8.f, 17.f);
+		UE_LOG(LogWCEvents, Display, TEXT("WCCROW at=%.1f source %.0f cm away remaining=%d"),Clock,FMath::Sqrt(Distance),YardCawsLeft);
 	}
 }
 

@@ -3,6 +3,7 @@
 #include "WCWorld.h"
 #include "Components/AudioComponent.h"
 #include "GameFramework/PlayerController.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Components/SplineComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
@@ -169,7 +170,7 @@ void AWCDirector::TickBathChair(float Dt)
 {
 	if (!BathChair.IsValid() || ChairBeat==EBathChairBeat::Finished) return;
 	AWCCharacter* P=Player();
-	if (!P) return;
+	if (!P || !P->GetController()) return;
 	const FVector Deputy=P->GetActorLocation();
 	AActor* Chair=BathChair.Get();
 	const double Age=Clock-ChairBeatAt;
@@ -186,7 +187,7 @@ void AWCDirector::TickBathChair(float Dt)
 		}
 		if (!NotesRead.Contains(TEXT("note_bath_mirror")) || ActiveNote.IsValid() || Deputy.Z<35. || Deputy.Z>190.) return;
 		if (Deputy.X>2414. && Deputy.X<2786. && Deputy.Y>-590. && Deputy.Y<Mouth.Y-75.) bChairExitArmed=true;
-		if (!Has(TEXT("bath_chair_exit_tip")) && (!bChairExitArmed || Deputy.Y<Mouth.Y-65. ||
+		if (!Has(TEXT("bath_chair_lookback_done")) && (!bChairExitArmed || Deputy.Y<Mouth.Y-8. ||
 			Deputy.Y>Mouth.Y+60. || FMath::Abs(Deputy.X-Mouth.X)>76.)) return;
 		if (P->IsInputLocked() || P->IsDown() || HasActiveEncounter()) return;
 		if (!PrepareRollingChair())
@@ -196,7 +197,7 @@ void AWCDirector::TickBathChair(float Dt)
 			return;
 		}
 		ChairBeatAt=Clock;
-		if (Has(TEXT("bath_chair_exit_tip")))
+		if (Has(TEXT("bath_chair_lookback_done")))
 		{
 			PoseFallenChair(BathChairHome,88.f);
 			ChairBeat=EBathChairBeat::WaitingForLookAway;
@@ -204,6 +205,11 @@ void AWCDirector::TickBathChair(float Dt)
 		}
 		ChairBeat=EBathChairBeat::RoomTipping;
 		bEventBusy=true;
+		ChairTurnOrigin=Deputy;
+		ChairViewStart=P->GetControlRotation().GetNormalized();
+		P->SetInputLocked(true);
+		P->GetCharacterMovement()->StopMovementImmediately();
+		P->ConsumeMovementInputVector();
 		UE_LOG(LogTemp,Display,TEXT("WCBATHCHAIR room tip at exit %s"),*Deputy.ToCompactString());
 		return;
 	case EBathChairBeat::RoomTipping:
@@ -211,11 +217,30 @@ void AWCDirector::TickBathChair(float Dt)
 		const float T=FMath::Clamp(float(Age/.64),0.f,1.f);
 		PoseFallenChair(BathChairHome,88.f*T*T);
 		if (T<1.f) return;
-		PlayAt(TEXT("wheel_sidefall"),Chair->GetActorLocation(),.82f,.93f,1200.f);
+		PlayAt(TEXT("wheel_sidefall"),Chair->GetActorLocation()+FVector(0,0,25.),.88f,1.f);
 		RememberAtCheckpoint(TEXT("bath_chair_exit_tip"));
+		StartleDeputy(.52f);
+		ChairBeat=EBathChairBeat::RoomLookBack;
+		ChairBeatAt=Clock;
+		return;
+	}
+	case EBathChairBeat::RoomLookBack:
+	{
+		FVector FallenSeat, Bounds;
+		Chair->GetActorBounds(false,FallenSeat,Bounds);
+		const FRotator Look = (FallenSeat-P->EyeLocation()).Rotation();
+		const double Ease = FMath::SmoothStep(.08,1.28,Age);
+		const double YawDelta = FMath::FindDeltaAngleDegrees(ChairViewStart.Yaw,Look.Yaw);
+		P->GetController()->SetControlRotation(FRotator(
+			FMath::Lerp(ChairViewStart.Pitch,Look.Pitch,Ease),ChairViewStart.Yaw+YawDelta*Ease,0.));
+		if (Age < 1.78) return;
+		RememberAtCheckpoint(TEXT("bath_chair_lookback_done"));
+		P->SetInputLocked(false);
 		bEventBusy=false;
 		ChairBeat=EBathChairBeat::WaitingForLookAway;
 		ChairBeatAt=Clock;
+		UE_LOG(LogTemp,Display,TEXT("WCBATHCHAIR look-back complete drift=%.1f cm alignment=%.2f"),
+			FVector::Dist2D(Deputy,ChairTurnOrigin),FVector::DotProduct(Look.Vector(),P->EyeForward()));
 		return;
 	}
 	case EBathChairBeat::WaitingForLookAway:
@@ -269,7 +294,7 @@ void AWCDirector::TickBathChair(float Dt)
 		float Speed=FMath::Lerp(95.f,218.f,FMath::SmoothStep(0.f,200.f,ChairTravel));
 		if (Forward>160.f) Speed+=38.f*FMath::SmoothStep(160.f,420.f,Forward);
 		if (FMath::Abs(Offset.Z)<165. && Side<57. && Forward>0. && Forward<105.)
-			Speed*=FMath::SmoothStep(59.f,105.f,Forward);
+			Speed*=FMath::Lerp(.46f,1.f,FMath::SmoothStep(59.f,105.f,Forward));
 		if (ChairTravel<250.f)
 			if (AWCDoor* Leaf=Door(TEXT("bath_g")); Leaf && !Leaf->IsOpen()) Leaf->SetOpen(true,.75f,true);
 		ChairSpeed=FMath::FInterpConstantTo(ChairSpeed,Speed,Dt,Speed<ChairSpeed ? 390.f : 210.f);
@@ -293,7 +318,7 @@ void AWCDirector::TickBathChair(float Dt)
 		}
 		if (ChairTravel<Length-.02f) return;
 		if (ChairRollSound.IsValid()) ChairRollSound->FadeOut(.16f,0.f);
-		PlayAt(TEXT("wheel_baseboard"),Next+Facing.Vector()*31.f,.78f,.95f,1000.f);
+		PlayAt(TEXT("wheel_baseboard"),Next+FVector(0,0,36.),1.f,.96f);
 		ChairImpactOmega=ChairSpeed/RearRadius;
 		ChairBeat=EBathChairBeat::Tipping;
 		ChairBeatAt=Clock;
@@ -312,7 +337,7 @@ void AWCDirector::TickBathChair(float Dt)
 		{
 			bChairLanded=true;
 			StartleDeputy(.76f);
-			PlayAt(TEXT("wheel_sidefall"),Chair->GetActorLocation(),.83f,.94f,1200.f);
+			PlayAt(TEXT("wheel_sidefall"),Chair->GetActorLocation()+FVector(0,0,22.),1.0f,.91f);
 			UE_LOG(LogTemp,Display,TEXT("WCBATHCHAIR chassis landed, upper wheel free"));
 		}
 		if (Age<1.65) return;
@@ -328,8 +353,9 @@ void AWCDirector::TickBathChair(float Dt)
 		const float Speed=FMath::Clamp(1.f-float(Age)/CoastDuration,0.f,1.f);
 		const float Previous=WheelRadians[0];
 		SpinChairWheel(0,ChairImpactOmega*Speed*Speed*Dt);
-		if (Speed>.12f && FMath::FloorToInt(Previous/(2.f*PI))!=FMath::FloorToInt(WheelRadians[0]/(2.f*PI)))
-			PlayAt(TEXT("wheel_axle_rub"),ChairWheels[0]->GetComponentLocation(),.31f*Speed,.74f+.26f*Speed,650.f);
+		const bool Revolved=FMath::FloorToInt(Previous/(2.f*PI))!=FMath::FloorToInt(WheelRadians[0]/(2.f*PI));
+		if (ChairWheels[0].IsValid() && ((Age>=.16 && Age-Dt<.16) || (Age>.66 && Speed>.15f && Revolved)))
+			PlayAt(TEXT("wheel_axle_rub"),ChairWheels[0]->GetComponentLocation(),.67f*Speed,.72f+.31f*Speed);
 		if (Age<CoastDuration) return;
 		bEventBusy=false;
 		Rest(8.f);

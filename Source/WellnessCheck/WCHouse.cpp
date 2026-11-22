@@ -18,6 +18,7 @@
 #include "Engine/SkeletalMesh.h"
 #include "EngineUtils.h"
 #include "GameFramework/PlayerController.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "HAL/FileManager.h"
@@ -155,8 +156,8 @@ void AWCDirector::SetReturnBlackout(bool bActive)
 			SwitchRoom(Room, false, false);
 		if (AWCDoor* Master = Door(TEXT("up_master"))) Master->SetOpen(true, .2f, true);
 	}
-	SetLightsTagged(TEXT("W_U_master"), bActive ? 4.f : 1.f);
-	SetLightsTagged(TEXT("W_U_hall"), bActive ? 3.f : 1.f);
+	SetLightsTagged(TEXT("W_U_master"), 1.f);
+	SetLightsTagged(TEXT("W_U_hall"), 1.f);
 	if (bActive && !PeekMoonKey)
 	{
 		const FVector Doorway = Pos(TEXT("Her_Peek"));
@@ -165,12 +166,13 @@ void AWCDirector::SetReturnBlackout(bool bActive)
 		PeekMoonKey = NewObject<USpotLightComponent>(this);
 		PeekMoonKey->SetWorldLocationAndRotation(Source,(Chest-Source).Rotation());
 		PeekMoonKey->SetIntensityUnits(ELightUnits::Lumens);
-		PeekMoonKey->SetIntensity(3584.f);
+		PeekMoonKey->SetIntensity(310.f);
 		PeekMoonKey->SetLightColor(EdithMoonlight());
 		PeekMoonKey->SetInnerConeAngle(19.f);
 		PeekMoonKey->SetOuterConeAngle(34.f);
 		PeekMoonKey->SetAttenuationRadius(385.f);
 		PeekMoonKey->SetSourceRadius(12.f);
+		PeekMoonKey->SetSpecularScale(.32f);
 		PeekMoonKey->SetLightingChannels(false,true,false);
 		PeekMoonKey->RegisterComponent();
 	}
@@ -259,7 +261,8 @@ bool AWCDirector::HouseEvent(FName Id)
 		if (bCircuitDead || bReturnBlackout)
 		{
 			PlayAt(TEXT("switch_click"), At, 0.9f, 1.f, 900.f);
-			Feedback(Has(TEXT("seen_fusebox")) ? TEXT("Dead. It needs that fuse.") : TEXT("Dead. The whole house is dead. There'll be a fuse box somewhere off the kitchen."));
+			if (bReturnBlackout) Feedback(TEXT("Nothing. The upstairs lights are dead."));
+			else Feedback(Has(TEXT("seen_fusebox")) ? TEXT("Dead. It needs that fuse.") : TEXT("Dead. The whole house is dead. There'll be a fuse box somewhere off the kitchen."));
 			return true;
 		}
 		if (Clock < R->DeadUntil && !R->bOn)
@@ -423,7 +426,6 @@ void AWCDirector::TickBuildUp(float Dt)
 	if (!P || !Has(TEXT("inside")) || Has(TEXT("peek_started")) || bBusy) return;
 	const float T = (PlaySeconds - InsideAt) / FMath::Max(TestPace, 0.01f);
 	const FVector L = P->GetActorLocation();
-	auto Above = [&L](float Dx, float Dy) { return L + FVector(Dx, Dy, 300.f); };
 	switch (BuildStep)
 	{
 	case 0:
@@ -432,8 +434,8 @@ void AWCDirector::TickBuildUp(float Dt)
 			// the front door shuts behind him
 			++BuildStep;
 			Set(TEXT("locked_in"));
-			if (AWCDoor* D = Door(TEXT("front"))) { D->Slam(); D->SetLocked(true); }
-			P->AddShake(0.3f);
+			if (AWCDoor* D = Door(TEXT("front"))) { D->SetOpen(false, 1.15f, true); D->SetLocked(true); }
+			UE_LOG(LogWCHouse, Display, TEXT("WCENTRY front door closed quietly"));
 			Tension = FMath::Max(Tension, 0.3f);
 			After(2.2f, [this]() { if (!Has(TEXT("door_stuck"))) Think(TEXT("...The front door.")); });
 		}
@@ -546,6 +548,7 @@ void AWCDirector::BeginDrive()
 	PC->SetControlRotation(FRotator(0.f, DriveHeading, 0.f));
 	ShowTagged(TEXT("CarRunning"), true);
 	SetLoop(TEXT("car"), TEXT("amb_car"), 1.f, 1.2f);
+	SetLoop(TEXT("yard_score"), TEXT(""), 0.f, 0.f, EWCSnd::Music);
 	SetLoop(TEXT("amb"), TEXT(""), 0.f, 1.f);              // windows up: the night is not heard until he gets out
 	// the opening shot: high over the forest, his headlights threading the road, then down and into the car
 	bAir = !FParse::Param(FCommandLine::Get(), TEXT("WCNoAir"));
@@ -711,10 +714,10 @@ void AWCDirector::TickDrive(float Dt)
 	const float Bump = (FMath::Sin(T * 8.7f) * 0.9f + FMath::Sin(T * 13.9f + 1.f) * 0.5f + FMath::Sin(T * 3.1f) * 1.4f) * Rough;
 	const float Roll = (FMath::Sin(T * 2.3f) * 0.7f + FMath::Sin(T * 6.1f) * 0.3f) * Rough;
 	// keep where the driver is looking, relative to the car, as the car turns
-	FRotator Rel = PC ? (PC->GetControlRotation() - FRotator(0.f, DriveHeading, 0.f)).GetNormalized() : FRotator::ZeroRotator;
+	FRotator Rel = PC && !bAir ? (PC->GetControlRotation() - FRotator(0.f, DriveHeading, 0.f)).GetNormalized() : FRotator::ZeroRotator;
 	Rel.Yaw = FMath::Clamp(Rel.Yaw, -80.f, 80.f);
 	Rel.Pitch = FMath::Clamp(Rel.Pitch, -30.f, 28.f);
-	if (ShadowPhase == 2) { Rel.Yaw = 154.f * LookBack; Rel.Pitch = -2.f * LookBack; }      // over his right shoulder, where it stood
+	if (!bAir && ShadowPhase == 2) { Rel.Yaw = 154.f * LookBack; Rel.Pitch = -2.f * LookBack; }      // over his right shoulder, where it stood
 	DriveHeading = Heading;
 	Car->SetActorLocationAndRotation(FVector(Pos0.X, Pos0.Y, CarHome.Z + Bump * 0.5f), FRotator(0.f, Heading + CarHomeRot.Yaw, Roll * 0.6f));
 	if (PC) PC->SetControlRotation(FRotator(Rel.Pitch, Heading + Rel.Yaw, 0.f));
@@ -750,7 +753,7 @@ void AWCDirector::TickDrive(float Dt)
 
 
 			if (!bAirDip && AirS > 0.80f) { bAirDip = true; FadeTo(0.85f, 0.3f); }
-			if (!bAirSwapped && AirS > 0.88f) { AirIntoCar(); After(0.12f, [this]() { FadeTo(0.f, 0.7f); }); }
+			if (!bAirSwapped && AirS > 0.88f) AirIntoCar();
 			if (bAuto && !AutoShotDir.IsEmpty())
 			{
 				static int32 AirShotN = -1;
@@ -761,8 +764,10 @@ void AWCDirector::TickDrive(float Dt)
 			{
 				bAir = false;
 				AirIntoCar();
+				FadeTo(0.f, .55f);
+				DriveCam->SetActorLocationAndRotation(SeatPos, SeatRot);
 				DriveCam->GetCameraComponent()->SetFieldOfView(CabinFov);
-				UE_LOG(LogWCHouse, Display, TEXT("WCDRIVE t=%.1f the camera is in the car, %.0f m in"), PlaySeconds, DriveDist / 100.f);
+				UE_LOG(LogWCHouse, Display, TEXT("WCDRIVE t=%.1f camera handed off at %.0f m, relative yaw %.1f pitch %.1f"), PlaySeconds, DriveDist / 100.f, Rel.Yaw, Rel.Pitch);
 				if (FParse::Param(FCommandLine::Get(), TEXT("WCAirOnly")))
 				{
 					const FString Dir0 = AutoShotDir;
@@ -814,13 +819,13 @@ void AWCDirector::EndDrive()
 			if (PC) { PC->SetViewTargetWithBlend(P, 0.f); PC->SetControlRotation(FRotator(0.f, 8.f, 0.f)); }
 		}
 		if (DriveCam.IsValid()) DriveCam->Destroy();
-		SetLoop(TEXT("amb"), TEXT("amb_yard"), 1.f, 2.f);
+		RefreshRoomTone(EListeningSpace::Exterior);
 	});
 	After(5.2f, [this]()
 	{
 		FadeTo(0.f, 2.2f);
 		if (AWCCharacter* P = Player()) P->SetInputLocked(false);
-		ShowHint(TEXT("WASD move    Mouse look    F flashlight    E use / examine    Shift hurry    C crouch"), 10.f);
+		ShowHint(TEXT("WASD move    Mouse look    F flashlight    E use / examine    Space / Shift hurry    C crouch"), 10.f);
 		DriveDone();
 	});
 }
@@ -980,51 +985,6 @@ void AWCDirector::EndStalk(bool bDriven)
 }
 
 // ================================================================================================ per-frame
-FVector AWCDirector::BinFocusPoint() const
-{
-	if (const AActor* Body = Find(TEXT("BinBody")))
-	{
-		FVector Center, Extent;
-		Body->GetActorBounds(false, Center, Extent);
-		return Center;
-	}
-	return Pos(TEXT("TrashPoint")) + FVector(0, 0, -5);
-}
-
-void AWCDirector::TickBinTurn(float Dt)
-{
-	if (!IsBinTurnActive()) return;
-	AWCCharacter* Deputy = Player();
-	if (!Deputy || !Deputy->GetController()) { BinTurnAt = -1.; return; }
-	const double Age = Clock - BinTurnAt;
-	if (Age < 0.) return;
-	const FVector Target = BinFocusPoint();
-	const FVector From = Deputy->GetActorLocation();
-	if (bStepToShedDoor && Age > .12)
-	{
-		const FVector Exit = Pos(TEXT("A_Shed"));
-		// Ease across the threshold on a swept path. Align with the opening first
-		// when starting beside the door jamb, and keep the capsule on its floor.
-		const float Side = FMath::SmoothStep(.12f,.85f,float(Age));
-		const float Delay = FMath::Abs(BinStartPos.Y-Exit.Y) > 48.f ? .48f : .12f;
-		const float Step = FMath::SmoothStep(Delay,2.12f,float(Age));
-		Deputy->SetActorLocation(FVector(FMath::Lerp(BinStartPos.X,Exit.X,Step),
-			FMath::Lerp(BinStartPos.Y,Exit.Y,Side),From.Z),true);
-	}
-	const FRotator Want = (Target - Deputy->EyeLocation()).Rotation();
-	BinTargetYaw += FMath::FindDeltaAngleDegrees(BinTargetYaw, float(Want.Yaw));
-	const float Turn = FMath::SmoothStep(0.f, 1.95f, float(Age));
-	Deputy->GetController()->SetControlRotation(FRotator(FMath::Lerp(BinViewStart.Pitch,Want.Pitch,Turn),
-		FMath::Lerp(BinViewStart.Yaw,double(BinTargetYaw),double(Turn)),0.));
-	if (Age >= 2.44)
-	{
-		BinTurnAt = -1.;
-		UE_LOG(LogWCHouse, Display, TEXT("WCBIN camera finished alignment=%.3f sight=%d"),
-			FVector::DotProduct(Deputy->EyeForward(), (Target-Deputy->EyeLocation()).GetSafeNormal()),
-			PlayerSees(Target, .8f, 1800.f));
-	}
-}
-
 void AWCDirector::HouseTick(float Dt)
 {
 	{
@@ -1040,7 +1000,7 @@ void AWCDirector::HouseTick(float Dt)
 		if (!VideoDir.IsEmpty() && Mode == EWCMode::Playing && VideoFrame < 4500) FScreenshotRequest::RequestScreenshot(VideoDir / FString::Printf(TEXT("f_%05d.png"), VideoFrame++), false, false);
 	}
 	if (bDriving) { TickDrive(Dt); return; }
-	TickBinTurn(Dt);
+	TickShedPickup();
 	UpdateFurniture(Dt);
 	TickVentTool();
 	if (Clock < GrabHoldUntil && Her() && Her()->IsShown())

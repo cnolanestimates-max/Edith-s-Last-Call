@@ -20,6 +20,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Camera/PlayerCameraManager.h"
 #include "GameFramework/PlayerController.h"
+#include "GameFramework/PlayerInput.h"
 #include "HAL/FileManager.h"
 #include "HAL/IConsoleManager.h"
 #include "Kismet/GameplayStatics.h"
@@ -85,20 +86,26 @@ void AWCDirector::AutoBegin()
 		else if (FParse::Param(FCommandLine::Get(),TEXT("WCBathMirror")))
 		{
 			const bool bStudySkin = FParse::Param(FCommandLine::Get(),TEXT("WCMirrorSkinStudy"));
-			Do(TEXT("record_mix")); Do(TEXT("flag:inside")); Do(TEXT("at:2588,-146,92,-115,-3")); Wait(.5f);
+			Do(TEXT("record_mix")); Do(TEXT("flag:inside"));
+			if (FParse::Param(FCommandLine::Get(),TEXT("WCMouthRegression")))
+			{
+				Do(TEXT("flag:peek_done")); Do(TEXT("at:1150,0,92,0,0"));
+				Do(TEXT("trigger_photo_hall")); Wait(2.4f); Do(TEXT("check_hall_photo"));
+			}
+			Do(TEXT("at:2588,-146,92,-115,-3")); Wait(.5f);
 			Do(TEXT("check_glass_from_hall")); Shot(TEXT("00_mirror_from_hall"));
-			Do(TEXT("at:2564,-392,92,173,3")); Wait(2.f);
-			Shot(TEXT("01_mirror_from_sink")); Do(TEXT("at:2517,-382,92,172,-4")); Wait(1.6f);
+			Do(TEXT("at:2564,-392,92,173,3")); Wait(.10f);
+			Shot(TEXT("01_mirror_first_glance")); Do(TEXT("at:2517,-382,92,172,-4")); Wait(1.6f);
 			Shot(TEXT("02_edith_in_glass")); Do(TEXT("check_mirror_skin"));
 			if (FParse::Param(FCommandLine::Get(), TEXT("WCMouthRegression"))) { Wait(.73f); Shot(TEXT("02b_first_ripple")); }
 			if (bStudySkin) Wait(5.f);
 			Do(TEXT("at:2540,-371,92,14,-29")); Wait(.8f);
 			Flag(TEXT("bath_mirror_first_turn"),3.f); Do(TEXT("check_first_empty_chair")); Shot(TEXT("03_empty_bath"));
-			Do(TEXT("at:2517,-382,92,172,-4")); Wait(1.2f); Do(TEXT("check_second_reflection")); Shot(TEXT("03b_second_reflection"));
+			Do(TEXT("at:2517,-382,92,172,-4")); Wait(.10f); Do(TEXT("check_second_reflection")); Shot(TEXT("03b_second_reflection"));
 			Do(TEXT("check_mirror_skin"));
 			if (FParse::Param(FCommandLine::Get(), TEXT("WCMouthRegression"))) { Wait(.73f); Shot(TEXT("03b_ripple_later")); }
 			if (bStudySkin) Wait(5.f);
-			Do(TEXT("at:2540,-371,92,14,-29")); Flag(TEXT("bath_mirror_seen"),3.f); Shot(TEXT("03c_second_turn_note"));
+			Wait(.55f); Do(TEXT("at:2540,-371,92,14,-29")); Flag(TEXT("bath_mirror_seen"),3.f); Shot(TEXT("03c_second_turn_note"));
 			Do(TEXT("at:2517,-382,92,172,-4")); Wait(.7f); Shot(TEXT("04_same_mirror_empty"));
 			if (!bStudySkin)
 			{
@@ -107,8 +114,9 @@ void AWCDirector::AutoBegin()
 				Touch(TEXT("__close")); Do(TEXT("check_bath_note_reload"));
 				if (FParse::Param(FCommandLine::Get(),TEXT("WCChairListener"))) Do(TEXT("flag:bath_chair_done"));
 				Do(TEXT("face_bath_exit")); Wait(1.f); Do(TEXT("check_chair_still"));
-				Do(TEXT("walk_to_bath_threshold")); Wait(1.4f); Do(TEXT("check_chair_held")); Shot(TEXT("05b_chair_tipped_at_exit"));
-				Do(TEXT("look_back_at_chair")); Do(TEXT("back_out_of_bath")); Wait(1.f); Do(TEXT("check_chair_held"));
+				Do(TEXT("walk_to_bath_threshold")); Wait(1.20f); Do(TEXT("check_guided_chair_turn")); Shot(TEXT("05b_camera_turning"));
+				Wait(1.35f); Do(TEXT("check_chair_held")); Shot(TEXT("05c_camera_returned"));
+				Do(TEXT("back_out_of_bath")); Wait(1.f); Do(TEXT("check_chair_held"));
 				Shot(TEXT("05c_watching_tipped_chair")); Do(TEXT("walk_beside_chair"));
 				Shot(TEXT("06_chair_passing")); Do(TEXT("watch_baseboard_contact")); Shot(TEXT("07_wall_contact"));
 				Do(TEXT("watch_raised_wheel")); Shot(TEXT("08_sideways"));
@@ -124,11 +132,32 @@ void AWCDirector::AutoBegin()
 				Wait(3.f); Do(TEXT("check_closed_mouth"));
 			}
 		}
+		else if (FParse::Param(FCommandLine::Get(),TEXT("WCOpeningProof")))
+		{
+			Do(TEXT("record_mix"));
+			Do(TEXT("at:3815,-753,59,0,-27")); Wait(.3f);
+			Touch(TEXT("pick_tape1")); Wait(.47f); Shot(TEXT("01_reach"));
+			Wait(.69f); Do(TEXT("check_tape_impact")); Shot(TEXT("02_vhs_impact"));
+			Wait(1.88f); Shot(TEXT("03_shed_turn")); Wait(2.05f);
+			Do(TEXT("check_shed_turn")); Shot(TEXT("04_still_in_shed"));
+			Do(TEXT("at:802,25,92,0,0")); Do(TEXT("flag:inside")); Wait(1.2f);
+			Do(TEXT("check_quiet_entry"));
+			Do(TEXT("space_sprint_down")); Wait(.25f); Do(TEXT("check_hurry"));
+			Do(TEXT("space_sprint_up")); Wait(.25f); Do(TEXT("check_walk"));
+			Do(TEXT("at:1260,365,92,90,0")); Do(TEXT("open_test_doll")); Flag(TEXT("heard_upstairs"), 3.f); Wait(10.f);
+			Do(TEXT("at:893,75,442,86,-20")); Flag(TEXT("peek_started"),3.f);
+			Wait(.16f); Do(TEXT("check_peek_flicker"));
+			Touch(TEXT("sw_uphall")); Wait(.8f); Do(TEXT("check_peek_dark")); Shot(TEXT("05_dead_switch"));
+			Do(TEXT("at:649,75,442,87,-5")); Wait(1.3f); Do(TEXT("check_unnoticed_peek"));
+			LookHer(1.15f); Wait(.45f); Do(TEXT("check_noticed_peek")); Shot(TEXT("06_dim_doorway"));
+			Do(TEXT("walk_to_peek")); Flag(TEXT("peek_done"),3.f); Wait(.65f);
+			Do(TEXT("check_peek_clear")); Shot(TEXT("07_empty_doorway")); Do(TEXT("finish_mix")); Wait(.5f);
+		}
 		else if (FParse::Param(FCommandLine::Get(),TEXT("WCUpstairsProof")))
 		{
 			Do(TEXT("record_mix")); Do(TEXT("flag:inside"));
 			Do(TEXT("at:875,100,442,87,-22")); Do(TEXT("flag:heard_upstairs")); Flag(TEXT("peek_started"),3.f);
-			Touch(TEXT("sw_uphall")); Wait(.55f); Do(TEXT("check_peek_dark")); Shot(TEXT("01_dead_switch"));
+			Touch(TEXT("sw_uphall")); Wait(.85f); Do(TEXT("check_peek_dark")); Shot(TEXT("01_dead_switch"));
 			LookHer(1.15f); Wait(1.45f); Shot(TEXT("02_moonlit_doorway")); Do(TEXT("check_peek_dark"));
 			Do(TEXT("walk_to_peek")); Flag(TEXT("peek_done"),3.f); Wait(.65f);
 			Do(TEXT("check_peek_clear")); Shot(TEXT("03_empty_doorway")); Do(TEXT("finish_mix")); Wait(.5f);
@@ -317,7 +346,9 @@ void AWCDirector::AutoBegin()
 		UGameplayStatics::SetGlobalTimeDilation(this, 5.f);
 		auto Do = [this](const TCHAR* Cmd) { AutoSteps.Add({A_Do,Cmd,0.f}); };
 		Do(TEXT("at:-1430,220,52,0,0")); Wait(16.f); Do(TEXT("crow_briefed")); Wait(240.f);
-		Do(TEXT("crow_budget")); Do(TEXT("at:330,30,94,0,0")); Wait(3.f); Do(TEXT("crow_inside"));
+		Do(TEXT("crow_budget")); Do(TEXT("at:420,-990,52,0,0")); Wait(6.f);
+		Do(TEXT("at:1980,-940,52,0,0")); Wait(19.f); Do(TEXT("check_left_crows"));
+		Do(TEXT("at:330,30,94,0,0")); Wait(3.f); Do(TEXT("crow_inside"));
 		AutoIndex=0; AutoStepStart=Clock; return;
 	}
 	if (FParse::Param(FCommandLine::Get(), TEXT("WCRoomCheck")))
@@ -1053,16 +1084,30 @@ void AWCDirector::AutoTick(float Dt)
 			if (ChairBeat!=EBathChairBeat::Waiting || P->IsInputLocked() || !BathChair->GetActorTransform().Equals(BathChairHome))
 				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL chair moved when player only turned towards exit"));
 		}
+		else if (S.Arg == TEXT("trigger_photo_hall"))
+		{
+			CueFreeAt=0.;
+			CueCount.FindOrAdd(TEXT("enter:t_hall_mid"))=1;
+			CueEvent(TEXT("enter:t_hall_mid"));
+		}
+		else if (S.Arg == TEXT("check_hall_photo"))
+		{
+			if (!Has(TEXT("frame_fell")) || P->IsInputLocked() || HasActiveEncounter())
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL silent hallway photo state"));
+		}
 		else if (S.Arg==TEXT("check_glass_from_hall"))
 		{
-			if (!BathTarget || !BathCapture || !BathGlass.IsValid() || NextMirrorCapture<=0. || MirrorShownAt>=0.)
-				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL permanent mirror on approach"));
+			if (!BathTarget || !BathCapture || !BathGlass.IsValid() || NextMirrorCapture<=0. ||
+				!BathReflection || !BathReflection->IsShown() || !BathReflection->Body->bVisibleInSceneCaptureOnly)
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL reflection already seated on hall approach"));
 			AutoMirrorMaterial=BathGlass.IsValid() ? BathGlass->GetMaterial(1) : nullptr;
+			AutoSeatedReflection=BathReflection.Get();
 		}
 		else if (S.Arg==TEXT("check_mirror_skin"))
 		{
-			if (!Her() || Her()->IsMouthOpen() || !BathWrithingSkin || !BathOriginalSkin || Her()->Body->GetMaterial(0) != BathWrithingSkin ||
-				Her()->GetActorScale3D().Equals(MirrorUnscaledTransform.GetScale3D()))
+			if (!Her() || BathReflection.Get()!=AutoSeatedReflection.Get() || !BathReflection ||
+				BathReflection->IsMouthOpen() || !BathWrithingSkin || BathReflection->Body->GetMaterial(0) != BathWrithingSkin ||
+				BathReflection->GetActorScale3D().Equals(Her()->GetActorScale3D()) || Her()->Body->GetMaterial(0)==BathWrithingSkin)
 				{ UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL mirror scale, writhing skin or closed mouth")); }
 			else UE_LOG(LogWCAuto,Display,TEXT("WCAUTO mirror appearance %d: writhing skin active, mouth closed"), Has(TEXT("bath_mirror_first_turn")) ? 2 : 1);
 		}
@@ -1088,25 +1133,25 @@ void AWCDirector::AutoTick(float Dt)
 				WhisperAt = ScheduledHaunt;
 				CueFreeAt = FreeAt;
 			}
-			if (!Second && Her() && (Her()->Body->GetMaterial(0) == BathWrithingSkin ||
-				!Her()->GetActorScale3D().Equals(MirrorUnscaledTransform.GetScale3D())))
-				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL mirror skin or size persisted after turn"));
 			const auto* Note=Thing(TEXT("note_bath_mirror"));
 			if (!BathGlass.IsValid() || BathGlass->GetMaterial(1)!=AutoMirrorMaterial.Get() || !Has(TEXT("bath_mirror_first_turn")) ||
-				Has(TEXT("bath_mirror_seen")) || !Note || !Note->IsHidden() || (MirrorShownAt>=0.)!=Second ||
-				(Second && (!Her() || !Her()->IsShown())) || (!Second && Her() && Her()->IsShown()))
+				Has(TEXT("bath_mirror_seen")) || !Note || !Note->IsHidden() || !BathReflection ||
+				BathReflection.Get()!=AutoSeatedReflection.Get() || !BathReflection->IsShown() ||
+				!BathReflection->Body->bVisibleInSceneCaptureOnly || !BathChair->GetActorTransform().Equals(BathChairHome))
 				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL mirror stage %s"),*S.Arg.ToString());
 		}
-		else if (S.Arg==TEXT("look_back_at_chair"))
+		else if (S.Arg==TEXT("check_guided_chair_turn"))
 		{
-			AimAt(P,BathChair->GetActorLocation()+FVector(0,0,32),Dt,6.f);
-			if (In<1.) return;
+			if (ChairBeat!=EBathChairBeat::RoomLookBack || !P->IsInputLocked() ||
+				BathChair->GetActorRightVector().Z<.98 || FVector::Dist2D(P->GetActorLocation(),ChairTurnOrigin)>3.)
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL automatic wheelchair look-back"));
 		}
 		else if (S.Arg==TEXT("walk_to_bath_threshold") || S.Arg==TEXT("back_out_of_bath"))
 		{
 			const bool Backing=S.Arg==TEXT("back_out_of_bath");
 			const FVector Loc=P->GetActorLocation();
-			const double TargetY=Backing ? -133. : -247.;
+			const double TargetY=Backing ? -133. : -192.;
+			if (!Backing && IsBathChairTurning()) { Next(); return; }
 			if (Backing) AimAt(P,BathChair->GetActorLocation()+FVector(0,0,32),Dt,6.f);
 			if (Loc.Y<TargetY && In<6.)
 			{
@@ -1166,7 +1211,7 @@ void AWCDirector::AutoTick(float Dt)
 		else if (S.Arg == TEXT("check_bath_note_reload"))
 		{
 			AWCInteractable* Note=Thing(TEXT("note_bath_mirror"));
-			if (!DoLoad() || !Has(TEXT("bath_mirror_seen")) || !NotesRead.Contains(TEXT("note_bath_mirror")) || !Note || Note->CanInteract())
+			if (BathReflection || !DoLoad() || !Has(TEXT("bath_mirror_seen")) || !NotesRead.Contains(TEXT("note_bath_mirror")) || !Note || Note->CanInteract())
 				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL bath note did not survive reload"));
 		}
 		else if (S.Arg == TEXT("check_bath_continue"))
@@ -1250,6 +1295,52 @@ void AWCDirector::AutoTick(float Dt)
 			if (!Circuit || Circuit->bOn != (S.Arg == TEXT("check_pendant_on")))
 				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL pendant switch %s"),*S.Arg.ToString());
 		}
+		else if (S.Arg == TEXT("check_tape_impact"))
+		{
+			if (!IsShedPickupActive() || !bShedImpactPlayed || !ShedGlove.IsValid() ||
+				!ShedGlove->IsVisible() || !ShedTape.IsValid() || ShedTape->IsHidden() ||
+				!P->IsInputLocked() || HasItem(TEXT("tape1")))
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL impact did not hit while tape was held"));
+		}
+		else if (S.Arg == TEXT("check_unnoticed_peek") || S.Arg == TEXT("check_noticed_peek"))
+		{
+			const bool Noticed = S.Arg == TEXT("check_noticed_peek");
+			if ((PeekSeenAt >= 0.) != Noticed || !Her() || !Her()->IsShown() ||
+				Has(TEXT("peek_leaving")) || P->IsFlashlightOn())
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL reveal hold at noticed=%d"), Noticed);
+		}
+		else if (S.Arg == TEXT("check_shed_turn"))
+		{
+			if (IsShedPickupActive() || !HasItem(TEXT("tape1")) || !Has(TEXT("tape1_taken")) ||
+				P->IsInputLocked() || FVector::Dist2D(P->GetActorLocation(), ShedOrigin) > 2. ||
+				FMath::Abs(P->GetControlRotation().GetNormalized().Pitch) > 1.)
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL shed release, position or pitch"));
+		}
+		else if (S.Arg == TEXT("check_quiet_entry"))
+		{
+			if (Has(TEXT("heard_upstairs")) || !Has(TEXT("locked_in")))
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL foyer progression before doll"));
+		}
+		else if (S.Arg == TEXT("space_sprint_down") || S.Arg == TEXT("space_sprint_up"))
+		{
+			if (auto* PC = Cast<APlayerController>(P->GetController()))
+			{
+				const bool Press = S.Arg == TEXT("space_sprint_down");
+				PC->InputKey(FInputKeyParams(EKeys::SpaceBar, Press ? IE_Pressed : IE_Released, Press ? 1. : 0., false));
+			}
+		}
+		else if (S.Arg == TEXT("check_hurry") || S.Arg == TEXT("check_walk"))
+		{
+			const bool Hurry = S.Arg == TEXT("check_hurry");
+			const float Speed = P->GetCharacterMovement()->MaxWalkSpeed;
+			UE_LOG(LogWCAuto,Display,TEXT("WCWALK speed=%.1f hurry=%d"), Speed, Hurry);
+			if (!FMath::IsNearlyEqual(Speed,P->WalkSpeed*(Hurry ? 1.30f : 1.f),.1f))
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL Space sprint binding or release"));
+		}
+		else if (S.Arg == TEXT("check_peek_flicker"))
+		{
+			if (!P->IsFlashlightOn()) UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL upstairs beam cut before flicker"));
+		}
 		else if (S.Arg == TEXT("check_peek_dark"))
 		{
 			P->ToggleFlashlight();
@@ -1264,7 +1355,11 @@ void AWCDirector::AutoTick(float Dt)
 				P->AddMovementInput((Goal - P->GetActorLocation()).GetSafeNormal2D(), .78f);
 				return;
 			}
-			UE_LOG(LogWCAuto,Display,TEXT("WCPEEK approach ended distance=%.0f torch=%d position=%s"),FVector::Dist2D(P->GetActorLocation(),Pos(TEXT("Her_Peek"))),P->IsFlashlightOn(),*P->GetActorLocation().ToCompactString());
+			const double Distance = FVector::Dist2D(P->GetActorLocation(), Pos(TEXT("Her_Peek")));
+			UE_LOG(LogWCAuto,Display,TEXT("WCPEEK approach ended distance=%.0f torch=%d position=%s"),Distance,P->IsFlashlightOn(),*P->GetActorLocation().ToCompactString());
+			const double Advance = FVector::DotProduct(P->GetActorLocation() - PeekSeenFrom, (Pos(TEXT("Her_Peek")) - PeekSeenFrom).GetSafeNormal2D());
+			if (FParse::Param(FCommandLine::Get(), TEXT("WCOpeningProof")) && (Advance < 180. || Advance > 205. || !Has(TEXT("peek_leaving"))))
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL Edith did not retreat three steps from the switch"));
 		}
 		else if (S.Arg == TEXT("check_peek_clear"))
 		{
@@ -1456,13 +1551,24 @@ void AWCDirector::AutoTick(float Dt)
 		}
 		else if (S.Arg == TEXT("finish_mix")) UAudioMixerBlueprintLibrary::StopRecordingOutputToAnyPath(this, EAudioRecordingExportType::WavFile, TEXT("arrival_mix"), AutoShotDir);
 		else if (S.Arg == TEXT("lit_review")) { SwitchRoom(TEXT("den"),true,false); SwitchRoom(TEXT("master"),true,false); }
-		else if (S.Arg == TEXT("replay_bin")) { Flags.Remove(TEXT("tape1_taken")); Event(TEXT("take:tape1")); }
+		else if (S.Arg == TEXT("replay_bin") || S.Arg == TEXT("take_tape"))
+		{
+			if (S.Arg == TEXT("replay_bin"))
+			{
+				Flags.Remove(TEXT("tape1_taken"));
+				ApplyWorldState();
+			}
+			if (AWCPickup* Tape = Cast<AWCPickup>(Thing(TEXT("pick_tape1"))))
+			{
+				Tape->SetActorHiddenInGame(false);
+				StartShedPickup(Tape);
+			}
+		}
 		else if (S.Arg == TEXT("check_harrow_loot"))
 		{
 			for (FName Id : {FName(TEXT("key_sitting")),FName(TEXT("key_prayer")),FName(TEXT("key_desk")),FName(TEXT("key_ell"))})
 				if (!HasItem(Id)) UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL missing earned item %s"),*Id.ToString());
 		}
-		else if (S.Arg == TEXT("take_tape")) Event(TEXT("take:tape1"));
 		else if (S.Arg == TEXT("mix_check"))
 		{
 			int32 Active = 0;
@@ -1499,6 +1605,11 @@ void AWCDirector::AutoTick(float Dt)
 		else if (S.Arg == TEXT("crow_budget"))
 		{
 			UE_LOG(LogWCAuto, Display, TEXT("WCCROW finished remaining=%d"),YardCawsLeft);
+		}
+		else if (S.Arg == TEXT("check_left_crows"))
+		{
+			if (!Has(TEXT("heard_left_crow_first")) || !Has(TEXT("heard_left_crow_second")))
+				UE_LOG(LogWCAuto,Error,TEXT("WCAUTO FAIL two local crow calls on the left path"));
 		}
 		else if (S.Arg == TEXT("crow_inside"))
 		{
@@ -1563,7 +1674,7 @@ void AWCDirector::AutoTick(float Dt)
 				}
 			}
 		}
-		else if (S.Arg == TEXT("inspectdoll")) Event(TEXT("inspect:doll"));
+		else if (S.Arg == TEXT("inspectdoll") || S.Arg == TEXT("open_test_doll")) { if (S.Arg == TEXT("open_test_doll")) Items.Add(TEXT("doll")); Event(TEXT("inspect:doll")); }
 		else if (S.Arg.ToString().StartsWith(TEXT("flag:"))) { Set(FName(*S.Arg.ToString().Mid(5))); ApplyWorldState(); }
 		else if (S.Arg == TEXT("book")) { bBusy = false; ScareBook(); }
 		else if (S.Arg.ToString().StartsWith(TEXT("mood:")))

@@ -139,7 +139,6 @@ private:
 	bool bInputLocked = false;
 	bool bGunAllowed = true;
 	float LightScale = 1.f;
-	float BinBeam = 0.f;
 	float FlickerUntil = -1.f;
 	float FlickerDepth = 0.85f;
 	float Clock = 0.f;

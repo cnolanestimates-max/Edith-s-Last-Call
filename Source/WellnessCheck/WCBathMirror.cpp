@@ -8,6 +8,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/TextureRenderTarget2D.h"
+#include "Kismet/GameplayStatics.h"
 #include "Materials/MaterialInterface.h"
 
 namespace
@@ -29,48 +30,66 @@ void AWCDirector::RefreshBathLetter()
 	}
 }
 
-void AWCDirector::FinishBathMirror(bool bWitnessed)
+void AWCDirector::SeatBathReflection()
 {
-	if (MirrorShownAt < 0.) return;
-	if (AWCEntity* H = Her())
+	AWCEntity* Edith = Her();
+	if (!Edith || !Edith->Body->GetSkeletalMeshAsset() || Has(TEXT("bath_mirror_seen"))) return;
+	const FVector ChairSeat = BathChairHome.GetLocation();
+	const FTransform Pose(FRotator(0.,183.,0.), ChairSeat, Edith->GetActorScale3D());
+	BathReflection = GetWorld()->SpawnActorDeferred<AWCEntity>(AWCEntity::StaticClass(), Pose, this, nullptr,
+		ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+	if (!BathReflection) return;
+	BathReflection->Anims = Edith->Anims;
+	BathReflection->EyeRef = Edith->EyeRef;
+	BathReflection->EyeRadius = Edith->EyeRadius;
+	BathReflection->HeadBone = Edith->HeadBone;
+	BathReflection->Body->SetSkeletalMeshAsset(Edith->Body->GetSkeletalMeshAsset());
+	BathReflection->Body->SetRelativeTransform(Edith->Body->GetRelativeTransform());
+	UGameplayStatics::FinishSpawningActor(BathReflection, Pose);
+	BathReflection->SetActorEnableCollision(false);
+	TInlineComponentArray<UPrimitiveComponent*> Parts(BathReflection);
+	for (UPrimitiveComponent* Part : Parts)
 	{
-		H->Vanish();
-		H->SetActorTransform(MirrorUnscaledTransform);
-		if (BathWrithingSkin)
-		{
-			H->Body->SetMaterial(0, BathOriginalSkin);
-			BathOriginalSkin = nullptr;
-		}
-		TInlineComponentArray<UPrimitiveComponent*> Parts(H);
-		for (UPrimitiveComponent* Part : Parts)
-		{
-			if (const FLightingChannels* Saved = MirrorMeshChannels.Find(Part))
-				Part->SetLightingChannels(Saved->bChannel0,Saved->bChannel1,Saved->bChannel2);
-			Part->bVisibleInSceneCaptureOnly = false;
-			Part->MarkRenderStateDirty();
-		}
-		MirrorMeshChannels.Reset();
+		Part->SetLightingChannels(false,false,true);
+		Part->SetVisibleInSceneCaptureOnly(true);
+		Part->SetCastShadow(false);
 	}
-	if (BathRim) BathRim->SetIntensity(1900.f);
-	if (BathEyeFill) BathEyeFill->SetVisibility(false);
-	if (BathTorsoFill) BathTorsoFill->SetVisibility(false);
-	MirrorShownAt = -1.;
-	MirrorDwell = 0.f;
+	BathReflection->Appear(ChairSeat, 183.f, TEXT("Wheelchair"));
+	if (BathWrithingSkin) BathReflection->Body->SetMaterial(0, BathWrithingSkin);
+
+	// Scale around the pelvis so the larger pose stays on the real cushion.
+	const FVector Hips = BathReflection->BoneWorld(TEXT("Hips"));
+	const FVector EyeShift = (BathReflection->EyeLocation()-Hips)*(SeatedScale-1.);
+	BathReflection->SetActorScale3D(Pose.GetScale3D()*SeatedScale);
+	BathReflection->SetActorLocation(Hips+(ChairSeat-Hips)*SeatedScale);
+	BathEyeFill->SetWorldLocation(ApprovedEyeLight+EyeShift);
+	BathEyeFill->SetVisibility(true);
+	const FVector FillSource = Hips + BathReflection->GetActorForwardVector()*62. -
+		BathReflection->GetActorRightVector()*20. + FVector(0,0,77.);
+	const FVector FillTarget = Hips + BathReflection->GetActorForwardVector()*10. + FVector(0,0,53.);
+	BathTorsoFill->SetWorldLocationAndRotation(FillSource,(FillTarget-FillSource).Rotation());
+	BathTorsoFill->SetVisibility(true);
+	BathRim->SetLightingChannels(true,true,true);
+	BathRim->SetIntensity(145.f);
+	BathReflection->SetFarGlow(0.f);
+	BathReflection->SetGlow(0.f);
+	BathReflection->SetEyeShine(.021f);
+	BathReflection->SetMood(TEXT("watch"));
+	UE_LOG(LogTemp,Display,TEXT("WCMIRROR seated reflection prepared before first capture"));
+}
+
+void AWCDirector::ClearBathReflection()
+{
+	if (!BathReflection) return;
+	BathReflection->Destroy();
+	BathReflection = nullptr;
+	BathEyeFill->SetVisibility(false);
+	BathTorsoFill->SetVisibility(false);
+	BathRim->SetLightingChannels(true,true,false);
+	BathRim->SetIntensity(1900.f);
+	BathTarget->ResizeTarget(BathBaseResolution.X,BathBaseResolution.Y);
 	MirrorWitnessSeconds = 0.f;
 	NextMirrorCapture = 0.;
-	bEventBusy = false;
-	if (bWitnessed && !Has(TEXT("bath_mirror_first_turn")))
-	{
-		RememberAtCheckpoint(TEXT("bath_mirror_first_turn"));
-		UE_LOG(LogTemp,Display,TEXT("WCMIRROR first turn: empty chair"));
-	}
-	else if (bWitnessed)
-	{
-		RememberAtCheckpoint(TEXT("bath_mirror_seen"));
-		RefreshBathLetter();
-		Rest(5.f);
-		UE_LOG(LogTemp, Display, TEXT("WCMIRROR chair empty, letter available"));
-	}
 }
 
 void AWCDirector::InitializeBathMirror()
@@ -151,6 +170,8 @@ void AWCDirector::InitializeBathMirror()
 	BathTorsoFill->SetCastShadows(false);
 	BathTorsoFill->SetVisibility(false);
 	BathTorsoFill->RegisterComponent();
+	SeatBathReflection();
+	if (BathReflection) BathTarget->ResizeTarget(BathBaseResolution.X*2,BathBaseResolution.Y*2);
 	CaptureBathMirror(FVector(2588.,-170.,155.));
 }
 
@@ -162,6 +183,7 @@ void AWCDirector::CaptureBathMirror(const FVector& Eye)
 	BathCapture->SetWorldLocationAndRotation(FVector(GlassCentre.X-Depth,Eye.Y,Eye.Z), FRotator::ZeroRotator);
 	BathCapture->CustomProjectionMatrix = FMatrix(FPlane(Depth/HalfWidth,0,0,0),FPlane(0,Depth/HalfHeight,0,0),
 		FPlane((Eye.Y-GlassCentre.Y)/HalfWidth,(Eye.Z-GlassCentre.Z)/HalfHeight,0,1),FPlane(0,0,Depth+.4,0));
+	if (BathReflection) BathReflection->LookAtReflection(FVector(GlassCentre.X-Depth,Eye.Y,Eye.Z));
 	BathCapture->CaptureScene();
 }
 
@@ -173,116 +195,68 @@ bool AWCDirector::IsInMirrorBathroom(const FVector& Eye)
 void AWCDirector::TickBathMirror(float Dt)
 {
 	AWCCharacter* P = Player();
-	if (!P) return;
+	if (!P || !BathChair.IsValid() || !BathCapture) return;
 	const FVector Eye = P->EyeLocation();
+	const FVector Gaze = P->EyeForward();
+	const FVector CentreRay = (GlassCentre-Eye).GetSafeNormal();
 	const bool bRoom = IsInMirrorBathroom(Eye);
-	if (!BathChair.IsValid() || !BathCapture) return;
-	// The face occupies a small part of the glass. Resolve its moving relief at
-	// the sink, then return to the ordinary reflection budget when the encounter ends.
-	const FIntPoint Resolution = (bRoom && !Has(TEXT("bath_mirror_seen"))) ? BathBaseResolution * 2 : BathBaseResolution;
-	if (BathTarget->SizeX != Resolution.X || BathTarget->SizeY != Resolution.Y)
+	const bool bFacing = FVector::DotProduct(Gaze,CentreRay) > .10;
+	const double Depth = Eye.X-GlassCentre.X;
+	if (BathReflection && Has(TEXT("bath_mirror_seen"))) ClearBathReflection();
+	if (!bRoom) MirrorWitnessSeconds = 0.f;
+
+	if (bRoom && BathReflection && !P->IsDown() && !P->IsInputLocked() && !ActiveNote.IsValid())
 	{
-		BathTarget->ResizeTarget(Resolution.X,Resolution.Y);
-		CaptureBathMirror(Eye);
-		NextMirrorCapture = Clock + 1./16.;
-	}
-	const FVector Gaze=P->EyeForward();
-	if (!bRoom)
-	{
-		FinishBathMirror(false);
-		MirrorDwell=0.f;
-		// Keep the reflection live on the hallway approach without drawing the bathroom across the house.
-		if (Clock>=NextMirrorCapture && Eye.Z>30. && Eye.Z<285. && Eye.X>GlassCentre.X+2. &&
-			FVector::DistSquared(Eye,GlassCentre)<FMath::Square(730.) &&
-			FVector::DotProduct(Gaze,(GlassCentre-Eye).GetSafeNormal())>-.1)
+		// Read the two looks while the figure stays seated even when the glass is off screen.
+		const FVector Head = BathReflection->EyeLocation();
+		const FVector VirtualHead(2.*GlassCentre.X-Head.X,Head.Y,Head.Z);
+		const FVector Sight = (VirtualHead-Eye).GetSafeNormal();
+		const FVector OnGlass = Eye + Sight * (-Depth/Sight.X);
+		const bool bInPane = FMath::Square((OnGlass.Y-GlassCentre.Y)/101.) +
+			FMath::Square((OnGlass.Z-178.)/70.) < 1.;
+		bool bLookingAtHer = bInPane && FVector::DotProduct(Sight,Gaze) > .86;
+		if (bLookingAtHer)
 		{
-			CaptureBathMirror(Eye);
-			NextMirrorCapture=Clock+1./16.;
-		}
-		return;
-	}
-	const FVector ChairSeat = BathChairHome.GetLocation();
-	const double Depth = Eye.X - GlassCentre.X;
-	const FVector CentreRay = (GlassCentre - Eye).GetSafeNormal();
-	// Her reflected head is behind the glass at the same depth as the real tub.
-	constexpr double HeadHeight = 59. + (171.-59.) * SeatedScale;
-	const FVector VirtualHead(2.*GlassCentre.X-ChairSeat.X, ChairSeat.Y, ChairSeat.Z + HeadHeight);
-	const FVector Sight = (VirtualHead - Eye).GetSafeNormal();
-	const FVector OnGlass = Eye + Sight * (-Depth / Sight.X);
-	// The reflective oval sits inside the wider rectangle occupied by the gilt frame.
-	const bool bInPane = FMath::Square((OnGlass.Y-GlassCentre.Y)/101.) + FMath::Square((OnGlass.Z-178.)/70.) < 1.;
-	const bool bFacing = FVector::DotProduct(Gaze, CentreRay) > .10;
-	bool bLookingAtHer = bInPane && FVector::DotProduct(Sight,Gaze) > .86;
-	if (bLookingAtHer && !Has(TEXT("bath_mirror_seen")))
-	{
-		FHitResult Hit;
-		FCollisionQueryParams Query(SCENE_QUERY_STAT(BathMirrorSight),false,P);
-		if (GetWorld()->LineTraceSingleByChannel(Hit,Eye,OnGlass+FVector(5.,0.,0.),ECC_Visibility,Query))
-		{
-			const AWCInteractable* Inspect=Cast<AWCInteractable>(Hit.GetActor());
-			bLookingAtHer = (Inspect && Inspect->WCId==TEXT("look_bathg_mirror")) ||
-				(Hit.GetActor() && Hit.GetActor()->ActorHasTag(TEXT("BathMirror")));
-		}
-	}
-	if (MirrorShownAt>=0. && bLookingAtHer) MirrorWitnessSeconds+=Dt;
-	const FVector SeatDirection=(ChairSeat+FVector(0,0,65)-Eye).GetSafeNormal();
-	const bool bTurnedToChair=!bFacing && FVector::DotProduct(Gaze,SeatDirection)>.63;
-	if (MirrorShownAt>=0. && (bTurnedToChair || bBusy || P->IsDown()))
-		FinishBathMirror(bTurnedToChair && !bBusy && !P->IsDown() && MirrorWitnessSeconds>=.4f);
-	if (!bFacing) { MirrorDwell=0.f; return; }
-	if (!Has(TEXT("bath_mirror_seen")) && MirrorShownAt < 0. && !HasActiveEncounter() &&
-		!P->IsDown() && !P->IsInputLocked() && !ActiveNote.IsValid() && Her() && !Her()->IsShown() && bLookingAtHer)
-	{
-		MirrorDwell += Dt;
-		if (MirrorDwell >= .22f)
-		{
-			AWCEntity* H = Her();
-			TInlineComponentArray<UPrimitiveComponent*> Parts(H);
-			for (UPrimitiveComponent* Part : Parts)
+			FHitResult Hit;
+			FCollisionQueryParams Query(SCENE_QUERY_STAT(BathMirrorSight),false,P);
+			if (GetWorld()->LineTraceSingleByChannel(Hit,Eye,OnGlass+FVector(5.,0.,0.),ECC_Visibility,Query))
 			{
-				MirrorMeshChannels.Add(Part,Part->LightingChannels);
-				Part->SetLightingChannels(false,false,true);
-				Part->bVisibleInSceneCaptureOnly = true;
-				Part->MarkRenderStateDirty();
+				const AWCInteractable* Inspect = Cast<AWCInteractable>(Hit.GetActor());
+				bLookingAtHer = (Inspect && Inspect->WCId==TEXT("look_bathg_mirror")) ||
+					(Hit.GetActor() && Hit.GetActor()->ActorHasTag(TEXT("BathMirror")));
 			}
-			H->Appear(ChairSeat, 183.f, TEXT("Wheelchair"));
-			if (BathWrithingSkin)
-			{
-				BathOriginalSkin = H->Body->GetMaterial(0);
-				H->Body->SetMaterial(0, BathWrithingSkin);
-			}
-			// Enlarge her around the seated hips so the pelvis stays on the cushion.
-			MirrorUnscaledTransform = H->GetActorTransform();
-			const FVector Hips = H->BoneWorld(TEXT("Hips"));
-			const FVector EyeShift = (H->EyeLocation() - Hips) * (SeatedScale - 1.);
-			H->SetActorScale3D(MirrorUnscaledTransform.GetScale3D() * SeatedScale);
-			H->SetActorLocation(Hips + (ChairSeat - Hips) * SeatedScale);
-			BathEyeFill->SetWorldLocation(ApprovedEyeLight + EyeShift);
-			BathEyeFill->SetVisibility(true);
-			const FVector FillSource = Hips + H->GetActorForwardVector()*62. -
-				H->GetActorRightVector()*20. + FVector(0,0,77.);
-			const FVector FillTarget = Hips + H->GetActorForwardVector()*10. + FVector(0,0,53.);
-			BathTorsoFill->SetWorldLocationAndRotation(FillSource,(FillTarget-FillSource).Rotation());
-			BathTorsoFill->SetVisibility(true);
-			BathRim->SetLightingChannels(true,true,true);
-			BathRim->SetIntensity(Has(TEXT("bath_mirror_first_turn")) ? 175.f : 145.f);
-			H->SetFarGlow(0.f);
-			H->SetGlow(0.f);
-			H->SetEyeShine(.021f);
-			H->SetMood(TEXT("watch"));
+		}
+		if (bLookingAtHer)
+		{
+			MirrorWitnessSeconds += Dt;
 			if (!Has(TEXT("bath_mirror_first_turn")) && !Has(TEXT("bath_mirror_snicker")) &&
-				PlayAt(TEXT("VO/edith_snicker_01"), H->HeadLocation(), .34f))
+				PlayAt(TEXT("VO/edith_snicker_01"), BathReflection->HeadLocation(), .34f))
 				RememberAtCheckpoint(TEXT("bath_mirror_snicker"));
-			MirrorShownAt = Clock;
-			NextMirrorCapture = 0.;
-			bEventBusy = true;
-			UE_LOG(LogTemp, Display, TEXT("WCMIRROR reflection seated, appearance %d"),Has(TEXT("bath_mirror_first_turn")) ? 2 : 1);
+		}
+		const FVector SeatDirection = (BathChairHome.GetLocation()+FVector(0,0,65)-Eye).GetSafeNormal();
+		if (MirrorWitnessSeconds>=.25f && !bFacing && FVector::DotProduct(Gaze,SeatDirection)>.63)
+		{
+			MirrorWitnessSeconds = 0.f;
+			if (!Has(TEXT("bath_mirror_first_turn")))
+			{
+				RememberAtCheckpoint(TEXT("bath_mirror_first_turn"));
+				UE_LOG(LogTemp,Display,TEXT("WCMIRROR first turn: empty physical chair, reflection stays seated"));
+			}
+			else
+			{
+				RememberAtCheckpoint(TEXT("bath_mirror_seen"));
+				ClearBathReflection();
+				RefreshBathLetter();
+				Rest(5.f);
+				CaptureBathMirror(Eye);
+				UE_LOG(LogTemp,Display,TEXT("WCMIRROR second turn: reflection cleared, letter available"));
+			}
 		}
 	}
-	else MirrorDwell = 0.f;
-	if (MirrorShownAt>=0. && Her())
-		Her()->LookAtReflection(FVector(GlassCentre.X-Depth,Eye.Y,Eye.Z));
-	if (Clock < NextMirrorCapture) return;
-	NextMirrorCapture = Clock + 1./16.;
+	// Keep the glass current as it comes into view through the open doorway.
+	const bool bApproach = Depth > 2. && Eye.Z>30. && Eye.Z<285. &&
+		FVector::DistSquared(Eye,GlassCentre)<FMath::Square(660.);
+	if (!bApproach || Clock < NextMirrorCapture || FVector::DotProduct(Gaze,CentreRay)<-.25) return;
+	NextMirrorCapture = Clock + (BathReflection ? 1./20. : 1./16.);
 	CaptureBathMirror(Eye);
 }

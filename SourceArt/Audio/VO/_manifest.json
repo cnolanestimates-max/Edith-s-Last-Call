@@ -156,9 +156,9 @@
  {
   "id": "d_thump",
   "who": "deputy",
-  "text": "Mrs. Harrow? ...I'm coming upstairs. Stay where you are.",
+  "text": "What was that? ...Sounded like it came from upstairs.",
   "fx": "dry",
-  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. Startled, calling up a staircase, trying to sound steady."
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. Startled at a noise above him, muttering to himself. A quick quiet question, then a short pause as he listens, then a low uncertain observation. Do not call out."
  },
  {
   "id": "m_whisper1",

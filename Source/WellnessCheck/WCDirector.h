@@ -13,6 +13,7 @@ class AWCEntity;
 class AWCNote;
 class AWCDoor;
 class AWCInteractable;
+class AWCPickup;
 class AWCTrigger;
 class USoundBase;
 class UAudioComponent;
@@ -201,10 +202,10 @@ public:
 	bool IsInsideHouse(const FVector& At) const { return SpaceAt(At) != EListeningSpace::Exterior; }
 	bool HasActiveEncounter() const { return bBusy || bEventBusy || StalkState != 0; }
 	bool IsPeekFlashOut() const { return Has(TEXT("peek_started")) && !Has(TEXT("peek_done")); }
-	FVector BinFocusPoint() const;
-	bool IsBinTurnActive() const { return BinTurnAt >= 0.; }
-	bool IsTurningToBin() const { return IsBinTurnActive() && Clock >= BinTurnAt; }
+	bool IsShedPickupActive() const { return ShedPickupAt >= 0.; }
+	void StartShedPickup(AWCPickup* Tape);
 	bool IsLookingAtPendant() const { return bPendantGuiding; }
+	bool IsBathChairTurning() const { return ChairBeat==EBathChairBeat::RoomTipping || ChairBeat==EBathChairBeat::RoomLookBack; }
 	bool DeferSittingRoomUnlock();
 	static FLinearColor EdithMoonlight() { return FLinearColor(.33f,.54f,1.f); }
 	bool IsDriving() const { return bDriving; }
@@ -233,6 +234,7 @@ private:
 	TWeakObjectPtr<class UPointLightComponent> FridgeBulb;
 	double PhoneRingAgainAt = 0.;
 	double PeekSeenAt = -1.;
+	FVector PeekSeenFrom = FVector::ZeroVector;
 	UPROPERTY(Transient) TObjectPtr<class USpotLightComponent> PeekMoonKey;
 	void BeginEnding();
 	// scares
@@ -264,12 +266,17 @@ private:
 	/** She has him: she screams in his face for Hold seconds (the view is pulled to her), then Then() runs. */
 	void Grab(float Hold, TFunction<void()> Then);
 	double GrabHoldUntil = 0.0;
-	double BinTurnAt = -1.;
-	bool bStepToShedDoor = false;
-	FRotator BinViewStart;
-	FVector BinStartPos;
-	float BinTargetYaw = 0.f;
-	void TickBinTurn(float Dt);
+	double ShedPickupAt = -1.;
+	bool bShedImpactPlayed = false;
+	TWeakObjectPtr<AWCPickup> ShedTape;
+	TWeakObjectPtr<UStaticMeshComponent> ShedGlove;
+	TWeakObjectPtr<UPointLightComponent> ShedFill;
+	FTransform ShedTapeHome;
+	FVector ShedOrigin, ShedEye;
+	FRotator ShedInitialView;
+	double ShedReachYaw = 0., ShedTurnDelta = 0.;
+	void TickShedPickup();
+	void FinishShedPickup();
 	void SetReturnBlackout(bool bActive);
 	TWeakObjectPtr<class UStaticMeshComponent> VentTool;
 	double VentToolAt = 0.;
@@ -330,7 +337,8 @@ private:
 	static bool IsInMirrorBathroom(const FVector& Eye);
 	void CaptureBathMirror(const FVector& Eye);
 	void TickBathMirror(float Dt);
-	void FinishBathMirror(bool bWitnessed);
+	void SeatBathReflection();
+	void ClearBathReflection();
 	void RefreshBathLetter();
 	TWeakObjectPtr<class UStaticMeshComponent> BathGlass;
 	UPROPERTY(Transient) TObjectPtr<class UTextureRenderTarget2D> BathTarget;
@@ -341,12 +349,9 @@ private:
 	UPROPERTY(Transient) TObjectPtr<class UPointLightComponent> BathEyeFill;
 	UPROPERTY(Transient) TObjectPtr<class USpotLightComponent> BathTorsoFill;
 	UPROPERTY(Transient) TObjectPtr<class UMaterialInterface> BathWrithingSkin;
-	UPROPERTY(Transient) TObjectPtr<class UMaterialInterface> BathOriginalSkin;
-	float MirrorDwell = 0.f;
+	UPROPERTY(Transient) TObjectPtr<AWCEntity> BathReflection;
 	float MirrorWitnessSeconds = 0.f;
-	TMap<TWeakObjectPtr<UPrimitiveComponent>, FLightingChannels> MirrorMeshChannels;
-	FTransform MirrorUnscaledTransform;
-	double MirrorShownAt = -1., NextMirrorCapture = 0.;
+	double NextMirrorCapture = 0.;
 	void TickBathChair(float Dt);
 	bool PrepareRollingChair();
 	void PoseFallenChair(const FTransform& Upright, float Degrees);
@@ -355,9 +360,11 @@ private:
 	FVector RollingChairPathPoint(float Distance) const;
 	TWeakObjectPtr<AActor> BathChair;
 	FTransform BathChairHome;
-	enum class EBathChairBeat : uint8 { Waiting, RoomTipping, WaitingForLookAway, Rolling, Tipping, Coasting, Finished };
+	enum class EBathChairBeat : uint8 { Waiting, RoomTipping, RoomLookBack, WaitingForLookAway, Rolling, Tipping, Coasting, Finished };
 	EBathChairBeat ChairBeat = EBathChairBeat::Waiting;
 	double ChairBeatAt = 0.;
+	FRotator ChairViewStart;
+	FVector ChairTurnOrigin = FVector::ZeroVector;
 	FTransform ChairWallPose;
 	TWeakObjectPtr<class UStaticMeshComponent> ChairWheels[4];
 	UPROPERTY(Transient) TObjectPtr<class USplineComponent> ChairRail;
@@ -388,6 +395,8 @@ private:
 	void TickYardCrows();
 	int32 YardCawsLeft = -1;
 	double NextYardCaw = -1.;
+	double LastYardCaw = -30.;
+	bool bWasAlongLeftYard = false;
 	TWeakObjectPtr<UAudioComponent> YardCrowVoice;
 	double NextHallTick = -1.;
 	int32 ExtraHallTicks = 0;
@@ -514,6 +523,7 @@ private:
 	UPROPERTY(Transient) TObjectPtr<USoundAttenuation> StairRunAtten;
 	UPROPERTY(Transient) TObjectPtr<USoundAttenuation> FlyAtten;
 	UPROPERTY(Transient) TObjectPtr<USoundAttenuation> CrowAtten;
+	UPROPERTY(Transient) TObjectPtr<USoundAttenuation> ChairImpactAtten;
 	TWeakObjectPtr<AWCEntity> HerActor;
 	TArray<TWeakObjectPtr<AWCTrigger>> Triggers;
 	TMap<FName, TWeakObjectPtr<AActor>> TagCache;
@@ -546,6 +556,7 @@ private:
 	FVector AutoStuckLoc = FVector::ZeroVector;
 	FTransform AutoFallenChairPose;
 	TWeakObjectPtr<class UMaterialInterface> AutoMirrorMaterial;
+	TWeakObjectPtr<AWCEntity> AutoSeatedReflection;
 	bool bAutoChairBeside = false;
 	FVector2D AutoRestWheelAngles = FVector2D::ZeroVector;
 	TArray<FVector> AutoPath;

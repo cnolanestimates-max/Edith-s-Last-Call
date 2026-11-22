@@ -200,7 +200,7 @@ void AWCHUD::DrawHUD()
 	{
 		AWCCharacter* Pl = D->Player();
 		if (Screen == EWCScreen::Inventory) CloseInventory(D);
-		else if (Screen == EWCScreen::None && !D->ActiveNote.IsValid() && D->Fade < 0.5f && !D->bBusy && !D->IsDriving() && !D->IsBinTurnActive() && Pl && !Pl->IsDown() && !Pl->IsInputLocked()) OpenInventory(D);
+		else if (Screen == EWCScreen::None && !D->ActiveNote.IsValid() && D->Fade < 0.5f && !D->bBusy && !D->IsDriving() && !D->IsShedPickupActive() && Pl && !Pl->IsDown() && !Pl->IsInputLocked()) OpenInventory(D);
 	}
 	if (D->Mode != EWCMode::Playing && Screen == EWCScreen::Inventory) CloseInventory(D);
 	if (D->Mode == EWCMode::Playing && bEsc && Screen == EWCScreen::Inventory)
@@ -639,7 +639,7 @@ void AWCHUD::DrawMenu(AWCDirector* D)
 	if (Screen == EWCScreen::Controls)
 	{
 		static const TCHAR* Rows[][2] = {
-			{ TEXT("Move"), TEXT("W A S D") }, { TEXT("Look"), TEXT("Mouse") }, { TEXT("Run"), TEXT("Left Shift") },
+			{ TEXT("Move"), TEXT("W A S D") }, { TEXT("Look"), TEXT("Mouse") }, { TEXT("Hurry"), TEXT("Space / Left Shift") },
 			{ TEXT("Crouch"), TEXT("C or Left Ctrl") }, { TEXT("Flashlight"), TEXT("F") }, { TEXT("Flashlight beam width"), TEXT("[  /  ]") }, { TEXT("Use / read / open"), TEXT("E") },
 			{ TEXT("Raise pistol"), TEXT("Hold Right Mouse") }, { TEXT("Fire"), TEXT("Left Mouse") }, { TEXT("Reload"), TEXT("R") },
 			{ TEXT("Inventory and objective"), TEXT("Tab or I") }, { TEXT("Pause"), TEXT("Esc") } };

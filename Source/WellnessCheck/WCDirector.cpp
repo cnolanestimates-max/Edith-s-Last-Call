@@ -795,11 +795,26 @@ UAudioComponent* AWCDirector::PlayAt(const FString& Name, const FVector& Where, 
 		if (!CrowAtten)
 		{
 			CrowAtten = DuplicateObject<USoundAttenuation>(Atten, this);
-			CrowAtten->Attenuation.AttenuationShapeExtents = FVector(420.f);
-			CrowAtten->Attenuation.FalloffDistance = 3000.f;
+			CrowAtten->Attenuation.AttenuationShapeExtents = FVector(660.f);
+			CrowAtten->Attenuation.FalloffDistance = 3900.f;
 			CrowAtten->Attenuation.dBAttenuationAtMax = -30.f;
+			CrowAtten->Attenuation.OcclusionVolumeAttenuation = .87f;
+			CrowAtten->Attenuation.OcclusionLowPassFilterFrequency = 3900.f;
 		}
 		Profile = CrowAtten;
+	}
+	else if (Name == TEXT("wheel_baseboard") || Name == TEXT("wheel_sidefall") || Name == TEXT("wheel_axle_rub"))
+	{
+		if (!ChairImpactAtten)
+		{
+			ChairImpactAtten = DuplicateObject<USoundAttenuation>(Atten, this);
+			ChairImpactAtten->Attenuation.AttenuationShapeExtents = FVector(340.f);
+			ChairImpactAtten->Attenuation.FalloffDistance = 2650.f;
+			ChairImpactAtten->Attenuation.dBAttenuationAtMax = -28.f;
+			ChairImpactAtten->Attenuation.OcclusionVolumeAttenuation = .83f;
+			ChairImpactAtten->Attenuation.OcclusionLowPassFilterFrequency = 4200.f;
+		}
+		Profile = ChairImpactAtten;
 	}
 	else if (Name == TEXT("flies_buzz"))
 	{
@@ -886,6 +901,8 @@ void AWCDirector::RefreshRoomTone(EListeningSpace Space)
 	const TCHAR* Bed = bOutside ? (Has(TEXT("dawn")) ? TEXT("amb_dawn") : TEXT("amb_yard")) :
 		(Space == EListeningSpace::Cellar ? TEXT("amb_cellar") : TEXT("amb_house"));
 	SetLoop(TEXT("amb"), Bed, 1.f, bOutside ? 0.f : 0.65f);
+	const bool bYardScore = bOutside && !bDriving && !Has(TEXT("dawn"));
+	SetLoop(TEXT("yard_score"), bYardScore ? TEXT("music_drone") : TEXT(""), bYardScore ? .23f : 0.f, 2.6f, EWCSnd::Music);
 	SetLoop(TEXT("drone"), bDarkInside ? TEXT("music_house") : TEXT(""), 0.55f, bDarkInside ? 1.2f : 0.f, EWCSnd::Music);
 	// The two tracks crossfade inside a single seamless house loop.
 	if (FParse::Param(FCommandLine::Get(), TEXT("WCSndLog")))
