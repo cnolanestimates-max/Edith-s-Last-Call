@@ -531,6 +531,372 @@ def pantry_cupboard():
 SETS.update({"SM_PolishDanielWardrobe": daniel_wardrobe, "SM_PolishPantryCupboard": pantry_cupboard})
 
 
+# ---------------------------------------------------------------------------------------------------- round two: home pieces
+# for the hospital kit (Cheyenne, 2026-11-22: "most of that other stuff I want done for sure").  Pivot at the middle of
+# the floor under the piece, front +Y, back at y = -D/2; the level seats each back against its wall.
+PORC, ENAMEL, CHROME, RUST = "MI_Porcelain", "M_HarrowEnamel", "M_ItemSteel", "MI_Rust"
+
+
+def rounded_basin(cx, cy, z_rim, w, d, depth, m, wall=1.2, r=6.0, seg=10):
+    """An open rectangular basin with rounded corners: outer skin, rolled rim and inner skin, as one lofted shell."""
+    def ring(hw, hd, rr, z):
+        pts = []
+        for k, (sx, sy) in enumerate(((1, 1), (-1, 1), (-1, -1), (1, -1))):
+            a0 = k * math.pi / 2
+            ccx, ccy = cx + sx * (hw - rr), cy + sy * (hd - rr)
+            for i in range(seg + 1):
+                a = a0 + (math.pi / 2) * i / seg
+                pts.append((ccx + rr * math.cos(a), ccy + rr * math.sin(a), z))
+        return pts
+    rows = [ring(w / 2 - 3.0, d / 2 - 3.0, r - 2.0, z_rim - depth - 2.0), ring(w / 2, d / 2, r, z_rim - 4.0), ring(w / 2 + 0.6, d / 2 + 0.6, r + 0.6, z_rim - 0.6),
+            ring(w / 2, d / 2, r, z_rim), ring(w / 2 - wall, d / 2 - wall, r - wall, z_rim - 0.4),
+            ring(w / 2 - wall - 0.5, d / 2 - wall - 0.5, r - wall - 0.5, z_rim - depth + 2.5), ring(w / 2 - wall - 4.0, d / 2 - wall - 4.0, max(1.0, r - wall - 4.0), z_rim - depth)]
+    bm = bmesh.new()
+    uv = bm.loops.layers.uv.new("UVMap")
+    vr = [[bm.verts.new(V(*p)) for p in row] for row in rows]
+    n = len(rows[0])
+    for k in range(len(vr) - 1):
+        for i in range(n):
+            j = (i + 1) % n
+            f = bm.faces.new((vr[k][i], vr[k][j], vr[k + 1][j], vr[k + 1][i]))
+            for lp in f.loops:
+                lp[uv].uv = (lp.vert.co.x * 3.0 + lp.vert.co.y * 3.0, lp.vert.co.z * 3.0)
+    for ring_ in (vr[0], vr[-1]):
+        c = bm.verts.new(V(cx, cy, rows[0][0][2] if ring_ is vr[0] else rows[-1][0][2]))
+        for i in range(n):
+            try:
+                bm.faces.new((c, ring_[i], ring_[(i + 1) % n]))
+            except ValueError:
+                pass
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    return obj(bm, m)
+
+
+def tap(x, y, z, m=CHROME, spout=12.0, yaw=0.0):
+    """A wall or deck mounted faucet: body, swan spout bent over the basin, a cross handle each side."""
+    lathe([(0, 0), (2.4, 0), (2.4, 1.0), (1.4, 1.6), (1.4, 6.0), (0, 6.6)], m, (x, y, z), 20, yaw)
+    tube([xform(p, (x, y, z), yaw) for p in ((0, 0, 5.5), (0, 0, 9.5), (0, spout * 0.35, 11.5), (0, spout * 0.75, 10.8), (0, spout, 8.0))], 0.95, m)
+    for s_ in (-1, 1):
+        hx = x + s_ * 9.0
+        lathe([(0, 0), (1.6, 0), (1.6, 1.0), (0.9, 1.4), (0.9, 4.0), (0, 4.0)], m, (hx, y, z), 16, yaw)
+        for a in (0, 90):
+            box((5.2, 0.8, 0.8), (hx, y, z + 4.0), PORC, yaw + a + 45, bevel=0.2)
+
+
+def kitchen_sink():
+    """A cast-iron enamelled farmhouse sink with a drainboard, on a painted base cabinet, splashback and wall taps,
+    a few dishes left in it, rust bled down from the taps."""
+    random.seed(1955)
+    W, D, H = 92.0, 54.0, 90.0
+    B = -D / 2
+    P = "MI_WoodPainted"
+    box((W - 4.0, D - 6.0, 8.0), (0.0, B + (D - 6.0) / 2, 0.0), "MI_WoodDark", bevel=0.3)
+    for sx in (-1, 1):
+        box((2.0, D - 2.0, H - 18.0), (sx * (W / 2 - 1.0), B + (D - 2.0) / 2, 8.0), P, bevel=0.3)
+    box((W, 1.0, H - 18.0), (0.0, B + 0.5, 8.0), P, bevel=0.0)
+    for x0, x1 in ((-W / 2 + 2.0, -0.3), (0.3, W / 2 - 2.0)):
+        door_panel(x0, x1, 9.0, H - 21.0, B + D - 2.0, P, rail=6.5)
+    knob(-3.0, H - 32.0, B + D - 2.0, "M_PhoneIvory")
+    knob(3.0, H - 32.0, B + D - 2.0, "M_PhoneIvory")
+    box((W, D - 2.0, 3.0), (0.0, B + (D - 2.0) / 2, H - 21.0), P, bevel=0.4)                               # top frame
+    # the iron sink: an apron front, the bowl on the right, a ribbed drainboard on the left, a high splashback
+    box((W + 1.0, 2.6, 18.0), (0.0, B + D - 1.0, H - 18.0), ENAMEL, bevel=1.0)                                # apron
+    box((W + 1.0, D - 2.0, 2.0), (0.0, B + (D - 2.0) / 2, H - 2.0), ENAMEL, bevel=0.8)                        # deck
+    rounded_basin(16.0, 2.0, H + 0.3, 44.0, 36.0, 19.0, ENAMEL)
+    for i in range(9):
+        box((30.0, 1.2, 0.5), (-24.0, B + 10.0 + i * 3.6, H), ENAMEL, bevel=0.2)                              # drainboard ribs
+    box((W + 1.0, 3.0, 26.0), (0.0, B + 1.5, H), ENAMEL, bevel=1.0)                                          # splashback
+    tap(16.0, B + 3.2, H + 14.0, spout=10.0)
+    lathe([(0, 0), (3.4, 0), (3.4, 0.3), (0, 0.3)], CHROME, (16.0, 2.0, H - 18.6), 20)                         # drain
+    # left behind: a stack of plates in the bowl, a cup, a pot on the drainboard
+    for i in range(4):
+        plate((15.0, 2.0, H - 18.3 + i * 1.05), 10.5, i * 21.0, tilt=(6.0, 0.0), rim=False)
+    cup((26.0, -6.0, H - 18.3), 200.0, tilt=(0.0, 0.0))
+    lathe([(0, 0), (9.0, 0), (9.5, 1.0), (9.5, 11.0), (9.9, 11.5), (9.2, 11.5), (8.9, 1.0), (0, 1.0)], ENAMEL, (-24.0, 4.0, H + 0.6), 32)
+    tube([(-24.0 - 9.6 - t * 14.0, 4.0, H + 9.0) for t in (0.0, 0.5, 1.0)], 1.0, "M_PhoneBakelite")
+    export("SM_PolishKitchenSink")
+
+
+def pedestal_sink():
+    """A porcelain pedestal basin with two taps, the bowl crazed, a dried cake of soap and a toothbrush glass."""
+    random.seed(1963)
+    H = 84.0
+    lathe([(0, 0), (11.0, 0), (11.5, 1.0), (9.0, 3.0), (7.0, 14.0), (6.0, 40.0), (6.5, 60.0), (8.0, 66.0), (0, 66.0)], PORC, (0.0, -6.0, 0.0), 32, sx=1.25, sy=1.0)
+    rounded_basin(0.0, -1.0, H, 56.0, 42.0, 14.0, PORC, wall=2.0, r=12.0)
+    box((56.0, 3.0, 12.0), (0.0, -21.0, H - 1.0), PORC, bevel=1.2)                                           # back ledge
+    tap(0.0, -18.5, H + 0.5, spout=7.0)                                                                       # one spout, hot and cold
+    lathe([(0, 0), (3.0, 0), (3.0, 0.3), (0, 0.3)], CHROME, (0.0, -1.0, H - 14.0), 20)
+    box((8.0, 5.0, 2.2), (-18.0, -17.0, H + 10.9), "M_PhoneIvory", 8.0, bevel=0.8)                           # soap
+    tumbler((18.0, -17.5, H + 10.9), 9.0, 3.0)
+    tube([(17.5, -17.0, H + 12.0), (19.0, -18.5, H + 24.0)], 0.45, "MI_ToyRed")                               # toothbrush
+    export("SM_PolishPedestalSink")
+
+
+def hamper():
+    """A wicker laundry hamper, its lid knocked askew, the washing nobody did spilling over the top and onto the floor."""
+    random.seed(1984)
+    R, H = 22.0, 58.0
+    W_ = "MI_WoodBleached"
+    lathe([(0, 0), (R - 2.0, 0), (R, 2.0), (R + 1.5, H - 3.0), (R + 2.2, H), (R + 0.6, H), (R - 0.2, H - 3.0), (R - 1.8, 2.0), (0, 2.0)], W_, (0, 0, 0), 48, sx=1.3)
+    for i in range(24):                                                                                        # woven uprights
+        a = TAU * i / 24
+        x0, y0 = math.cos(a) * (R + 0.4) * 1.3, math.sin(a) * (R + 0.4)
+        x1, y1 = math.cos(a) * (R + 2.0) * 1.3, math.sin(a) * (R + 2.0)
+        tube([(x0, y0, 2.0), (x1, y1, H - 2.0)], 0.5, W_, 6)
+    for k in range(9):                                                                                         # weave bands
+        z = 6.0 + k * 5.8
+        rr = R + 0.6 + 1.5 * z / H
+        tube([(math.cos(TAU * i / 48) * rr * 1.3, math.sin(TAU * i / 48) * rr, z) for i in range(49)], 0.55, W_, 6)
+    lathe([(0, 0), (R + 2.5, 0), (R + 2.5, 1.6), (0, 2.4)], W_, (7.0, 4.0, H + 2.0), 48, 20.0, tilt=(8.0, -6.0), sx=1.3)  # the lid, askew
+    # clothes: a towel over the rim, a shirt half out, socks on the floor
+    for (cx, cy, cz, sx, sy, m) in ((-10.0, -6.0, H - 2.0, 18.0, 11.0, "MI_FabricBlue"), (6.0, -8.0, H + 1.0, 12.0, 10.0, "M_HarrowGingham"),
+                                    (-30.0, 10.0, 0.6, 14.0, 8.0, "MI_Sheet"), (-40.0, -8.0, 0.4, 7.0, 4.0, "MI_FabricDark")):
+        lathe([(0, 0), (1.0, 0.0), (0.9, 2.2), (0.5, 3.2), (0, 3.4)], m, (cx, cy, cz), 24, random.uniform(0, 180), sx=sx, sy=sy)
+    tube([(-24.0, -2.0, H - 1.0), (-30.0, -2.0, H - 12.0), (-33.0, 0.0, H - 30.0), (-34.0, 2.0, 8.0), (-36.0, 4.0, 1.0)], 2.2, "MI_Sheet", 10)  # a towel trailing down
+    export("SM_PolishHamper")
+
+
+def file_cabinet():
+    """A 1960s oak four-drawer file in place of the office steel one: brass card holders and pulls, papers on top."""
+    random.seed(1966)
+    W, D, H = 46.0, 62.0, 132.0
+    B = -D / 2
+    O = "MI_WoodTrim"
+    box((W - 3.0, D - 3.0, 5.0), (0.0, B + (D - 3.0) / 2, 0.0), "MI_WoodDark", bevel=0.3)
+    for sx in (-1, 1):
+        box((2.0, D, H - 7.0), (sx * (W / 2 - 1.0), B + D / 2, 5.0), O, bevel=0.3)
+    box((W, 1.0, H - 7.0), (0.0, B + 0.5, 5.0), O, bevel=0.0)
+    box((W + 1.6, D + 1.0, 2.2), (0.0, B + (D + 1.0) / 2, H - 2.2), O, bevel=0.6)
+    dh = (H - 9.0) / 4
+    for k in range(4):
+        z = 5.5 + k * dh
+        ajar = 9.0 if k == 1 else 0.0
+        box((W - 4.6, 2.2, dh - 1.2), (0.0, B + D - 1.1 + ajar, z), O, bevel=0.6)
+        box((W - 10.0, 0.6, dh - 8.0), (0.0, B + D + ajar, z + 4.0), O, bevel=0.4)
+        box((7.0, 0.3, 3.2), (0.0, B + D + 0.4 + ajar, z + dh - 9.0), BRASS, bevel=0.1)                         # label holder
+        box((5.6, 0.12, 2.2), (0.0, B + D + 0.6 + ajar, z + dh - 8.5), PAPER, bevel=0.0)
+        bail(0.0, z + dh * 0.45, B + D + 0.3 + ajar, 7.0)
+        if ajar:                                                                                                 # folders standing in it
+            for i in range(9):
+                box((W - 8.0, 0.3, 24.0), (0.0, B + D - 6.0 - i * 1.6 + ajar, z + 2.0), random.choice((CARD, PAPER, "MI_FabricGreen")), tilt=(random.uniform(-8, 8), 0.0), bevel=0.0)
+    for i in range(6):                                                                                           # papers on top
+        box((21.0, 28.0, 0.25), (random.uniform(-3, 3), random.uniform(-4, 4), H + 0.3 + i * 0.3), PAPER, random.uniform(-14, 14), bevel=0.0)
+    box((22.0, 15.0, 6.0), (2.0, 14.0, H + 2.1), CARD, 10.0, bevel=0.2)                                         # a shoebox of receipts
+    export("SM_PolishFileCabinet")
+
+
+def cellar_shelves():
+    """Rough cellar shelving of plank and two-by-four in place of the school lockers: paint cans, coffee cans of nails,
+    old jars, a toolbox, a coil of rope, a kerosene lantern, all under dust."""
+    random.seed(1949)
+    W, D, H = 160.0, 46.0, 186.0
+    B = -D / 2
+    PL = "MI_MegaRottenWood"
+    for sx in (-1, 0, 1):
+        for sy in (B + 2.0, B + D - 2.0):
+            box((3.8, 3.8, H), (sx * (W / 2 - 2.0), sy, 0.0), PL, random.uniform(-1, 1), bevel=0.3)
+    levels = (12.0, 56.0, 102.0, 146.0, H - 3.0)
+    for z in levels:
+        for k in range(3):
+            box((W, D / 3 - 0.5, 2.4), (0.0, B + D / 6 + k * D / 3, z), PL, tilt=(0.0, random.uniform(-0.6, 0.6)), bevel=0.3)
+    def paint_can(x, y, z, H_=17.0, R_=8.5):
+        lathe([(0, 0), (R_, 0), (R_, H_), (R_ - 0.8, H_ + 0.6), (0, H_ + 0.6)], CHROME, (x, y, z), 28)
+        lathe([(R_ + 0.05, 2.0), (R_ + 0.05, H_ - 3.0)], PAPER, (x, y, z), 28)
+        tube([(x - R_ + 0.3, y, z + H_ - 1.0), (x, y, z + H_ + 5.0), (x + R_ - 0.3, y, z + H_ - 1.0)], 0.2, CHROME, 6)
+        tube([(x + R_ * 0.7, y + R_ * 0.7, z + H_), (x + R_ * 0.72, y + R_ * 0.72, z + H_ * 0.4)], 0.7, "MI_PaintDrip" if False else RUST, 6)
+    for i, x in enumerate((-66.0, -48.0, -30.0)):
+        paint_can(x, -4.0, levels[0] + 2.4)
+    for x in (-8.0, 6.0):
+        can((x, 2.0, levels[0] + 2.4), 14.0, 6.0, label=RUST)                                                 # coffee cans of nails
+    box((40.0, 20.0, 18.0), (40.0, 2.0, levels[0] + 2.4), "MI_ToyRed", bevel=0.8)                            # a steel toolbox
+    tube([(28.0, 2.0, levels[0] + 20.4), (40.0, 2.0, levels[0] + 26.0), (52.0, 2.0, levels[0] + 20.4)], 0.8, CHROME, 8)
+    fills = ["M_PickleOchre", "M_PicklePale", "M_PickleRust", "M_JarSediment"]
+    for z in (levels[1], levels[2]):
+        x = -W / 2 + 9.0
+        while x < W / 2 - 9.0:
+            jar((x, random.uniform(-8, 2), z + 2.4), random.choice((13.0, 15.0, 18.0)), 4.6, random.choice(fills))
+            x += random.uniform(10.5, 13.0)
+    for k in range(6):                                                                                          # rope coil
+        tube([(-40.0 + 12.0 * math.cos(TAU * i / 24), 2.0 + 12.0 * math.sin(TAU * i / 24), levels[3] + 3.4 + k * 1.6) for i in range(25)], 0.9, "MI_Cardboard", 6)
+    lathe([(0, 0), (7.0, 0), (7.0, 6.0), (5.5, 8.0), (4.0, 10.0), (5.5, 22.0), (3.0, 26.0), (1.5, 28.0), (0, 28.0)], RUST, (20.0, 0.0, levels[3] + 2.4), 24)
+    lathe([(0, 10.0), (5.0, 10.0), (5.4, 21.0), (0, 21.0)], GLASS, (20.0, 0.0, levels[3] + 2.4), 24)              # lantern glass
+    tube([(15.0, 0.0, levels[3] + 30.0), (20.0, 0.0, levels[3] + 36.0), (25.0, 0.0, levels[3] + 30.0)], 0.3, RUST, 6)
+    for x in (-60.0, 50.0):
+        box((30.0, 28.0, 22.0), (x, 0.0, levels[4] + 2.4), CARD, random.uniform(-6, 6), bevel=0.3)
+    export("SM_PolishCellarShelves")
+
+
+SETS.update({"SM_PolishKitchenSink": kitchen_sink, "SM_PolishPedestalSink": pedestal_sink, "SM_PolishHamper": hamper,
+             "SM_PolishFileCabinet": file_cabinet, "SM_PolishCellarShelves": cellar_shelves})
+
+
+# ---------------------------------------------------------------------------------------------------- round two: wardrobes
+# What the kit's open wardrobe (HorrorHouseKit SM_Wardrobe_Open_Clothes, its own rag of a garment hidden) holds.  Its inside:
+# x -66..53, y -54..2 (the door swings open beyond +Y), floor z 46, ceiling z 194.
+WX0, WX1, WY0, WY1, WZ0, WZ1 = -64.0, 51.0, -52.0, 0.0, 46.0, 192.0
+RAIL_Z, RAIL_Y = 182.0, -27.0
+FABRICS = ["MI_FabricBlue", "MI_FabricDark", "MI_FabricGreen", "MI_FabricRed", "M_HarrowCalico", "M_HarrowGingham", "M_HarrowBrocade",
+           "M_HarrowBurgundy", "MI_Sheet"]
+
+
+def rail():
+    tube([(WX0 - 1.0, RAIL_Y, RAIL_Z), (WX1 + 1.0, RAIL_Y, RAIL_Z)], 1.1, BRASS, 12)
+
+
+def garment(x, length, m, width=44.0, sleeves=False, seed=0.0, sway=0.0):
+    """A garment on a wooden hanger on the rail, hanging edge-on to the front like it would: shoulders to hem lofted as a
+    thin closed sleeve of cloth with folds that deepen toward the hem."""
+    yc = RAIL_Y
+    top = RAIL_Z - 4.5
+    hw0 = width / 2 * 0.92
+    tube([(x, yc - hw0, top - 3.0), (x, yc - hw0 * 0.5, top - 1.0), (x, yc, top), (x, yc + hw0 * 0.5, top - 1.0), (x, yc + hw0, top - 3.0)], 0.7, "MI_WoodDark", 8)
+    tube([(x, yc, top), (x, yc, RAIL_Z + 1.0), (x, yc - 1.6, RAIL_Z + 2.6), (x, yc - 2.6, RAIL_Z + 1.4)], 0.22, CHROME, 6)
+    N, M = 14, 28
+    bm = bmesh.new()
+    uv = bm.loops.layers.uv.new("UVMap")
+    rows = []
+    for k in range(N + 1):
+        t = k / N
+        z = top - 1.5 - t * length
+        hw = width / 2 * (0.42 + 0.58 * min(1.0, t * 7.0)) * (1.0 + 0.14 * t)
+        th = 1.6 + 2.8 * t
+        row = []
+        for i in range(M):
+            a = TAU * i / M
+            fold = (0.6 + 2.0 * t) * math.sin(5.0 * a + seed + t * 2.0)
+            px = x + sway * t * t + (th + fold) * math.cos(a)
+            py = yc + hw * math.sin(a)
+            row.append(bm.verts.new(V(px, py, z)))
+        rows.append(row)
+    for k in range(N):
+        for i in range(M):
+            j = (i + 1) % M
+            f = bm.faces.new((rows[k][i], rows[k][j], rows[k + 1][j], rows[k + 1][i]))
+            for lp in f.loops:
+                kk = k if lp.vert in rows[k] else k + 1
+                ii = (rows[kk].index(lp.vert))
+                lp[uv].uv = (ii / M * 1.6, kk / N * length / 40.0)
+    c = bm.verts.new(V(x, yc, top - 1.5 - length))
+    for i in range(M):
+        bm.faces.new((rows[-1][(i + 1) % M], rows[-1][i], c))
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    obj(bm, m)
+    if sleeves:
+        for s_ in (-1, 1):
+            tube([(x + 0.5, yc + s_ * hw0 * 0.9, top - 4.0), (x + 1.0, yc + s_ * hw0 * 1.02, top - 22.0), (x + 1.8 + sway * 0.2, yc + s_ * hw0 * 0.96, top - 44.0)], 3.0, m, 10)
+
+
+def shoes(x, y, m, yaw=0.0):
+    for s_ in (-1, 1):
+        cx, cy = x + s_ * 5.0 * math.cos(math.radians(yaw + 90)), y + s_ * 5.0 * math.sin(math.radians(yaw + 90))
+        lathe([(0, 0), (4.0, 0.0), (4.4, 2.0), (4.0, 4.5), (2.6, 6.5), (0, 7.0)], m, (cx, cy, WZ0), 20, yaw + random.uniform(-8, 8), sx=2.6, sy=1.0)
+
+
+def folded(x, y, z, w, d, n, mats):
+    zz = z
+    for i in range(n):
+        h = random.uniform(2.6, 4.2)
+        box((w + random.uniform(-2, 2), d + random.uniform(-2, 2), h), (x + random.uniform(-1.2, 1.2), y + random.uniform(-1.2, 1.2), zz), random.choice(mats), random.uniform(-6, 6), bevel=1.0)
+        zz += h
+    return zz
+
+
+def aide_wardrobe():
+    """Mrs. Pruitt's things, the aide who lived in: her white uniform dresses, a cardigan, a raincoat, Sunday blouse; her
+    shoes in pairs underneath, sweaters folded on the floor of it and a hat box."""
+    random.seed(1991)
+    rail()
+    # (the left door stays shut, so most of it hangs in the open right half, +X, where it can be seen)
+    plan = [(-40.0, 112.0, "MI_FabricDark", True), (-28.0, 90.0, "M_HarrowBurgundy", False), (4.0, 104.0, "MI_Sheet", False), (11.0, 104.0, "MI_Sheet", False),
+            (19.0, 72.0, "MI_FabricBlue", True), (27.0, 64.0, "M_HarrowGingham", True), (35.0, 66.0, "MI_FabricGreen", True)]
+    for i, (x, L, m, sl) in enumerate(plan):
+        garment(x, L, m, 44.0 if L < 100 else 40.0, sl, seed=i * 1.7, sway=random.uniform(-2, 2))
+    for i in range(4):                                                                                            # empty hangers
+        x = 41.0 + i * 3.0
+        tube([(x, RAIL_Y - 19.0, RAIL_Z - 7.5), (x, RAIL_Y - 9.0, RAIL_Z - 5.5), (x, RAIL_Y, RAIL_Z - 4.5), (x, RAIL_Y + 9.0, RAIL_Z - 5.5), (x, RAIL_Y + 19.0, RAIL_Z - 7.5)],
+             0.7, "MI_WoodDark", 8)
+        tube([(x, RAIL_Y, RAIL_Z - 4.5), (x, RAIL_Y, RAIL_Z + 1.0), (x, RAIL_Y - 1.6, RAIL_Z + 2.6)], 0.22, CHROME, 6)
+    shoes(8.0, -12.0, "M_PhoneIvory", 95.0)                                                                       # white work shoes
+    shoes(22.0, -12.0, "MI_Leather", 88.0)
+    shoes(-30.0, -14.0, "MI_LeatherTan", 85.0)
+    zz = folded(38.0, -30.0, WZ0, 22.0, 30.0, 6, ["MI_FabricBlue", "MI_FabricGreen", "MI_Sheet", "MI_FabricDark"])
+    lathe([(0, 0), (12.0, 0), (12.0, 11.0), (12.6, 11.0), (12.6, 14.0), (0, 14.0)], "M_HarrowCalico", (38.0, -30.0, zz), 40)
+    export("SM_PolishAideWardrobe")
+
+
+def sewing_wardrobe():
+    """Edith's sewing store: dresses half made, pinned and tacked, on the rail; bolts of cloth stood on end, folded lengths,
+    pattern envelopes, a tin of notions and a tape measure hanging off the rail."""
+    random.seed(1957)
+    rail()
+    plan = [(-40.0, 96.0, "M_HarrowCalico", False), (-28.0, 88.0, "M_HarrowGingham", True), (2.0, 102.0, "M_HarrowBrocade", False),
+            (10.0, 60.0, "MI_Sheet", True), (18.0, 92.0, "MI_FabricRed", False), (26.0, 80.0, "M_HarrowBurgundy", True)]
+    for i, (x, L, m, sl) in enumerate(plan):
+        garment(x, L, m, 42.0, sl, seed=i * 2.3, sway=random.uniform(-2.5, 2.5))
+    tube([(34.0, RAIL_Y + 2.0, RAIL_Z + 1.2), (34.6, RAIL_Y + 4.0, RAIL_Z - 30.0), (35.0, RAIL_Y + 5.0, RAIL_Z - 62.0)], 0.35, "M_PhoneIvory", 4)   # tape measure
+    tube([(36.0, RAIL_Y - 2.0, RAIL_Z + 1.2), (36.4, RAIL_Y - 4.0, RAIL_Z - 26.0), (37.0, RAIL_Y - 5.0, RAIL_Z - 48.0)], 0.35, "M_PhoneIvory", 4)
+    for i in range(5):                                                                                            # bolts on end
+        x = 22.0 + i * 6.5
+        box((3.5, 26.0, 62.0 + random.uniform(-6, 6)), (x, -28.0, WZ0), random.choice(FABRICS), tilt=(0.0, random.uniform(-10, 4)), bevel=1.2)
+    zz = folded(6.0, -24.0, WZ0, 24.0, 30.0, 7, FABRICS)
+    for i in range(5):                                                                                            # pattern envelopes
+        box((16.0, 23.0, 0.4), (6.0 + random.uniform(-2, 2), -24.0 + random.uniform(-2, 2), zz + i * 0.45), PAPER, random.uniform(-20, 20), bevel=0.0)
+    box((24.0, 15.0, 9.0), (-30.0, -30.0, WZ0), "M_HarrowEnamel", 6.0, bevel=0.8)                               # the notions tin
+    box((24.6, 15.6, 1.2), (-30.0, -30.0, WZ0 + 9.0), "M_HarrowEnamel", 6.0, bevel=0.5)
+    for i in range(6):                                                                                            # cotton reels on its lid
+        lathe([(0, 0), (1.4, 0), (1.4, 0.5), (1.1, 0.6), (1.1, 3.2), (1.4, 3.3), (1.4, 3.8), (0, 3.8)], random.choice(FABRICS), (-38.0 + i * 3.4, -30.0, WZ0 + 10.2), 12)
+    export("SM_PolishSewingWardrobe")
+
+
+def present(x, y, z, w, d, h, paper, ribbon, yaw=0.0):
+    """A wrapped box, ribboned both ways with a bow on top and a paper tag."""
+    box((w, d, h), (x, y, z), paper, yaw, bevel=0.35)
+    box((w + 0.3, 1.6, h + 0.3), (x, y, z - 0.15), ribbon, yaw, bevel=0.1)
+    box((1.6, d + 0.3, h + 0.3), (x, y, z - 0.15), ribbon, yaw, bevel=0.1)
+    s = min(w, d) * 0.18 + 1.5
+    for a in (35.0, 215.0, 125.0):
+        ca, sa = math.cos(math.radians(a + yaw)), math.sin(math.radians(a + yaw))
+        tube([(x, y, z + h + 0.3), (x + ca * s * 0.6, y + sa * s * 0.6, z + h + s * 0.55), (x + ca * s, y + sa * s, z + h + 0.6), (x + ca * s * 0.35, y + sa * s * 0.35, z + h + 0.5)], 0.6, ribbon, 6)
+    box((4.0, 0.15, 2.6), xform((w / 2 * 0.6, d / 2 + 0.3, h * 0.5), (x, y, z), yaw), "M_ItemCard", yaw, tilt=(-10.0, 0.0), bevel=0.0)
+
+
+PAPERS = ["MI_FabricRed", "MI_FabricGreen", "M_HarrowGingham", "M_HarrowCalico", "M_HarrowBrocade", "MI_FabricBlue", "M_HarrowWrapper", "MI_ToyRed", "MI_ToyBlue"]
+RIBBONS = ["M_ItemRibbon", "M_ItemGold", "MI_Sheet", "MI_FabricRed"]
+
+
+def attic_presents():
+    """Every Christmas since 1969, a present for Danny and one for Ruth, wrapped and tagged and never opened: packed into
+    the attic wardrobe to the top and spilling out onto the boards in front of it."""
+    random.seed(1969)
+    # inside, stacked in rough columns from the floor of the wardrobe to near its top
+    x = WX0 + 2.0
+    while x < WX1 - 8.0:
+        w = random.uniform(16, 30)
+        if x + w > WX1:
+            w = WX1 - x
+        z = WZ0
+        while z < WZ1 - 24.0:
+            h = random.uniform(7, 22)
+            d = random.uniform(20, 44)
+            present(x + w / 2 + random.uniform(-1, 1), WY0 + d / 2 + random.uniform(0, 4), z, w - 1.0, d, h, random.choice(PAPERS), random.choice(RIBBONS), random.uniform(-5, 5))
+            z += h + 0.3
+        x += w + 0.4
+    # spilled out in front
+    floor = []
+    for i in range(6):
+        w, d, h = random.uniform(18, 34), random.uniform(18, 34), random.uniform(8, 20)
+        px, py = -58.0 + i * 15.0 + random.uniform(-3, 3), random.uniform(20, 58)
+        present(px, py, 0.0, w, d, h, random.choice(PAPERS), random.choice(RIBBONS), random.uniform(-25, 25))
+        floor.append((px, py, h, min(w, d)))
+    for (px, py, h, s_) in floor[::2]:                                                                          # a smaller one on top
+        present(px + random.uniform(-2, 2), py + random.uniform(-2, 2), h + 0.35, s_ * 0.6, s_ * 0.55, random.uniform(5, 10), random.choice(PAPERS),
+                random.choice(RIBBONS), random.uniform(0, 90))
+    export("SM_PolishAtticPresents")
+
+
+SETS.update({"SM_PolishAideWardrobe": aide_wardrobe, "SM_PolishSewingWardrobe": sewing_wardrobe, "SM_PolishAtticPresents": attic_presents})
+
+
 for name, fn in SETS.items():
     if argv and name not in argv:
         continue

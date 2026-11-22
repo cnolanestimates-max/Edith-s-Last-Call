@@ -32,7 +32,7 @@ for fbx in sorted(SRC.glob("SM_*.fbx")):
     ui.set_editor_property("mesh_type_to_import", u.FBXImportType.FBXIT_STATIC_MESH)
     sd = ui.get_editor_property("static_mesh_import_data")
     sd.set_editor_property("combine_meshes", True)
-    sd.set_editor_property("auto_generate_collision", "Wardrobe" in name or "Cupboard" in name)      # furniture blocks; the sets sit in cabinets
+    sd.set_editor_property("auto_generate_collision", not name.endswith("Set"))      # furniture blocks; the sets sit in cabinets
     t.set_editor_property("options", ui)
     tools.import_asset_tasks([t])
     sm = eal.load_asset(f"{DEST}/{name}")
