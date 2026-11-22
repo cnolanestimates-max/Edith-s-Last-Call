@@ -927,7 +927,7 @@ for n, x, y, z, yaw in (("A_Porch", -150, 0, GZ, 0), ("A_Foyer", 220, 60, GZ, 0)
                         ("A_Kitchen", 1000, 380, GZ, 20), ("A_BackDoor", 2700, 0, GZ, 0), ("A_Den", 2000, -380, GZ, 250), ("A_Sickroom", 2400, 380, GZ, 60), ("A_Pantry", 1800, 400, GZ, 60), ("A_BathG", 2600, -380, GZ, 250),
                         ("A_Daniel", 2000, -380, UZ, 250), ("A_Sewing", 2600, -380, UZ, 250), ("A_Aide", 2000, 380, UZ, 60), ("A_Bath2", 2600, 380, UZ, 60), ("A_UpEll", 1750, 0, UZ, 0), ("A_Sitting", 1250, -350, GZ, 200),
                         ("A_StairsTop", 900, 60, UZ, 160), ("A_Master", 380, 330, UZ, 30), ("A_Kids", 420, -330, UZ, 250),
-                        ("A_Prayer", 1150, 330, UZ, 60), ("A_UpBath", 1380, -372, UZ, 90), ("A_Book", 610, -292, GZ, 100), ("A_HallSit", 1390, -90, GZ, 250), ("A_Attic", 760, -250, AZ, 250), ("A_CellarShelf", 1380, 60, CZ, 90),
+                        ("A_Prayer", 1150, 330, UZ, 60), ("A_UpBath", 1200, -395, UZ, 90), ("A_Book", 610, -292, GZ, 100), ("A_HallSit", 1390, -90, GZ, 250), ("A_Attic", 760, -250, AZ, 250), ("A_CellarShelf", 1380, 60, CZ, 90),
                         ("A_Root", 1400, 330, CZ, 90), ("A_Cruiser", -1450, 260, -40, 180)):
     point(n, x, y, z, yaw, folder="Auto")
 TOUR = [("road", -9000, 300, 60, 0), ("gate", -3300, 320, 60, -5), ("yard", -1900, -200, 52, 8), ("yard_side", -1200, -1500, 52, 50), ("yard_back", 3900, 1300, 52, 200),
@@ -982,5 +982,6 @@ runpy.run_path(os.path.join(HERE, "review_rooms.py"))["dress"]()
 runpy.run_path(os.path.join(HERE, "harrow_progression.py"))["dress"]()
 runpy.run_path(os.path.join(HERE, "bath_mirror.py"))["dress"]()
 runpy.run_path(os.path.join(HERE, "hall_pendant.py"))["dress"]()
+runpy.run_path(os.path.join(HERE, "harrow_playtest.py"))["dress"]()
 if not level_editor.save_current_level():
     raise RuntimeError("Could not save yard routes and bedroom pickup")

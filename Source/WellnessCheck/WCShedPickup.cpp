@@ -130,7 +130,7 @@ void AWCDirector::TickShedPickup()
 			const FVector Step = FMath::Lerp(Bin,Away,I/4.f) + Up * 10.;
 			After(Footfalls[I], [this,Step,I]() { PlayAt(TEXT("step_gravel"),Step,2.1f-.17f*I,.94f+.035f*I,2400.f,true); });
 		}
-		Say(TEXT("d_shedcall"), 3.22f);
+		Say(TEXT("d_shedcall"), 1.14f);
 		UE_LOG(LogTemp, Display, TEXT("WCSHED impact and shake t=%.2f lift=%.2f stow=%.2f locked=%d"),T,Lift,Stow,P->IsInputLocked());
 	}
 	if (T >= ReleaseAt) FinishShedPickup();

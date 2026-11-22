@@ -168,6 +168,23 @@ void AWCDirector::AutoBegin()
 			Do(TEXT("record_mix")); Do(TEXT("daniel_entry")); Flag(TEXT("left_done"),6.f); Wait(25.f);
 			Do(TEXT("finish_mix")); Wait(.5f);
 		}
+		else if (FParse::Param(FCommandLine::Get(), TEXT("WCFuseRoute")))
+		{
+			Do(TEXT("flag:inside")); Do(TEXT("flag:peek_done")); Do(TEXT("flag:power_out")); Do(TEXT("flag:lockin_done"));
+			Do(TEXT("at:1200,-395,442,90,-24")); Touch(TEXT("bath_dresser")); Flag(TEXT("bath_chain_released"), 2.f);
+			Do(TEXT("at:1010,-406,442,-90,-42")); Touch(TEXT("look_upbath_tub")); Flag(TEXT("bath_drained"), 2.f);
+			Wait(3.f); Touch(TEXT("pick_key_sitting"));
+			Do(TEXT("at:265,105,92,0,-1")); Do(TEXT("walk_past_stair_wall"));
+			Do(TEXT("at:831.4163,127.0449,92,-32.58102,-1.75130"));
+			Do(TEXT("pendant_warm")); Do(TEXT("pendant_cool")); Do(TEXT("pendant_warm"));
+			Wait(5.f); Do(TEXT("walk_to_pendant")); Wait(1.8f);
+			Do(TEXT("at:1390,-111,92,-90,0")); Touch(TEXT("sitting")); Flag(TEXT("sitting_open"), 7.f);
+			Do(TEXT("at:1066,-362,92,90,-22")); Touch(TEXT("pick_fuse"));
+			Do(TEXT("at:1860,422,92,0,0")); Touch(TEXT("fusebox")); Flag(TEXT("fuse_done"), 3.f);
+			Do(TEXT("check_direct_fuse_route")); Wait(7.f);
+			Do(TEXT("at:1800,-75,442,-90,8")); Wait(1.f); Shot(TEXT("Danny"));
+			Do(TEXT("at:200,-75,442,-90,8")); Wait(1.f); Shot(TEXT("Ruth"));
+		}
 		else if (FParse::Param(FCommandLine::Get(),TEXT("WCHallPendant")))
 		{
 			Do(TEXT("record_mix")); Do(TEXT("flag:inside")); Do(TEXT("at:265,105,92,0,-1")); Do(TEXT("lamp_only"));
@@ -1624,6 +1641,19 @@ void AWCDirector::AutoTick(float Dt)
 			Set(TEXT("phone_ringing"));
 			if (Target && Target->WCId == TEXT("phone")) P->DoInteract();
 			UE_LOG(LogWCAuto, Display, TEXT("WCROOM phone focus=%s answered=%d"),Target ? *Target->WCId.ToString() : TEXT("none"),Has(TEXT("phone_done")));
+		}
+		else if (S.Arg == TEXT("check_direct_fuse_route"))
+		{
+			const bool bCompleted = !Has(TEXT("phone_done")) && Has(TEXT("bath_chain_released")) &&
+				Has(TEXT("sitting_open")) && Has(TEXT("fuse_done")) && !HasItem(TEXT("fuse")) && !bPowerOut;
+			if (!bCompleted || !DoLoad() || !Has(TEXT("fuse_done")))
+			{
+				UE_LOG(LogWCAuto, Error, TEXT("WCAUTO FAIL direct fuse route or checkpoint"));
+			}
+			else
+			{
+				UE_LOG(LogWCAuto, Display, TEXT("WCFUSE restored pantry power without answering the phone; checkpoint verified"));
+			}
 		}
 		else if (S.Arg == TEXT("check_book_focus"))
 		{

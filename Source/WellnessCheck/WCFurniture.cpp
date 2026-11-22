@@ -84,12 +84,17 @@ void AWCDirector::RefreshFurnitureLoot()
     Visible(TEXT("pick_key_prayer"), Open(TEXT("piano_drawer")) && !HasItem(TEXT("key_prayer")) && !Has(TEXT("prayer_key_taken")));
     Visible(TEXT("pick_key_ell"), Open(TEXT("walter_drawer")) && !HasItem(TEXT("key_ell")) && !Has(TEXT("walter_keys_taken")));
     Visible(TEXT("pick_key_sitting"), Open(TEXT("bath_water")) && !HasItem(TEXT("key_sitting")) && !Has(TEXT("sitting_open")));
-    Visible(TEXT("bath_dresser"), Has(TEXT("phone_done")));
+    const bool BathOpen = Has(TEXT("peek_done")) || Has(TEXT("phone_done"));
+    const bool ChainFree = Has(TEXT("bath_chain_released")) || Has(TEXT("phone_done"));
+    Visible(TEXT("bath_dresser"), BathOpen);
+    if (AWCInteractable* A = Thing(TEXT("bath_dresser"))) A->Prompt = ChainFree ? TEXT("Inspect the bath dresser") : TEXT("Free the trapped chain");
     if (AWCInteractable* A = Thing(TEXT("fridge_door"))) A->Prompt = Has(TEXT("fridge_open")) ? TEXT("Close the refrigerator") : TEXT("Open the refrigerator");
     if (AWCInteractable* A = Thing(TEXT("sitting_drawer"))) A->Prompt = Has(TEXT("writing_open")) ? TEXT("Close the writing-desk drawer") : TEXT("Open the writing-desk drawer");
     if (AWCInteractable* A = Thing(TEXT("daniel_drawer"))) A->Prompt = Has(TEXT("daniel_drawer_open")) ? TEXT("Close Daniel's desk drawer") : TEXT("Open Daniel's desk drawer");
     if (AWCInteractable* A = Thing(TEXT("look_piano"))) A->Prompt = HasItem(TEXT("piano_ivory")) ? TEXT("Replace the missing ivory key") : TEXT("Inspect the piano keyboard");
-    if (AWCInteractable* A = Thing(TEXT("look_upbath_tub"))) A->Prompt = Has(TEXT("bath_drained")) ? TEXT("Inspect the empty bath") : TEXT("Pull the bath plug");
+    if (AWCInteractable* A = Thing(TEXT("look_upbath_tub")))
+        A->Prompt = Has(TEXT("bath_drained")) ? TEXT("Inspect the empty bath") :
+            (ChainFree ? TEXT("Pull the bath plug") : TEXT("Inspect the bath plug"));
 }
 
 bool AWCDirector::FurnitureEvent(FName Id)
@@ -116,14 +121,28 @@ bool AWCDirector::FurnitureEvent(FName Id)
     }
     if (Id == TEXT("use:bath_dresser"))
     {
-        Feedback(TEXT("A brass key tag, still damp. Someone scratched into the drawer: pull the bath plug."));
-        if (!Has(TEXT("bath_drained"))) SetObjective(TEXT("Pull the plug in the black bathwater beside the upstairs dresser"));
+        if (Has(TEXT("bath_drained"))) { Feedback(TEXT("The last links of the wet chain lie across the drawer.")); return true; }
+        if (!Has(TEXT("bath_chain_released")) && !Has(TEXT("phone_done")))
+        {
+            Set(TEXT("bath_chain_released"));
+            if (const AWCInteractable* Dresser = Thing(TEXT("bath_dresser")))
+                PlayAt(TEXT("shelf_scrape"), Dresser->GetActorLocation(), .48f);
+            SetObjective(TEXT("Pull the plug in the black bathwater"));
+            ApplyWorldState();
+            Checkpoint(TEXT("bath_chain"));
+        }
+        Feedback(TEXT("The chain is free. There is a brass tag just below the surface."));
         return true;
     }
     if (Id == TEXT("look:look_upbath_tub"))
     {
         if (Has(TEXT("bath_drained"))) { Feedback(TEXT("Only the ring of black sediment remains.")); return true; }
-        if (!Has(TEXT("phone_done"))) { Feedback(TEXT("The plug chain is caught. The end runs under the shut dresser drawer.")); return true; }
+        if (!Has(TEXT("bath_chain_released")) && !Has(TEXT("phone_done")))
+        {
+            Feedback(TEXT("The chain is caught in the dresser beside the bath."));
+            if (Has(TEXT("peek_done"))) SetObjective(TEXT("Free the plug chain at the front bathroom dresser"));
+            return true;
+        }
         Set(TEXT("bath_drained"));
         if (const AWCInteractable* Water = Thing(TEXT("bath_water"))) PlayAt(TEXT("bath_drain"),Water->GetActorLocation(),.74f);
         SetObjective(TEXT("Take the brass key from the bottom of the bath")); Checkpoint(TEXT("bath_drained"));
@@ -167,5 +186,10 @@ void AWCDirector::RestoreHarrowHints()
     else if (Objective == TEXT("Find what the iron key opens")) SetObjective(TEXT("Unlock the upstairs prayer room"));
     else if (Objective == TEXT("Find what Walter's keys open")) SetObjective(TEXT("Unlock the rear upstairs hall. Check the aide's room for her videotape."));
     else if (Objective == TEXT("Something slid open upstairs")) SetObjective(TEXT("Search the dresser in the front upstairs bathroom"));
+    else if (Has(TEXT("peek_done")) && !Has(TEXT("sitting_open")) && !HasItem(TEXT("key_sitting")) &&
+        (Objective == TEXT("Answer the phone in the kitchen") || Objective == TEXT("Check the back hall downstairs")))
+        SetObjective(Has(TEXT("bath_drained")) ? TEXT("Take the brass key from the upstairs bath") :
+            Has(TEXT("bath_chain_released")) || Has(TEXT("phone_done")) ? TEXT("Pull the plug in the upstairs bath") :
+            TEXT("Check the dresser in the front upstairs bathroom"));
     else if (Objective == TEXT("Find what the long key opens")) SetObjective(TEXT("Take the long key to the attic door upstairs"));
 }

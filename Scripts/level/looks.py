@@ -10,7 +10,7 @@ LOOKS = [
     ("clothesline", -1060, 505, 120, "A sheet and a nightgown, grey with rain. Hung out to dry a year ago and never brought in.", (130, 20, 50)),
     ("well", -1500, -620, 40, "Boarded over. The boards are newer than the well.", (60, 60, 60)),
     # (the far half of the bench only: over the whole bench it sat in front of the VHS tape, and "Look" was all he was offered there)
-    ("shed_bench", 3896, -672, 62, "Seed packets gone to pulp, twine, a coffee can of nails rusted into one lump. Walter's bench. Nobody has stood at it in years.", (40, 44, 26)),
+    ("shed_bench", 3896, -672, 62, "Looks like a handyman's workbench. Seed packets, a spool of twine, and a coffee can full of nails rusted into one lump.", (40, 44, 26)),
     ("shed_tools", 2800 + 760 + 190, -884, 90, "Shovels, a pitchfork, a rake. One nail has nothing hanging on it, and the dust under it is not as thick.", (130, 14, 80)),
     ("bulkhead", 1000, 715, 10, "Cellar doors, chained from outside. So nobody went in that way. Or came out.", (110, 50, 40)),
     # ---- front hall
@@ -60,7 +60,7 @@ LOOKS = [
     ("family_dolls", 2445, -412, UZ + 122, "Four rag dolls. WALTER. RUTH. DANNY, stitched across their chests. The fourth one has no name. It is taller than the others and it has one eye.", (16, 50, 24)),
     ("sewing_cradle", 2700, -540, UZ + 45, "Empty. It always was.", (30, 40, 36)),
     ("aide_chair", 1905, 268, UZ + 40, "A chair, split along the top rail where it was jammed under the doorknob. From the inside. She slept like that.", (30, 30, 40)),
-    ("aide_suitcase", 2060, 400, UZ + 30, "Half packed and left behind. She didn't stop to close it.", (34, 34, 26)),
+    ("aide_suitcase", 2060, 400, UZ + 30, "Mrs. Pruitt's suitcase. The black cassette tucked among her things is marked RECORDING II.", (34, 34, 26)),
     ("bath2_tub", 2700, 300, UZ + 55, "Full. The water isn't moving. My light won't go down into it.", (44, 80, 34)),
     ("bath2_hole", 2540, 390, UZ + 30, "Floor's gone through to the sickroom. Rotted from the top. Something stood in this spot for a long time.", (70, 70, 40)),
     # ---- attic and cellar

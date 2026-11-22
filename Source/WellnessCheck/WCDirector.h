@@ -292,6 +292,7 @@ private:
 	void BeginDrive();
 	void TickDrive(float Dt);
 	void EndDrive();
+	void ParkCruiser();
 	void DriveDone();
 	void TickStalk(float Dt);
 	void StalkShot();

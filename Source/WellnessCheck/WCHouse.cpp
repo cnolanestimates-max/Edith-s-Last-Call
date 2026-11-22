@@ -87,7 +87,13 @@ void AWCDirector::HouseBegin()
 	for (TActorIterator<AActor> It(GetWorld()); It; ++It) if (It->ActorHasTag(TEXT("NavNode"))) NavPts.Add(It->GetActorLocation());
 	for (TActorIterator<AActor> It(GetWorld()); It; ++It)
 	{
-		if (It->ActorHasTag(TEXT("Cruiser"))) { Car = *It; CarHome = It->GetActorLocation(); CarHomeRot = It->GetActorRotation(); }
+		if (It->ActorHasTag(TEXT("Cruiser")))
+		{
+			Car = *It;
+			CarHome = It->GetActorLocation();
+			CarHomeRot = It->GetActorRotation();
+			bParkedCarCollision = It->GetActorEnableCollision();
+		}
 		if (It->ActorHasTag(TEXT("DriverSeat"))) Seat = *It;
 	}
 	bPowerOut = Has(TEXT("power_out")) && !Has(TEXT("fuse_done"));
@@ -336,13 +342,22 @@ bool AWCDirector::HouseEvent(FName Id)
 	{
 		Set(TEXT("seen_fusebox"));
 		if (Has(TEXT("fuse_done")) || !bPowerOut) { Feedback(TEXT("Glass fuses. One is newer than the rest.")); return true; }
-		if (!HasItem(TEXT("fuse"))) { Feedback(TEXT("One fuse is blown black. I need a spare.")); return true; }
+		if (!HasItem(TEXT("fuse")))
+		{
+			Feedback(TEXT("One fuse is blown black. The spare is on the side table in the sitting room."));
+			if (Has(TEXT("sitting_open"))) SetObjective(TEXT("Find the spare fuse on the downstairs sitting-room side table"));
+			else if (HasItem(TEXT("key_sitting"))) SetObjective(TEXT("Unlock the downstairs sitting room opposite the kitchen"));
+			else if (Has(TEXT("peek_done"))) SetObjective(TEXT("Find the sitting-room key in the front upstairs bathroom"));
+			return true;
+		}
 		Set(TEXT("fuse_done"));
 		bPowerOut = false;
 		Items.Remove(TEXT("fuse"));
 		PlayAt(TEXT("switch_click"), Pos(TEXT("FusePoint")), 1.f, 0.8f);
 		PlayAt(TEXT("bulb_buzz"), Pos(TEXT("FusePoint")), 0.8f);
 		After(0.7f, [this]() { SwitchRoom(TEXT("pantry"), true, false); Feedback(TEXT("That's got it.")); });
+		if (Objective.Contains(TEXT("fuse"))) SetObjective(TEXT("Search the house for Edith Harrow"));
+		Checkpoint(TEXT("fuse_done"));
 		return true;
 	}
 	if (Id == TEXT("use:desk"))
@@ -395,7 +410,13 @@ bool AWCDirector::HouseEvent(FName Id)
 		if (!Has(TEXT("watcher_seen"))) { Set(TEXT("watcher_seen")); After(1.8f, [this]() { Think(TEXT("...Was that")); }); }
 		return true;
 	}
-	if (Id == TEXT("take:fuse")) { if (!bPowerOut) Feedback(TEXT("A spare fuse. Might want that.")); return true; }
+	if (Id == TEXT("take:fuse"))
+	{
+		Feedback(TEXT("A spare fuse for the panel in the pantry beside the kitchen."));
+		if (bPowerOut) SetObjective(TEXT("Replace the blown fuse in the pantry"));
+		Checkpoint(TEXT("sitting_fuse"));
+		return true;
+	}
 	if (Id == TEXT("take:key_attic"))
 	{
 		SetObjective(TEXT("Take the long key to the attic door upstairs"));
@@ -490,9 +511,22 @@ void AWCDirector::AirIntoCar()
 	SetLoop(TEXT("amb"), TEXT(""), 0.f, 0.8f);
 }
 
+void AWCDirector::ParkCruiser()
+{
+	if (!Car.IsValid()) return;
+
+	// The drive rig is aligned to the authored transform. Turn the parked exterior
+	// only after the cabin view has faded, so the windshield handoff stays intact.
+	FRotator Parked = CarHomeRot;
+	Parked.Yaw = FRotator::NormalizeAxis(Parked.Yaw + 180.f);
+	Car->SetActorLocationAndRotation(CarHome, Parked);
+	Car->SetActorHiddenInGame(false);
+	Car->SetActorEnableCollision(bParkedCarCollision);
+}
+
 void AWCDirector::BeginDrive()
 {
-
+	if (Car.IsValid()) Car->SetActorLocationAndRotation(CarHome, CarHomeRot);
 	ShowTagged(TEXT("CabinOnly"), true);          // the inside of the car exists only while he is in it
 	if (Car.IsValid()) Car->SetActorHiddenInGame(true);      // and the outside does not (its aerial stood in the windscreen like a black pole)
 	DrivePts.Reset(); DriveLen.Reset();
@@ -528,7 +562,6 @@ void AWCDirector::BeginDrive()
 		UE_LOG(LogWCHouse, Display, TEXT("WCDRIVE the thing on the road stands %.0f m in"), ShadowDist / 100.f);
 	}
 	bDriving = true;
-	bParkedCarCollision = Car->GetActorEnableCollision();
 	Car->SetActorEnableCollision(false);
 	P->SetInputLocked(true);
 	P->SetFlashlight(false, false);
@@ -811,6 +844,7 @@ void AWCDirector::EndDrive()
 	After(2.6f, [this]() { ShowTagged(TEXT("CarRunning"), false); FadeTo(1.f, 0.7f); });
 	After(3.6f, [this]()
 	{
+		ParkCruiser();
 		Play2D(TEXT("car_door"), 0.9f);
 		APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0);
 		if (AWCCharacter* P = Player())
@@ -841,7 +875,8 @@ void AWCDirector::TickStalk(float Dt)
 	if (StalkState == 0)
 	{
 		const bool bMay = Has(TEXT("lockin_done")) && !Has(TEXT("sprint_started")) && !Has(TEXT("dawn")) && !bBusy && !H->IsShown() && !ActiveNote.IsValid()
-			&& !Has(TEXT("phone_ringing")) && Clock >= NextScareAt && Clock >= NextStalkAt && StalksDone < 4 && !bEventBusy && L.Z > -60.f && L.Z < 560.f && !P->IsDown();
+			&& (!Has(TEXT("phone_ringing")) || FVector::DistSquared(L, Pos(TEXT("PhonePoint"))) > FMath::Square(650.f))
+			&& Clock >= NextScareAt && Clock >= NextStalkAt && StalksDone < 4 && !bEventBusy && L.Z > -60.f && L.Z < 560.f && !P->IsDown();
 		if (!bMay) return;
 		// somewhere on this floor, not too near, where he is not looking
 		FVector Best = FVector::ZeroVector; float BestScore = -1.f;

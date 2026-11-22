@@ -221,7 +221,8 @@ void AWCDirector::ApplyWorldState()
 		Box->bEnabled = Has(TEXT("underbed_done")) && !bTaken;
 		if (!bTaken) Box->SetActorLocation(Pos(TEXT("Her_Under")) + FVector(0, Has(TEXT("underbed_done")) ? -15.f : 150.f, 1.f));
 	}
-	ShowTagged(TEXT("Show_drawer"), Has(TEXT("phone_done")));
+	const bool DresserOpen = Has(TEXT("bath_chain_released")) || Has(TEXT("phone_done"));
+	ShowTagged(TEXT("Show_drawer"), DresserOpen);
 	UpdateFurniture(0.f, Furniture.IsEmpty());
 	RefreshFurnitureLoot();
 	ShowTagged(TEXT("Hide_shears"), !HasItem(TEXT("shears")));
@@ -248,7 +249,7 @@ void AWCDirector::ApplyWorldState()
 	ShowTagged(TEXT("L_Welcome"), !Has(TEXT("knocked")));
 	if (AWCInteractable* Desk = Thing(TEXT("desk"))) Desk->bEnabled = !Has(TEXT("desk_open"));
 	bPowerOut = Has(TEXT("power_out")) && !Has(TEXT("fuse_done"));
-	ShowTagged(TEXT("Hide_drawer"), !Has(TEXT("phone_done")));
+	ShowTagged(TEXT("Hide_drawer"), !DresserOpen);
 	for (TActorIterator<APostProcessVolume> It(GetWorld()); It; ++It)
 	{
 		if (It->ActorHasTag(TEXT("PP_Dawn"))) It->bEnabled = Has(TEXT("dawn"));
@@ -286,6 +287,7 @@ void AWCDirector::StoryBegin(bool bFromSave)
 	Fade = 1.f;
 	if (bFromSave)
 	{
+		ParkCruiser();
 		RestoreHarrowHints();
 		if (Has(TEXT("tape2_played")) && !Has(TEXT("tv_scare"))) Items.Add(TEXT("tape2"));
 		UpdateFurniture(0.f,true);
@@ -316,6 +318,9 @@ void AWCDirector::StoryBegin(bool bFromSave)
 		T = Say(TEXT("d_arrive3"), T + 0.6f);
 		return;
 	}
+	ParkCruiser();
+	ShowTagged(TEXT("CabinOnly"), false);
+	ShowTagged(TEXT("CarRunning"), false);
 	Play2D(TEXT("car_door"), 0.8f);
 	After(1.2f, [this]() { FadeTo(0.f, 3.f); });
 	After(3.f, [this]()
@@ -516,7 +521,18 @@ void AWCDirector::StoryEvent(FName Id)
 		if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 5.0; Feedback(TEXT("The attic. Locked. Danny's things are up there.")); }
 		return;
 	}
-	if (Is(Id, TEXT("locked:sitting")) || Is(Id, TEXT("locked:up_prayer")))
+	if (Is(Id, TEXT("locked:sitting")))
+	{
+		if (Clock > SpeechFreeAt)
+		{
+			SpeechFreeAt = Clock + 5.0;
+			Feedback(TEXT("A strip of tape on the latch: 'Mrs Pruitt, I left the key in the front bathroom upstairs.'"));
+			if (Has(TEXT("peek_done")) && !Has(TEXT("bath_drained")))
+				SetObjective(TEXT("Find the sitting-room key in the front upstairs bathroom"));
+		}
+		return;
+	}
+	if (Is(Id, TEXT("locked:up_prayer")))
 	{
 		if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 5.0; Feedback(TEXT("Locked. Scratches round the keyhole, from the inside.")); }
 		return;
@@ -636,7 +652,13 @@ void AWCDirector::StoryEvent(FName Id)
 					After(T + 0.6f, [this]() { Think(TEXT("But she flinched. Every shot, she flinched.")); });
 					T += 3.f;
 				}
-				After(T + 0.8f, [this]() { if (!Has(TEXT("phone_done")) && !Has(TEXT("phone_ringing"))) SetObjective(TEXT("Check the back hall downstairs")); Checkpoint(TEXT("lockin_done")); });
+				After(T + 0.8f, [this]()
+				{
+					if (HasItem(TEXT("fuse")) && bPowerOut) SetObjective(TEXT("Replace the blown fuse in the pantry"));
+					else if (!Has(TEXT("sitting_open")) && !HasItem(TEXT("key_sitting")) && !Has(TEXT("bath_chain_released")) && !Has(TEXT("bath_drained")))
+						SetObjective(TEXT("Check the dresser in the front upstairs bathroom"));
+					Checkpoint(TEXT("lockin_done"));
+				});
 			Tension = 0.45f;
 		}
 		else if (Has(TEXT("ceiling_started")) && !Has(TEXT("ceiling_done")))
@@ -666,7 +688,14 @@ void AWCDirector::StoryEvent(FName Id)
 	if (Is(Id, TEXT("use:phone")) && Has(TEXT("phone_ringing")) && !Has(TEXT("phone_done"))) { ScarePhone(); return; }
 	if (Is(Id, TEXT("take:key_sitting"))) { SetObjective(TEXT("Unlock the downstairs sitting room across the hall from the kitchen")); Checkpoint(TEXT("sitting_key")); return; }
 	if (Is(Id, TEXT("take:keep_daniel"))) { AtticTagsTaken(); return; }
-	if (Is(Id, TEXT("unlock:sitting"))) { Set(TEXT("sitting_open")); Say(TEXT("d_sitting"), 3.f); Checkpoint(TEXT("sitting")); return; }
+	if (Is(Id, TEXT("unlock:sitting")))
+	{
+		Set(TEXT("sitting_open"));
+		Say(TEXT("d_sitting"), 3.f);
+		if (!HasItem(TEXT("fuse")) && !Has(TEXT("fuse_done"))) SetObjective(TEXT("Find the spare fuse on the sitting-room side table"));
+		Checkpoint(TEXT("sitting"));
+		return;
+	}
 		if (Is(Id, TEXT("take:key_prayer"))) { SetObjective(TEXT("Take the piano drawer's iron key to the upstairs prayer room")); Checkpoint(TEXT("prayer_key")); return; }
 	if (Is(Id, TEXT("unlock:up_ell"))) { Checkpoint(TEXT("ell")); return; }
 	if (Is(Id, TEXT("closed:note_prayer")) && !Has(TEXT("placed"))) { SetObjective(TEXT("Find what was theirs, and something to cut with")); return; }
@@ -868,7 +897,7 @@ void AWCDirector::StoryTick(float Dt)
 		PhoneRingAgainAt = Clock;
 		if (AWCInteractable* Ph = Thing(TEXT("phone"))) { Ph->Prompt = TEXT("Answer"); Ph->bEnabled = true; }
 		After(3.f, [this]() { Think(TEXT("That phone has no line.")); });
-		SetObjective(TEXT("Answer the phone in the kitchen"));
+		ShowHint(TEXT("The phone is ringing in the kitchen"), 5.f);
 	}
 	if (Has(TEXT("phone_ringing")) && !Has(TEXT("phone_done")) && Clock >= PhoneRingAgainAt)
 	{
@@ -922,6 +951,7 @@ void AWCDirector::StoryTick(float Dt)
 					Set(TEXT("locked_in"));
 				}
 				Set(TEXT("peek_done"));
+				RefreshFurnitureLoot();
 				After(.28f, [this]() {
 					if (AWCCharacter* Deputy = Player()) { Deputy->SetLightScale(1.f); Deputy->SetFlashlight(true, true); }
 				});
@@ -1156,12 +1186,15 @@ void AWCDirector::ScarePhone()
 								bBusy = false;
 								Rest(170.f);
 								float T2 = Say(TEXT("d_after_kitchen"), 0.3f);
-								T2 = Say(TEXT("d_drawer"), T2 + 2.2f);
+								if (!Has(TEXT("bath_chain_released")) && !Has(TEXT("bath_drained")))
+									T2 = Say(TEXT("d_drawer"), T2 + 2.2f);
 								After(T2, [this]()
 								{
-									// somewhere above him a drawer is pulled open (its key is no longer in the kitchen)
-									PlayAt(TEXT("drag_floor"), Pos(TEXT("DrawerPoint")), 1.f, 1.5f, 4500.f);
-									SetObjective(TEXT("Search the open dresser drawer in the front upstairs bathroom"));
+									if (!Has(TEXT("bath_chain_released")) && !Has(TEXT("bath_drained")))
+									{
+										PlayAt(TEXT("drag_floor"), Pos(TEXT("DrawerPoint")), 1.f, 1.5f, 4500.f);
+										SetObjective(TEXT("Search the open dresser drawer in the front upstairs bathroom"));
+									}
 									Checkpoint(TEXT("phone_done"));
 								});
 								Tension = 0.55f;
