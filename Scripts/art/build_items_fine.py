@@ -1462,3 +1462,5 @@ print("FINE all done")
 
 # the bin at the back of the house and what is in it (its own file: Scripts/art/trash_models.py)
 exec(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "trash_models.py"), encoding="utf-8").read())
+# the tipped oil drum and its spill in the back yard (Scripts/art/yard_models.py)
+exec(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "yard_models.py"), encoding="utf-8").read())

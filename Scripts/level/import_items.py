@@ -1,5 +1,50 @@
 # The small carried things (Scripts/art/build_items.py): static meshes + plain metal / glass materials.
 # exec'd by import_assets.py; step name "items".
+def step_items_only(names):
+    """Import just these fine items (SourceArt/Props/items_fine) with their baked materials and touch nothing else: no
+    picture filter, no shared item materials, no television, no tapes.  WC_ITEMS_ONLY=OilDrum,OilSpill"""
+    P = G + "/Props"
+    dd = SRC + "/Props/items_fine"
+    for n in [n for n in names if n]:
+        name = "SM_Item_" + n
+        t = unreal.AssetImportTask()
+        t.set_editor_property("filename", f"{dd}/{name}.fbx")
+        t.set_editor_property("destination_path", P)
+        t.set_editor_property("destination_name", name)
+        t.set_editor_property("replace_existing", True)
+        t.set_editor_property("automated", True)
+        t.set_editor_property("save", True)
+        ui = unreal.FbxImportUI()
+        ui.set_editor_property("automated_import_should_detect_type", False)
+        ui.set_editor_property("import_mesh", True)
+        ui.set_editor_property("import_as_skeletal", False)
+        ui.set_editor_property("import_animations", False)
+        ui.set_editor_property("import_materials", False)
+        ui.set_editor_property("import_textures", False)
+        ui.set_editor_property("mesh_type_to_import", unreal.FBXImportType.FBXIT_STATIC_MESH)
+        sd = ui.get_editor_property("static_mesh_import_data")
+        sd.set_editor_property("combine_meshes", True)
+        sd.set_editor_property("auto_generate_collision", True)
+        sd.set_editor_property("normal_import_method", unreal.FBXNormalImportMethod.FBXNIM_IMPORT_NORMALS)
+        t.set_editor_property("options", ui)
+        tools.import_asset_tasks([t])
+        sm = eal.load_asset(f"{P}/{name}")
+        if not sm:
+            log(f"item {name}: FAILED to import")
+            continue
+        for k in ("C", "N", "ORM"):                                     # fresh bakes replace the old textures outright
+            tp = f"{G}/Props/Tex/T_Item_{n}_{k}"
+            if eal.does_asset_exist(tp):
+                eal.delete_asset(tp)
+        fm = fine_material(n, dd + "/tex")
+        if fm:
+            for i in range(len(sm.static_materials)):
+                sm.set_material(i, fm)
+        eal.save_loaded_asset(sm, False)
+        bb = sm.get_bounding_box()
+        log(f"item {name}: fine only; half size {(bb.max.x - bb.min.x) / 2:.1f} x {(bb.max.y - bb.min.y) / 2:.1f} x {(bb.max.z - bb.min.z) / 2:.1f} cm")
+
+
 def item_material(name, rgb, rough, metallic):
     m = new_material(name)
     mel.connect_material_property(const3(m, rgb, -400, 0), "", unreal.MaterialProperty.MP_BASE_COLOR)
@@ -235,6 +280,8 @@ def fine_material(name, tdir):
 
 
 def step_items():
+    if os.environ.get("WC_ITEMS_ONLY"):
+        return step_items_only(os.environ["WC_ITEMS_ONLY"].split(","))
     filter_material()
     d = SRC + "/Props/items"
     if not os.path.isdir(d):
