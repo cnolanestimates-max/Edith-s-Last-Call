@@ -62,7 +62,6 @@ LOOKS = [
     ("aide_chair", 1905, 268, UZ + 40, "A chair, split along the top rail where it was jammed under the doorknob. From the inside. She slept like that.", (30, 30, 40)),
     ("aide_suitcase", 2060, 400, UZ + 30, "Mrs. Pruitt's suitcase. The black cassette tucked among her things is marked RECORDING II.", (34, 34, 26)),
     ("bath2_tub", 2700, 300, UZ + 55, "Full. The water isn't moving. My light won't go down into it.", (44, 80, 34)),
-    ("bath2_hole", 2540, 390, UZ + 30, "Floor's gone through to the sickroom. Rotted from the top. Something stood in this spot for a long time.", (70, 70, 40)),
     # ---- attic and cellar
     ("attic_easel", 1000, 420, AZ + 120, "A family portrait under a sheet. Four people. Five, now. Someone has painted a tall grey shape in behind them, in house paint.", (40, 40, 80)),
     ("attic_wardrobe", 780, 560, AZ + 110, "Christmas boxes. Every tag says 'To Danny' or 'To Ruth.' One for every Christmas since 1969. None opened.", (60, 30, 100)),

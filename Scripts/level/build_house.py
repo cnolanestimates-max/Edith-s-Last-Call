@@ -343,7 +343,9 @@ XB = 2800.0                                              # back wall of the hous
 
 # ================================================================== FLOORS / CEILINGS (boxes, with the stair hole)
 # places where a floor has rotted through: (x0, x1, y0, y1) per level
-HOLES = {GZ: [(470, 620, -560, -440)], UZ: [(1290, 1440, -430, -310), (2480, 2600, 330, 450)], AZ: [(1280, 1400, 300, 420)]}
+# (the upstairs back bathroom had one too, at 2480..2600 x 330..450; it filled the doorway so nobody could get in, and
+#  Cheyenne asked for it to be floored over, 2026-11-22)
+HOLES = {GZ: [(470, 620, -560, -440)], UZ: [(1290, 1440, -430, -310)], AZ: [(1280, 1400, 300, 420)]}
 HOLE_LIST = []      # (x0, x1, y0, y1, z of this floor, z of the floor below) for decay.py
 
 
@@ -983,7 +985,9 @@ runpy.run_path(os.path.join(HERE, "harrow_progression.py"))["dress"]()
 runpy.run_path(os.path.join(HERE, "bath_mirror.py"))["dress"]()
 runpy.run_path(os.path.join(HERE, "hall_pendant.py"))["dress"]()
 runpy.run_path(os.path.join(HERE, "harrow_playtest.py"))["dress"]()
+runpy.run_path(os.path.join(HERE, "linen_shelf.py"))["dress"]()
 runpy.run_path(os.path.join(HERE, "polish_pass.py"))["dress"]()            # furniture turned to face its rooms (2026-11-21)
-runpy.run_path(os.path.join(HERE, "polish_yard.py"))["dress"]()            # oil drum, gravel road (2026-11-21)
+runpy.run_path(os.path.join(HERE, "polish_yard.py"))["dress"]()            # oil drum, gravel path (2026-11-21)
+runpy.run_path(os.path.join(HERE, "polish_fixes.py"))["dress"]()           # floor patched over the back bathroom hole (2026-11-22)
 if not level_editor.save_current_level():
     raise RuntimeError("Could not save yard routes and bedroom pickup")
