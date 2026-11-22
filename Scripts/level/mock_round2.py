@@ -131,9 +131,14 @@ def dress():
             a.set_actor_hidden_in_game(not undo)
             a.static_mesh_component.set_visibility(undo)
     # ---- clutter on the bare tops
-    for label, folder, mesh in (("Dresser_Drawers", "/Dining", "SM_MockClutterDresser"), ("SM_Table_Small_01a", "/Living", "SM_MockClutterTable")):
+    # (every top with nothing readable or usable on it, or with the middle left clear for the note that is there; the
+    # bathroom dressers carry the Harrow bath clue, so they are left alone)
+    # (dz: how far the real top is below the piece's bounds: the aide's dresser has a back rail, the trunks a rounded lid)
+    for label, folder, mesh, dz in (("Dresser_Drawers", "/Dining", "SM_MockClutterDresser", 0.0), ("SM_Table_Small_01a", "/Living", "SM_MockClutterTable", 0.0),
+                                    ("Dresser_Drawers", "/Kitchen", "SM_ClutterKitchenDresser", 0.0), ("Chest_Trunk", "/Daniel", "SM_ClutterDanielTrunk", -2.0),
+                                    ("AideDresser", "/Aide", "SM_ClutterAideDresser", -19.5), ("Chest_Trunk", "/Master", "SM_ClutterMasterTrunk", -2.0)):
         top = next((a for a in actors if a.get_actor_label() == label and str(a.get_folder_path()).endswith(folder)), None)
-        lab = "Mock_" + mesh[7:]
+        lab = "Mock_" + mesh[7:] if mesh.startswith("SM_Mock") else mesh[3:]
         if undo:
             if by.get(lab):
                 sub.destroy_actor(by[lab])
@@ -141,10 +146,10 @@ def dress():
         if not top:
             continue
         o, e = top.get_actor_bounds(False)
-        a = by.get(lab) or sub.spawn_actor_from_class(u.StaticMeshActor, u.Vector(o.x, o.y, o.z + e.z), top.get_actor_rotation())
+        a = by.get(lab) or sub.spawn_actor_from_class(u.StaticMeshActor, u.Vector(o.x, o.y, o.z + e.z + dz), top.get_actor_rotation())
         a.set_actor_label(lab)
         a.set_folder_path("House/Mock")
-        a.set_actor_location_and_rotation(u.Vector(o.x, o.y, o.z + e.z), top.get_actor_rotation(), False, True)
+        a.set_actor_location_and_rotation(u.Vector(o.x, o.y, o.z + e.z + dz), top.get_actor_rotation(), False, True)
         a.static_mesh_component.set_static_mesh(eal.load_asset("/Game/WC/Props/Polish/" + mesh))
         a.static_mesh_component.set_collision_profile_name("NoCollision")
         n += 1

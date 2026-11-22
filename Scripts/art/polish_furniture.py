@@ -956,45 +956,46 @@ def candle(x, y, H=7.0):
 
 def mock_clutter_dresser():
     """The dining-room dresser: family photographs, a doily under a dish of old candies, the mail she stopped opening, her
-    pill organiser, her reading glasses, a vase of flowers long dead, a burned-down candle."""
+    pill organiser, her reading glasses, a vase of flowers long dead, a burned-down candle.  The middle is left clear for
+    the reminder note that lies there (Note_note_rem3)."""
     random.seed(1993)
-    doily(-6.0, -2.0, 15.0)
-    for (x, y, w, h, yaw) in ((-44.0, -16.0, 14.0, 19.0, 8.0), (-28.0, -18.0, 18.0, 23.0, -4.0), (34.0, -17.0, 13.0, 17.0, -10.0)):
+    doily(-38.0, 6.0, 13.0)
+    for (x, y, w, h, yaw) in ((-48.0, -17.0, 14.0, 19.0, 8.0), (-28.0, -19.0, 18.0, 23.0, -4.0), (36.0, -17.0, 13.0, 17.0, -10.0)):
         frame(x, y, w, h, yaw)
-    lathe([(0, 0), (3.5, 0), (3.6, 0.5), (1.4, 1.2), (1.3, 3.5), (6.5, 5.0), (9.0, 8.5), (8.6, 8.5), (6.2, 5.6), (0, 4.0)], GLASS, (-6.0, -2.0, 0.12), 32)
+    lathe([(0, 0), (3.5, 0), (3.6, 0.5), (1.4, 1.2), (1.3, 3.5), (6.5, 5.0), (9.0, 8.5), (8.6, 8.5), (6.2, 5.6), (0, 4.0)], GLASS, (-38.0, 6.0, 0.12), 32)
     for i in range(14):
         a, r = random.uniform(0, TAU), random.uniform(0, 5.5)
         lathe([(0, 0), (1.0, 0.3), (1.0, 0.9), (0, 1.2)], random.choice(("MI_ToyRed", "MI_ToyYellow", "MI_FabricGreen", "M_PhoneIvory")),
-              (-6.0 + math.cos(a) * r, -2.0 + math.sin(a) * r, 4.3 + r * 0.35 + random.uniform(0, 1.2)), 8, random.uniform(0, 180), sx=1.6)
-    mail(18.0, 10.0, 9, -12.0)
-    box((19.0, 5.0, 2.2), (-32.0, 12.0, 0.0), "M_HarrowEnamel", 6.0, bevel=0.4)                                  # pill organiser
+              (-38.0 + math.cos(a) * r, 6.0 + math.sin(a) * r, 4.3 + r * 0.35 + random.uniform(0, 1.2)), 8, random.uniform(0, 180), sx=1.6)
+    mail(30.0, 12.0, 9, -12.0)
+    box((19.0, 5.0, 2.2), (-20.0, 18.0, 0.0), "M_HarrowEnamel", 6.0, bevel=0.4)                                  # pill organiser
     for i in range(7):
-        box((2.3, 4.2, 0.6), (-32.0 - 8.1 + i * 2.7, 12.0, 2.2), random.choice(("M_HarrowEnamel", "MI_ToyBlue", "MI_ToyYellow")), 6.0, bevel=0.1)
-    glasses(2.0, 16.0, 20.0)
-    dead_flowers(46.0, -8.0)
-    candle(20.0, -12.0)
+        box((2.3, 4.2, 0.6), (-20.0 - 8.1 + i * 2.7, 18.0, 2.2), random.choice(("M_HarrowEnamel", "MI_ToyBlue", "MI_ToyYellow")), 6.0, bevel=0.1)
+    glasses(46.0, 16.0, 20.0)
+    dead_flowers(48.0, -8.0)
+    candle(24.0, -14.0)
     export("SM_MockClutterDresser")
 
 
 def mock_clutter_table():
     """The side table by the sofa: an ashtray full, a pack of cigarettes and a lighter, the TV Guide, a coffee mug with a
-    dried ring in it, the television's remote."""
+    dried ring in it, the television's remote.  The middle is left clear for the letter that lies there (Note_note_letter1)."""
     random.seed(1994)
-    lathe([(0, 0), (6.5, 0), (7.0, 0.5), (7.0, 2.6), (6.2, 2.8), (5.4, 1.0), (0, 1.0)], GLASS, (-16.0, -8.0, 0.0), 32)
+    lathe([(0, 0), (6.5, 0), (7.0, 0.5), (7.0, 2.6), (6.2, 2.8), (5.4, 1.0), (0, 1.0)], GLASS, (-30.0, -10.0, 0.0), 32)
     for i in range(7):
         a = random.uniform(0, TAU)
-        p0 = (-16.0 + math.cos(a) * random.uniform(0, 3), -8.0 + math.sin(a) * random.uniform(0, 3), 1.2)
+        p0 = (-30.0 + math.cos(a) * random.uniform(0, 3), -10.0 + math.sin(a) * random.uniform(0, 3), 1.2)
         p1 = (p0[0] + math.cos(a) * 3.0, p0[1] + math.sin(a) * 3.0, 1.5 + random.uniform(0, 1.4))
         tube([p0, p1], 0.4, random.choice(("M_PhoneIvory", "MI_Cardboard")), 6)
-    lathe([(0, 0), (6.2, 0), (6.2, 1.1), (0, 1.1)], "M_Black", (-16.0, -8.0, 0.0), 32)                          # ash in the bottom
-    box((5.6, 2.2, 8.6), (2.0, -12.0, 0.0), "MI_ToyRed", 14.0, tilt=(0.0, 90.0), bevel=0.2)                     # cigarettes, on its side
-    box((2.4, 1.2, 7.2), (6.0, -4.0, 0.0), "MI_ToyBlue", -30.0, tilt=(0.0, 90.0), bevel=0.3)                    # lighter
-    box((13.5, 19.0, 0.6), (14.0, 6.0, 0.0), "M_HarrowWrapper", -8.0, bevel=0.1)                                 # TV Guide
-    cup((-18.0, 12.0, 0.0), 210.0, R=4.2, H=9.2, m="M_HarrowEnamel")
-    lathe([(0, 0.95), (3.7, 0.95), (3.7, 1.3), (0, 1.3)], "M_KitchenTar", (-18.0, 12.0, 0.0), 24)                 # dried coffee
-    box((5.0, 17.0, 2.0), (30.0, -2.0, 0.0), "M_PhoneBakelite", 12.0, bevel=0.6)                                 # the remote
+    lathe([(0, 0), (6.2, 0), (6.2, 1.1), (0, 1.1)], "M_Black", (-30.0, -10.0, 0.0), 32)                          # ash in the bottom
+    box((5.6, 2.2, 8.6), (-18.0, -21.0, 0.0), "MI_ToyRed", 14.0, tilt=(0.0, 90.0), bevel=0.2)                     # cigarettes, on its side
+    box((2.4, 1.2, 7.2), (-10.0, 22.0, 0.0), "MI_ToyBlue", -30.0, tilt=(0.0, 90.0), bevel=0.3)                    # lighter
+    box((13.5, 19.0, 0.6), (29.0, 8.0, 0.0), "M_HarrowWrapper", -8.0, bevel=0.1)                                 # TV Guide
+    cup((-31.0, 15.0, 0.0), 210.0, R=4.2, H=9.2, m="M_HarrowEnamel")
+    lathe([(0, 0.95), (3.7, 0.95), (3.7, 1.3), (0, 1.3)], "M_KitchenTar", (-31.0, 15.0, 0.0), 24)                 # dried coffee
+    box((5.0, 17.0, 2.0), (30.0, -16.0, 0.0), "M_PhoneBakelite", 80.0, bevel=0.6)                                 # the remote
     for i in range(12):
-        box((0.9, 0.9, 0.4), xform((-1.3 + (i % 3) * 1.3, -5.0 + (i // 3) * 2.2, 2.0), (30.0, -2.0, 0.0), 12.0), random.choice(("M_PhoneIvory", "MI_ToyRed")), 12.0, bevel=0.1)
+        box((0.9, 0.9, 0.4), xform((-1.3 + (i % 3) * 1.3, -5.0 + (i // 3) * 2.2, 2.0), (30.0, -16.0, 0.0), 80.0), random.choice(("M_PhoneIvory", "MI_ToyRed")), 80.0, bevel=0.1)
     export("SM_MockClutterTable")
 
 
@@ -1080,6 +1081,112 @@ def wrapped_patterns():
 
 SETS.update({"SM_AlcoveMetronomeSet": alcove_metronome, "SM_SculleryWashSet": scullery_washboard,
              "SM_LinenStackSet": folded_linen, "SM_BoxRoomPatternSet": wrapped_patterns})
+
+
+# ---------------------------------------------------------------------------------------------------- clutter, every room
+# (Cheyenne liked the clutter mock-up, 2026-11-22.)  Tops with nothing readable or usable on them; pivot at the middle of
+# the top, front +Y.
+def canister(x, y, H, R, m="M_HarrowEnamel"):
+    lathe([(0, 0), (R, 0), (R, H), (R - 0.4, H + 0.3), (0, H + 0.3)], m, (x, y, 0.0), 32)
+    lathe([(0, H + 0.2), (R + 0.3, H + 0.2), (R + 0.3, H + 1.6), (R * 0.4, H + 2.4), (0.9, H + 2.6), (0.9, H + 3.6), (0, H + 3.8)], m, (x, y, 0.0), 32)
+
+
+def towel_fold(x, y, z, w, d, n, m, yaw=0.0):
+    zz = z
+    for i in range(n):
+        box((w, d, 2.6), (x + random.uniform(-0.8, 0.8), y + random.uniform(-0.8, 0.8), zz), m, yaw + random.uniform(-4, 4), bevel=1.0)
+        zz += 2.6
+    return zz
+
+
+def clutter_kitchen_dresser():
+    """The kitchen dresser: a bread box, the canister set (flour, sugar, coffee, tea), a crock of wooden spoons, a recipe
+    box, dish towels folded and a jar of bacon grease by the stove side."""
+    random.seed(1958)
+    box((38.0, 24.0, 19.0), (-34.0, -10.0, 0.0), "M_HarrowEnamel", bevel=2.5)                                   # bread box
+    box((34.0, 1.0, 9.0), (-34.0, 2.4, 6.0), "M_HarrowEnamel", tilt=(-20.0, 0.0), bevel=0.8)
+    for i, (H, R) in enumerate(((19.0, 7.0), (16.0, 6.0), (13.0, 5.0), (10.5, 4.2))):
+        canister(-6.0 + i * 13.0, -12.0, H, R)
+    lathe([(0, 0), (5.5, 0), (6.0, 2.0), (6.2, 14.0), (5.6, 14.0), (5.6, 1.0), (0, 1.0)], CER, (42.0, -10.0, 0.0), 28)
+    for i in range(6):
+        a = TAU * i / 6
+        tube([(42.0 + math.cos(a) * 2.0, -10.0 + math.sin(a) * 2.0, 2.0), (42.0 + math.cos(a) * 4.5, -10.0 + math.sin(a) * 4.5, 30.0 + random.uniform(-3, 3))], 0.45, "MI_WoodBleached", 6)
+    box((14.0, 9.0, 9.0), (8.0, 12.0, 0.0), "MI_WoodDark", 10.0, bevel=0.4)                                     # recipe box
+    for i in range(6):
+        box((12.0, 0.1, 7.5), (8.0 + random.uniform(-0.3, 0.3), 9.0 + i * 1.0, 6.0), "M_ItemCard", 10.0, tilt=(random.uniform(-8, 8), 0.0), bevel=0.0)
+    towel_fold(-30.0, 14.0, 0.0, 22.0, 16.0, 3, "M_HarrowGingham", 6.0)
+    jar((30.0, 14.0, 0.0), 11.0, 4.6, "M_PickleOchre", "M_ItemSteel")
+    export("SM_ClutterKitchenDresser")
+
+
+def clutter_bath_dresser():
+    """Edith's bathroom dresser: a hairbrush and comb, a powder tin with its puff, scent bottles on a glass tray, a jar of
+    cold cream, a dish of hairpins and a towel folded."""
+    random.seed(1931)
+    box((30.0, 16.0, 0.6), (-24.0, -10.0, 0.0), GLASS, bevel=0.2)                                                 # vanity tray
+    for i, (x, H) in enumerate(((-34.0, 9.0), (-26.0, 12.0), (-17.0, 7.0))):
+        lathe([(0, 0.6), (2.6, 0.6), (3.0, 1.8), (3.0, H * 0.6), (1.0, H * 0.75), (0.8, H * 0.9), (1.4, H), (0.9, H + 1.6), (0, H + 1.8)], GLASS, (x, -10.0, 0.0), 24)
+        lathe([(0, 1.0), (2.5, 1.0), (2.5, H * 0.35), (0, H * 0.35)], "M_PickleOchre", (x, -10.0, 0.0), 16)
+    lathe([(0, 0), (6.5, 0), (6.5, 4.0), (6.8, 4.0), (6.8, 5.6), (0, 6.0)], "M_HarrowEnamel", (2.0, -8.0, 0.0), 32)   # powder tin
+    lathe([(0, 0), (3.5, 0.0), (3.8, 1.2), (2.8, 2.2), (0, 2.6)], "M_PhoneIvory", (8.0, 6.0, 0.0), 20, sx=1.1)      # the puff
+    lathe([(0, 0), (3.8, 0), (4.0, 4.2), (4.2, 4.2), (4.2, 5.6), (0, 5.8)], "M_PhoneIvory", (20.0, -12.0, 0.0), 28)    # cold cream
+    lathe([(0, 0), (4.0, 0.0), (5.4, 1.2), (5.0, 1.4), (0, 0.6)], CER, (34.0, -10.0, 0.0), 24)                       # hairpin dish
+    for i in range(8):
+        a = random.uniform(0, TAU)
+        tube([(34.0 + math.cos(a) * 1.5, -10.0 + math.sin(a) * 1.5, 0.9), (34.0 + math.cos(a) * 4.0, -10.0 + math.sin(a) * 4.0, 1.1)], 0.12, "M_Black", 4)
+    box((5.0, 19.0, 2.6), (-30.0, 14.0, 0.0), "MI_WoodDark", 70.0, bevel=0.8)                                      # hairbrush
+    lathe([(0, 0), (4.8, 0.0), (5.0, 2.6), (0, 2.8)], "MI_WoodDark", xform((0, 10.0, 0), (-30.0, 14.0, 0.0), 70.0), 20, 70.0, sx=1.0, sy=1.4)
+    box((1.6, 16.0, 0.5), (-12.0, 16.0, 0.0), "M_PhoneBakelite", 80.0, bevel=0.2)                                  # comb
+    towel_fold(40.0, 10.0, 0.0, 24.0, 18.0, 2, "MI_Sheet", -4.0)
+    export("SM_ClutterBathDresser")
+
+
+def clutter_daniel_trunk():
+    """The foot of Danny's bed: his army blanket folded, the letters he sent home tied with a ribbon and a baseball.
+    Kept along the crown of the lid (it falls away to the front and back)."""
+    random.seed(1968)
+    towel_fold(-24.0, 0.0, 0.0, 34.0, 22.0, 3, "MI_FabricGreen", 4.0)
+    z = mail(2.0, -2.0, 12, 8.0)                                       # (the book already on the lid stays clear, right of it)
+    box((16.4, 1.4, z + 0.4), (2.0, -2.0, 0.0), "M_ItemRibbon", 8.0, bevel=0.1)
+    box((1.4, 10.0, z + 0.4), (2.0, -2.0, 0.0), "M_ItemRibbon", 8.0, bevel=0.1)
+    lathe([(0, 0), (2.0, 0.2), (3.6, 1.2), (3.7, 3.7), (2.0, 7.2), (0, 7.4)], "M_PhoneIvory", (40.0, -2.0, 0.0), 20)  # baseball
+    tube([(40.0 + 3.7 * math.cos(a), -2.0 + 3.7 * math.sin(a), 3.7 + 1.2 * math.sin(2 * a)) for a in [TAU * i / 24 for i in range(25)]], 0.18, "MI_ToyRed", 4)
+    export("SM_ClutterDanielTrunk")
+
+
+def clutter_aide_dresser():
+    """Mrs. Pruitt's dresser: her Bible and two paperbacks, her nurse's watch, a hairbrush, a coffee mug, her pills and her
+    glasses, a stack of folded towels."""
+    random.seed(1990)
+    book((-60.0, -8.0, 0.0), 6.0, 24.0, 17.0, "MI_Leather", lie=True)
+    book((-58.0, -8.0, 4.0), 2.6, 18.0, 11.0, "MI_FabricRed", yaw=12.0, lie=True)
+    book((-60.0, -8.0, 6.6), 2.0, 18.0, 11.0, "M_HarrowWrapper", yaw=-8.0, lie=True)
+    lathe([(0, 0), (1.8, 0), (1.8, 0.9), (0, 1.0)], CHROME, (-36.0, 12.0, 0.0), 20)                                # watch
+    box((1.6, 18.0, 0.3), (-36.0, 12.0, 0.0), "MI_Leather", 30.0, bevel=0.1)
+    box((5.0, 19.0, 2.6), (-16.0, -10.0, 0.0), "MI_WoodBleached", 100.0, bevel=0.8)
+    cup((0.0, 10.0, 0.0), 160.0, R=4.2, H=9.0, m=CER)
+    bottle((18.0, -12.0, 0.0), 9.0, 2.4, 1.0, GLASS, fill=3.0, fill_m="M_PickleRust", cap="M_PhoneIvory", label=PAPER)
+    glasses(30.0, 10.0, -20.0)
+    towel_fold(56.0, -4.0, 0.0, 26.0, 20.0, 4, "MI_Sheet", 3.0)
+    export("SM_ClutterAideDresser")
+
+
+def clutter_master_trunk():
+    """The trunk at the foot of Edith's bed: quilts folded on it, and her sewing basket."""
+    random.seed(1947)
+    zz = 0.0
+    for m in ("M_HarrowCalico", "MI_Sheet", "M_HarrowGingham", "MI_FabricGreen"):
+        box((64.0 + random.uniform(-3, 3), 24.0 + random.uniform(-2, 2), 4.0), (random.uniform(-2, 2), random.uniform(-1.5, 1.5), zz), m, random.uniform(-3, 3), bevel=1.6)
+        zz += 4.0
+    lathe([(0, 0), (9.0, 0), (11.0, 8.0), (10.4, 8.0), (8.4, 1.0), (0, 1.0)], "MI_WoodBleached", (18.0, 0.0, zz), 32)
+    lathe([(0, 8.0), (11.2, 8.0), (11.2, 9.4), (0, 10.0)], "MI_WoodBleached", (18.0, 0.0, zz), 32)
+    for i in range(4):
+        lathe([(0, 0), (1.4, 0), (1.4, 0.5), (1.1, 0.6), (1.1, 3.2), (1.4, 3.3), (1.4, 3.8), (0, 3.8)], random.choice(FABRICS), (10.0 + i * 3.6, -6.0, zz + 10.2), 12)
+    export("SM_ClutterMasterTrunk")
+
+
+SETS.update({"SM_ClutterKitchenDresser": clutter_kitchen_dresser, "SM_ClutterBathDresser": clutter_bath_dresser,
+             "SM_ClutterDanielTrunk": clutter_daniel_trunk, "SM_ClutterAideDresser": clutter_aide_dresser, "SM_ClutterMasterTrunk": clutter_master_trunk})
 
 
 for name, fn in SETS.items():
