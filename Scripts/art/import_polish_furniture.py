@@ -42,7 +42,7 @@ for fbx in sorted(SRC.glob("SM_*.fbx")):
     missing = []
     for i, sl in enumerate(sm.static_materials):
         slot = str(sl.material_slot_name)
-        m = eal.load_asset("/Game/WC/Materials/" + slot)
+        m = eal.load_asset("/Game/WC/Materials/" + slot) or eal.load_asset("/Game/HorrorHouseKit/Materials/" + slot)
         if m:
             sm.set_material(i, m)
         else:

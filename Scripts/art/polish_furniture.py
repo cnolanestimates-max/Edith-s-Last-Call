@@ -897,6 +897,191 @@ def attic_presents():
 SETS.update({"SM_PolishAideWardrobe": aide_wardrobe, "SM_PolishSewingWardrobe": sewing_wardrobe, "SM_PolishAtticPresents": attic_presents})
 
 
+# ---------------------------------------------------------------------------------------------------- mock-ups: clutter
+# Lived-in clutter for two bare tops, pivot at the middle of the top surface (z 0 is the top), front +Y.  Mock-ups for
+# Cheyenne to keep or trash (2026-11-22).
+def frame(x, y, w, h, yaw, m="MI_WoodDark", pic="MI_PortraitFace"):
+    box((w, 1.2, h), (x, y, 0.0), m, yaw, tilt=(-14.0, 0.0), bevel=0.3)
+    box((w - 3.0, 0.2, h - 3.0), xform((0, 0.7, 1.5), (x, y, 0.0), yaw, (-14.0, 0.0)), pic, yaw, tilt=(-14.0, 0.0), bevel=0.0)
+    box((w - 2.6, 0.1, h - 2.6), xform((0, 0.9, 1.3), (x, y, 0.0), yaw, (-14.0, 0.0)), GLASS, yaw, tilt=(-14.0, 0.0), bevel=0.0)
+    box((1.0, 7.0, 0.8), xform((0, -4.5, 0.0), (x, y, 0.0), yaw), m, yaw, tilt=(30.0, 0.0), bevel=0.1)       # the stand at the back
+
+
+def doily(x, y, R, yaw=0.0):
+    pts = [(0, 0.05)]
+    lathe([(0, 0.0), (R, 0.0), (R, 0.12), (0, 0.12)], "MI_Sheet", (x, y, 0.0), 48, yaw)
+    for i in range(16):
+        a = TAU * i / 16
+        lathe([(0, 0.0), (2.0, 0.0), (2.0, 0.1), (0, 0.1)], "MI_Sheet", (x + math.cos(a) * R, y + math.sin(a) * R, 0.01), 12)
+
+
+def mail(x, y, n, yaw):
+    z = 0.0
+    for i in range(n):
+        box((16.0, 9.5, 0.35), (x + random.uniform(-1.2, 1.2), y + random.uniform(-1, 1), z), random.choice((PAPER, PAPER, "M_ItemCard")), yaw + random.uniform(-10, 10), bevel=0.0)
+        z += 0.38
+    tube([(x - 8.5, y - 3.0, z * 0.5), (x - 8.5, y + 3.0, z * 0.5)], 0.25, "MI_ToyRed", 6)                    # rubber band
+    return z
+
+
+def glasses(x, y, yaw):
+    for s_ in (-1, 1):
+        c = xform((s_ * 3.0, 0, 1.6), (x, y, 0.0), yaw, (70.0, 0.0))
+        tube([xform((s_ * 3.0 + 1.9 * math.cos(TAU * i / 16), 0, 1.6 + 1.5 * math.sin(TAU * i / 16)), (x, y, 0.0), yaw, (70.0, 0.0)) for i in range(17)], 0.12, "M_PhoneBakelite", 5)
+        lathe([(0, 0), (1.8, 0), (1.8, 0.1), (0, 0.1)], GLASS, c, 16, yaw, tilt=(-20.0, 0.0), sx=1.05, sy=0.8)
+        tube([xform((s_ * 5.0, 0, 1.8), (x, y, 0.0), yaw, (70.0, 0.0)), xform((s_ * 5.6, -12.0, 0.4), (x, y, 0.0), yaw)], 0.12, "M_PhoneBakelite", 5)
+
+
+def dead_flowers(x, y):
+    lathe([(0, 0), (3.0, 0), (3.4, 1.0), (4.6, 8.0), (3.0, 15.0), (2.0, 18.0), (2.6, 20.0), (2.3, 20.0), (1.6, 18.0), (2.6, 15.0), (4.2, 8.0), (2.6, 1.0), (0, 1.0)],
+          "M_HarrowEnamel", (x, y, 0.0), 28)
+    for i in range(9):
+        a, r = random.uniform(0, TAU), random.uniform(0.0, 1.2)
+        top = (x + math.cos(a) * (3 + 9 * r), y + math.sin(a) * (3 + 7 * r), 26.0 + random.uniform(0, 14) - 6 * r)
+        mid = (x + math.cos(a) * (1.5 + 3 * r), y + math.sin(a) * (1.5 + 3 * r), 21.0)
+        tube([(x, y, 12.0), mid, top, (top[0] + math.cos(a) * 3, top[1] + math.sin(a) * 3, top[2] - random.uniform(2, 8))], 0.16, "MI_FabricGreen", 5)
+        lathe([(0, 0), (1.4, 0.4), (1.6, 1.6), (0.6, 2.4), (0, 2.5)], random.choice(("MI_FabricDark", "MI_LeatherTan", "MI_Cardboard")),
+              (top[0] + math.cos(a) * 3, top[1] + math.sin(a) * 3, top[2] - 3.0), 10, tilt=(random.uniform(60, 160), random.uniform(-30, 30)))
+    for i in range(5):                                                                                          # petals dropped
+        box((1.6, 1.0, 0.1), (x + random.uniform(-14, 14), y + random.uniform(-10, 10), 0.0), "MI_FabricDark", random.uniform(0, 180), bevel=0.0)
+
+
+def candle(x, y, H=7.0):
+    lathe([(0, 0), (5.0, 0), (5.2, 0.6), (1.6, 1.2), (1.4, 4.0), (2.4, 4.6), (2.4, 5.2), (0, 5.2)], BRASS, (x, y, 0.0), 24)
+    lathe([(0, 5.2), (1.9, 5.2), (2.0, 5.2 + H), (0.4, 5.2 + H + 0.4), (0, 5.2 + H + 0.4)], "M_PhoneIvory", (x, y, 0.0), 16)
+    tube([(x, y, 5.2 + H + 0.3), (x, y, 5.2 + H + 1.4)], 0.1, "M_Black", 4)
+    for a in (0.6, 2.4, 4.2):                                                                                   # wax run down it
+        tube([(x + 2.0 * math.cos(a), y + 2.0 * math.sin(a), 5.2 + H), (x + 2.1 * math.cos(a), y + 2.1 * math.sin(a), 5.2 + H * 0.5), (x + 2.6 * math.cos(a), y + 2.6 * math.sin(a), 5.0)], 0.35, "M_PhoneIvory", 6)
+
+
+def mock_clutter_dresser():
+    """The dining-room dresser: family photographs, a doily under a dish of old candies, the mail she stopped opening, her
+    pill organiser, her reading glasses, a vase of flowers long dead, a burned-down candle."""
+    random.seed(1993)
+    doily(-6.0, -2.0, 15.0)
+    for (x, y, w, h, yaw) in ((-44.0, -16.0, 14.0, 19.0, 8.0), (-28.0, -18.0, 18.0, 23.0, -4.0), (34.0, -17.0, 13.0, 17.0, -10.0)):
+        frame(x, y, w, h, yaw)
+    lathe([(0, 0), (3.5, 0), (3.6, 0.5), (1.4, 1.2), (1.3, 3.5), (6.5, 5.0), (9.0, 8.5), (8.6, 8.5), (6.2, 5.6), (0, 4.0)], GLASS, (-6.0, -2.0, 0.12), 32)
+    for i in range(14):
+        a, r = random.uniform(0, TAU), random.uniform(0, 5.5)
+        lathe([(0, 0), (1.0, 0.3), (1.0, 0.9), (0, 1.2)], random.choice(("MI_ToyRed", "MI_ToyYellow", "MI_FabricGreen", "M_PhoneIvory")),
+              (-6.0 + math.cos(a) * r, -2.0 + math.sin(a) * r, 4.3 + r * 0.35 + random.uniform(0, 1.2)), 8, random.uniform(0, 180), sx=1.6)
+    mail(18.0, 10.0, 9, -12.0)
+    box((19.0, 5.0, 2.2), (-32.0, 12.0, 0.0), "M_HarrowEnamel", 6.0, bevel=0.4)                                  # pill organiser
+    for i in range(7):
+        box((2.3, 4.2, 0.6), (-32.0 - 8.1 + i * 2.7, 12.0, 2.2), random.choice(("M_HarrowEnamel", "MI_ToyBlue", "MI_ToyYellow")), 6.0, bevel=0.1)
+    glasses(2.0, 16.0, 20.0)
+    dead_flowers(46.0, -8.0)
+    candle(20.0, -12.0)
+    export("SM_MockClutterDresser")
+
+
+def mock_clutter_table():
+    """The side table by the sofa: an ashtray full, a pack of cigarettes and a lighter, the TV Guide, a coffee mug with a
+    dried ring in it, the television's remote."""
+    random.seed(1994)
+    lathe([(0, 0), (6.5, 0), (7.0, 0.5), (7.0, 2.6), (6.2, 2.8), (5.4, 1.0), (0, 1.0)], GLASS, (-16.0, -8.0, 0.0), 32)
+    for i in range(7):
+        a = random.uniform(0, TAU)
+        p0 = (-16.0 + math.cos(a) * random.uniform(0, 3), -8.0 + math.sin(a) * random.uniform(0, 3), 1.2)
+        p1 = (p0[0] + math.cos(a) * 3.0, p0[1] + math.sin(a) * 3.0, 1.5 + random.uniform(0, 1.4))
+        tube([p0, p1], 0.4, random.choice(("M_PhoneIvory", "MI_Cardboard")), 6)
+    lathe([(0, 0), (6.2, 0), (6.2, 1.1), (0, 1.1)], "M_Black", (-16.0, -8.0, 0.0), 32)                          # ash in the bottom
+    box((5.6, 2.2, 8.6), (2.0, -12.0, 0.0), "MI_ToyRed", 14.0, tilt=(0.0, 90.0), bevel=0.2)                     # cigarettes, on its side
+    box((2.4, 1.2, 7.2), (6.0, -4.0, 0.0), "MI_ToyBlue", -30.0, tilt=(0.0, 90.0), bevel=0.3)                    # lighter
+    box((13.5, 19.0, 0.6), (14.0, 6.0, 0.0), "M_HarrowWrapper", -8.0, bevel=0.1)                                 # TV Guide
+    cup((-18.0, 12.0, 0.0), 210.0, R=4.2, H=9.2, m="M_HarrowEnamel")
+    lathe([(0, 0.95), (3.7, 0.95), (3.7, 1.3), (0, 1.3)], "M_KitchenTar", (-18.0, 12.0, 0.0), 24)                 # dried coffee
+    box((5.0, 17.0, 2.0), (30.0, -2.0, 0.0), "M_PhoneBakelite", 12.0, bevel=0.6)                                 # the remote
+    for i in range(12):
+        box((0.9, 0.9, 0.4), xform((-1.3 + (i % 3) * 1.3, -5.0 + (i // 3) * 2.2, 2.0), (30.0, -2.0, 0.0), 12.0), random.choice(("M_PhoneIvory", "MI_ToyRed")), 12.0, bevel=0.1)
+    export("SM_MockClutterTable")
+
+
+SETS.update({"SM_MockClutterDresser": mock_clutter_dresser, "SM_MockClutterTable": mock_clutter_table})
+
+
+def alcove_metronome():
+    """Walnut case with inset face, graduated scale, pendulum and winding key."""
+    box((15.5, 10, 1.4), (0, 0, 0), "M_HarrowWalnut", bevel=.45)
+    box((14, 8.8, 1.1), (0, 0, 1.4), TRIM, bevel=.25)
+    # Stepped feet are hidden underneath the bevel of the case.
+    for x in (-5, 5):
+        for y in (-3, 3):
+            box((2.5, 2.5, .45), (x, y, 0), TRIM, bevel=.14)
+    bm = bmesh.new()
+    rings = []
+    for width, depth, z in ((13, 8, 2), (12, 7.7, 4), (5.3, 5.0, 24), (4.5, 4.2, 25.8)):
+        rings.append([bm.verts.new(V(x*width/2, y*depth/2, z))
+                      for x,y in ((-1,-1),(1,-1),(1,1),(-1,1))])
+    for a, b in zip(rings, rings[1:]):
+        for i in range(4):
+            j = (i+1) % 4
+            bm.faces.new((a[i], a[j], b[j], b[i]))
+    bm.faces.new(rings[0]); bm.faces.new(rings[-1])
+    bm.normal_update()
+    uv = bm.loops.layers.uv.new("UVMap")
+    for face in bm.faces:
+        for l in face.loops:
+            p = l.vert.co
+            l[uv].uv = ((p.y if abs(face.normal.x) > .5 else p.x)*5+.5, p.z*4)
+    bmesh.ops.bevel(bm, geom=list(bm.edges), offset=.0019, segments=2, affect="EDGES", clamp_overlap=True)
+    obj(bm, "M_HarrowWalnut", False)
+    box((2.3, .5, 19.2), (0, 4.0, 4.5), BRASS, tilt=(3.8,0), bevel=.12)
+    for i in range(14):
+        z = 6 + i*1.1
+        box((1.35 if i % 3 == 0 else .82, .08, .12), (0, 4.36-(z-4.5)*.067,z), "M_Black", bevel=0)
+    tube([(0.1,4.7,6),(1.7,4.0,21.0)], .14, STEEL, 8)
+    box((1.5, 1.0, 2.0), (1.17,4.25,15.25), BRASS, tilt=(0,6), bevel=.16)
+    tube([(5.7,0,7),(8.6,0,7)], .35, BRASS, 10)
+    tube([(8.6,-1.5,7),(8.6,0,8.1),(8.6,1.5,7),(8.6,0,5.9),(8.6,-1.5,7)], .21, BRASS, 8)
+    export("SM_AlcoveMetronomeSet")
+
+
+def scullery_washboard():
+    """Corrugated zinc washboard resting in a shallow enamel tray."""
+    lathe([(0,0), (18.5,0), (20.4,.9), (22.8,9.3), (22.8,10.0),
+           (21.9,10.1), (20.9,8.6), (18.3,.9), (0,.9)],
+          "M_HarrowEnamel", (0,0,0), 48, sx=1.25, sy=.72)
+    for x in (-28.4,28.4):
+        tube([(x*.88,-4,8),(x,-5,9.5),(x,-5,11.5),(x,4,11.5),(x,4,9.4),(x*.88,4,8)], .53, STEEL, 10)
+    for x in (-12.,12.):
+        box((2.7, 2.6, 36), (x,-5.,2), WOOD, tilt=(19.,0.), bevel=.37)
+    box((24, 2.1, 4.3), (0,-15.25,32.0), WOOD, tilt=(19.,0.), bevel=.4)
+    for z in range(7,31):
+        y = -5.0 - (z-2)*.344
+        tube([(-10.9,y,z),(10.9,y,z)], .63, STEEL, 10)
+    box((8.2,5.3,2.5), (13,4.5,1), "M_PhoneIvory", yaw=11, bevel=.67)
+    export("SM_SculleryWashSet")
+
+
+def folded_linen():
+    for i,(width, depth, shade, yaw) in enumerate(((27,21,SHEET,2),(27,20,SHEET,-5),(23,18,"MI_FabricGreen",4),
+                                                   (23,17,SHEET,-4),(19,15,SHEET,4))):
+        z=i*2.4
+        box((width,depth,2.65), (1,(-1)**i*.45,z), shade,yaw,bevel=.85)
+        # Two rounded woven hems follow the folded front edge.
+        for trimz in (.54,1.21):
+            tube([xform((x,depth*.475,z+trimz),(1,0,0),yaw) for x in (-width*.40,0,width*.4)], .13, shade, 8)
+    export("SM_LinenStackSet")
+
+
+def wrapped_patterns():
+    for i,(x,y,w,d,yaw) in enumerate(((-11,0,22,28,-8),(9,-2,22,26,13),(6,5,18,21,-7))):
+        z = 4.0 if i==2 else 0.
+        box((w,d,4.2), (x,y,z), PAPER, yaw, bevel=.6)
+        for u_,v_ in ((.24,0),(-.22,0)):
+            at = (x,y,z)
+            tube([xform((u_*w,h,4.24),at,yaw) for h in (-d/2,0,d/2)],.16,BRASS,8)
+        tube([xform((k,v_,4.26),(x,y,z),yaw) for k in (-w/2,0,w/2)], .17, BRASS, 8)
+        box((7,5,.12), xform((2,4,4.3),(x,y,z),yaw), "M_PhoneIvory", yaw, bevel=.05)
+    export("SM_BoxRoomPatternSet")
+
+
+SETS.update({"SM_AlcoveMetronomeSet": alcove_metronome, "SM_SculleryWashSet": scullery_washboard,
+             "SM_LinenStackSet": folded_linen, "SM_BoxRoomPatternSet": wrapped_patterns})
+
+
 for name, fn in SETS.items():
     if argv and name not in argv:
         continue
