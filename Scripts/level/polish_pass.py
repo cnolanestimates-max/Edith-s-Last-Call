@@ -31,6 +31,13 @@ TURN = [
     ("Wardrobe_Tall", "/Daniel", 90.0, True),
     ("AideDresser", "/Aide", -90.0, True),                       # the "desk" turned round: an old chest of drawers
     ("Wardrobe_Open_Clothes", "/Aide", 90.0, True),              # and it stood 27 cm into the wall
+    # stood into the wall behind them: same way round, backs brought out to two centimetres off the plaster (2026-11-22)
+    ("Wardrobe_Open_Clothes", "/Sewing", 0.0, True),             # 38 cm into the wall
+    ("Lockers_Row_4_Dented", "/Cellar", 0.0, True),              # 22 cm
+    ("Wardrobe_Leaning", "/Attic", 180.0, True),                 # 16 cm (its top, leaning back)
+    ("Wardrobe_Mirror_Cracked", "/Sitting", 0.0, True),          # 12 cm
+    ("Altar", "/Prayer", 180.0, True),                           # 12 cm
+    ("Sofa_Chesterfield", "/Den", 180.0, True),                  # 7 cm
 ]
 
 
