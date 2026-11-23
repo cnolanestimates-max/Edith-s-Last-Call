@@ -52,7 +52,8 @@ for setter, val in (("set_fog_density", 0.028), ("set_fog_height_falloff", 0.06)
         getattr(fc, setter)(val)
     except Exception as exc:
         log(f"fog {setter}: {exc}")
-for prop, val in (("volumetric_fog_scattering_distribution", 0.6), ("volumetric_fog_extinction_scale", 1.6),
+# thicker air (Cheyenne picked lighting option B, 2026-11-23): more forward scattering and extinction than the first 0.6 / 1.6
+for prop, val in (("volumetric_fog_scattering_distribution", 0.9), ("volumetric_fog_extinction_scale", 2.0),
                   ("volumetric_fog_albedo", unreal.Color(214, 218, 226, 255)), ("volumetric_fog_distance", 5000.0),
                   ("volumetric_fog_start_distance", 0.0), ("volumetric_fog_near_fade_in_distance", 0.0),
                   ("fog_max_opacity", 0.96)):
@@ -91,7 +92,10 @@ grade("Grade_Night", NIGHT_EV, [
     ("scene_fringe_intensity", 0.25), ("color_saturation", unreal.Vector4(0.80, 0.84, 0.90, 1.0)),
     ("color_contrast", unreal.Vector4(1.08, 1.08, 1.08, 1.0)), ("color_gain_shadows", unreal.Vector4(0.90, 0.98, 1.08, 1.0)),
     ("color_gamma_midtones", unreal.Vector4(0.98, 1.0, 1.02, 1.0)), ("white_temp", 6800.0),
-    ("ambient_occlusion_intensity", 0.7), ("local_exposure_shadow_contrast_scale", 0.9)])
+    ("ambient_occlusion_intensity", 0.7), ("local_exposure_shadow_contrast_scale", 0.9),
+    # option B (2026-11-23): a little more bounce light, and Lumen at its higher quality so the thicker air reads
+    ("indirect_lighting_intensity", 1.1), ("lumen_scene_lighting_quality", 2.0), ("lumen_final_gather_quality", 2.0),
+    ("lumen_scene_detail", 2.0), ("lumen_reflection_quality", 2.0)])
 grade("Grade_Dawn", NIGHT_EV + 2.4, [          # the first grey before sunrise (Cheyenne: "barely breaking morning, not bright sun")
     ("vignette_intensity", 0.45), ("film_grain_intensity", 0.15), ("bloom_intensity", 0.3),
     ("color_saturation", unreal.Vector4(0.72, 0.74, 0.8, 1.0)), ("white_temp", 6900.0)], priority=5.0, tags=["PP_Dawn"], enabled=False)
@@ -103,7 +107,8 @@ def shaft(name, x, y, z, yaw, pitch=-15.0):
     x += math.cos(math.radians(yaw)) * 78.0
     y += math.sin(math.radians(yaw)) * 78.0
     z -= 42.0
-    m_ = light_spot(name + "_moon", x, y, z, yaw, pitch, 2600, (0.5, 0.63, 1.0), 900, 36, 62, "Lights/Windows", tags=["Hide_dawn", name], shadows=True, vol=1.5)
+    # option B (Cheyenne, 2026-11-23): the moonlight a little dimmer (2600 -> 1820) and barely lighting the air (vol 1.5 -> 0.525)
+    m_ = light_spot(name + "_moon", x, y, z, yaw, pitch, 1820, (0.5, 0.63, 1.0), 900, 36, 62, "Lights/Windows", tags=["Hide_dawn", name], shadows=True, vol=0.525)
     m_.light_component.set_editor_property("lighting_channels", LC_SHAFT)
     light_spot(name + "_dawn", x, y, z, yaw, pitch + 4, 9000, (0.72, 0.76, 0.92), 1100, 36, 62, "Lights/Windows", tags=["Show_dawn"], shadows=True, vol=2.4)
 

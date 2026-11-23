@@ -128,10 +128,13 @@ static void ApplyLookPreview(UWorld* W, const FString& Looks)
 		// a fuller walk in the camera (WCCharacter.cpp, wc.CameraFeel) and a touch of motion blur on fast turns
 		APostProcessVolume* V = W->SpawnActor<APostProcessVolume>();
 		V->bUnbound = true; V->Priority = 50.f; V->BlendWeight = 1.f;
-		V->Settings.bOverride_MotionBlurAmount = true; V->Settings.MotionBlurAmount = 0.45f;
-		V->Settings.bOverride_MotionBlurMax = true; V->Settings.MotionBlurMax = 2.f;
-		UKismetSystemLibrary::ExecuteConsoleCommand(W, TEXT("wc.CameraFeel 1"), nullptr);
-		UE_LOG(LogWCAuto, Display, TEXT("WCLOOK camera on"));
+		float Feel = 1.f, Blur = 0.45f;                                        // -WCLookCam= strength, -WCLookBlur= motion blur
+		FParse::Value(FCommandLine::Get(), TEXT("WCLookCam="), Feel);
+		FParse::Value(FCommandLine::Get(), TEXT("WCLookBlur="), Blur);
+		V->Settings.bOverride_MotionBlurAmount = true; V->Settings.MotionBlurAmount = Blur;
+		V->Settings.bOverride_MotionBlurMax = true; V->Settings.MotionBlurMax = 2.f + 2.f * Blur;
+		UKismetSystemLibrary::ExecuteConsoleCommand(W, *FString::Printf(TEXT("wc.CameraFeel %.2f"), Feel), nullptr);
+		UE_LOG(LogWCAuto, Display, TEXT("WCLOOK camera on (feel %.2f, blur %.2f)"), Feel, Blur);
 	}
 }
 

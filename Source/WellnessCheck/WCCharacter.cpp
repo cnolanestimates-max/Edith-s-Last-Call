@@ -24,7 +24,7 @@
 #include "HAL/IConsoleManager.h"
 
 // Cheyenne's camera-feel preview (2026-11-23): off unless a look test turns it on (-WCLook=camera)
-static TAutoConsoleVariable<int32> CVarWCCameraFeel(TEXT("wc.CameraFeel"), 0, TEXT("Look preview: a fuller walk in the camera (deeper bob, side sway, a nod on each step, breathing when still)"));
+static TAutoConsoleVariable<float> CVarWCCameraFeel(TEXT("wc.CameraFeel"), 0.f, TEXT("Look preview: how much fuller the walk is in the camera (0 off, 1 the first try, 2.5 and 4 the stronger tries): deeper bob, side sway, a nod on each step, a lean into turns, breathing when still"));
 static const int32 DustCount = 260;
 static const float DustBox = 320.f;
 
@@ -552,16 +552,22 @@ void AWCCharacter::Tick(float Dt)
 	float Roll = FMath::Sin(BobTime) * 0.5f * BobAmt;
 	float PitchAdd = 0.f, YawAdd = 0.f;
 	float SideAdd = 0.f;
-	if (CVarWCCameraFeel.GetValueOnGameThread() > 0)
+	const float Feel = CVarWCCameraFeel.GetValueOnGameThread();
+	if (Feel > 0.f)
 	{
-		Z = EyeZ + FMath::Sin(BobTime * 2.f) * 2.6f * BobAmt;                 // a deeper rise and fall with each step
-		SideAdd = FMath::Sin(BobTime) * 1.5f * BobAmt;                         // weight shifting from foot to foot
-		Roll = FMath::Sin(BobTime) * 0.95f * BobAmt;
-		PitchAdd += FMath::Sin(BobTime * 2.f + 0.6f) * 0.45f * BobAmt;         // a small nod as each foot lands
-		const float Idle = 1.f - FMath::Clamp(Speed / 60.f, 0.f, 1.f);         // standing still: breathing
-		Z += FMath::Sin(Clock * 1.55f) * 0.45f * Idle;
-		PitchAdd += FMath::Sin(Clock * 1.55f - 0.8f) * 0.22f * Idle;
-		YawAdd += FMath::Sin(Clock * 0.53f) * 0.18f * Idle;
+		static float LastYaw = 0.f, YawRate = 0.f;
+		const float Yaw = GetControlRotation().Yaw;
+		YawRate = FMath::FInterpTo(YawRate, FMath::UnwindDegrees(Yaw - LastYaw) / FMath::Max(Dt, 0.001f), Dt, 6.f);
+		LastYaw = Yaw;
+		Z = EyeZ + FMath::Sin(BobTime * 2.f) * (1.6f + 1.0f * Feel) * BobAmt;                // a deeper rise and fall with each step
+		SideAdd = FMath::Sin(BobTime) * 1.5f * Feel * BobAmt;                                  // weight shifting from foot to foot
+		Roll = FMath::Sin(BobTime) * (0.5f + 0.45f * Feel) * BobAmt;
+		PitchAdd += FMath::Sin(BobTime * 2.f + 0.6f) * 0.45f * Feel * BobAmt;                 // a nod as each foot lands
+		Roll += FMath::Clamp(YawRate, -220.f, 220.f) * 0.012f * Feel;                          // leaning into a turn
+		const float Idle = 1.f - FMath::Clamp(Speed / 60.f, 0.f, 1.f);                         // standing still: breathing
+		Z += FMath::Sin(Clock * 1.55f) * 0.45f * Feel * Idle;
+		PitchAdd += FMath::Sin(Clock * 1.55f - 0.8f) * 0.22f * Feel * Idle;
+		YawAdd += FMath::Sin(Clock * 0.53f) * 0.18f * Feel * Idle;
 	}
 
 	Shake = FMath::FInterpTo(Shake, 0.f, Dt, 2.2f);
