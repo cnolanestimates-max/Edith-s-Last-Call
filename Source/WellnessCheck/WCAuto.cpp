@@ -6,6 +6,7 @@
 #include "WCCharacter.h"
 #include "WCEntity.h"
 #include "WCWorld.h"
+#include "WCGame.h"
 
 #include "EngineUtils.h"
 #include "AudioMixerBlueprintLibrary.h"
@@ -156,7 +157,31 @@ void AWCDirector::AutoBegin()
 		Player()->SetInputLocked(false); Player()->SetFlashlight(true,false); Fade = FadeTarget = 0.f;
 		auto Do = [this](const TCHAR* Cmd) { AutoSteps.Add({A_Do,Cmd,0.f}); };
 		auto Touch = [this](const TCHAR* Id) { AutoSteps.Add({A_Use,Id,0.f}); };
-		if (FParse::Param(FCommandLine::Get(),TEXT("WCRoomConnections")))
+		if (FParse::Param(FCommandLine::Get(),TEXT("WCRuthMapCheck")))
+		{
+			Do(TEXT("flag:inside")); Do(TEXT("flag:briefed")); Do(TEXT("flag:attic_done"));
+			Do(TEXT("at:327,49,92,88,-33")); Do(TEXT("ruth_map_checkpoint")); Touch(TEXT("ruth_foyer_envelope"));
+			Do(TEXT("ruth_map_first")); Do(TEXT("ruth_map_show")); Wait(.5f); Shot(TEXT("01_foyer_scrap")); Do(TEXT("ruth_map_close"));
+			Do(TEXT("at:209,-257,92,-90,-48")); Touch(TEXT("ruth_stash_0"));
+			Do(TEXT("at:1014,-840,92,-75,-28")); Touch(TEXT("ruth_metronome")); Touch(TEXT("ruth_metronome"));
+			Do(TEXT("ruth_metronome_closed")); Touch(TEXT("ruth_metronome")); Touch(TEXT("ruth_scrap_2"));
+			Do(TEXT("at:1800,533,92,90,0")); Touch(TEXT("scullery_pantry")); Do(TEXT("scullery_locked"));
+			Do(TEXT("at:1740,487,92,169,-12")); Touch(TEXT("pick_key_scullery"));
+			Do(TEXT("at:1800,533,92,90,0")); Touch(TEXT("scullery_pantry")); Flag(TEXT("scullery_open"),5.f);
+			Do(TEXT("at:2324,710,92,73,-23")); Touch(TEXT("ruth_washboard")); Touch(TEXT("ruth_scrap_3"));
+			Do(TEXT("ruth_map_show")); Wait(.5f); Shot(TEXT("02_ground_assembled")); Do(TEXT("ruth_map_close"));
+			Do(TEXT("at:2422,713,92,108,-28")); Touch(TEXT("pick_ammo_scullery"));
+			Do(TEXT("at:2798,409,442,78,-23")); Touch(TEXT("ruth_linen")); Touch(TEXT("ruth_scrap_4"));
+			Do(TEXT("ruth_map_show")); Wait(.5f); Shot(TEXT("03_unknown_linen_room")); Do(TEXT("ruth_map_close"));
+			Do(TEXT("at:2654,-414,442,-90,-24")); Touch(TEXT("ruth_tin_star")); Touch(TEXT("ruth_tin_moon"));
+			Touch(TEXT("ruth_tin_wave")); Do(TEXT("ruth_tins_closed")); Touch(TEXT("ruth_tin_star")); Touch(TEXT("ruth_scrap_5"));
+			Do(TEXT("at:2704,-437,442,-94,-28")); Touch(TEXT("ruth_stash_2"));
+			Do(TEXT("at:910,-281,792,-92,-36")); Touch(TEXT("ruth_attic_case")); Touch(TEXT("ruth_scrap_6")); Touch(TEXT("ruth_stash_3"));
+			Do(TEXT("at:613,-424,-258,-88,-30")); Touch(TEXT("ruth_shark_tin")); Touch(TEXT("ruth_scrap_7"));
+			Do(TEXT("ruth_map_show")); Wait(.5f); Shot(TEXT("04_cellar_assembled")); Do(TEXT("ruth_map_close"));
+			Do(TEXT("ruth_map_continue"));
+		}
+		else if (FParse::Param(FCommandLine::Get(),TEXT("WCRoomConnections")))
 		{
 			Do(TEXT("flag:inside"));
 			Do(TEXT("at:746,-674,92,0,0")); Do(TEXT("room_walk:954,-674"));
@@ -1299,6 +1324,58 @@ void AWCDirector::AutoTick(float Dt)
 	case A_Do:
 		if (S.Arg.ToString().StartsWith(TEXT("rec:"))) { GLookRecName = S.Arg.ToString().Mid(4); GLookFrame = 0; Next(); return; }
 		if (S.Arg == TEXT("rec_off")) { GLookRecName.Empty(); Next(); return; }
+		if (S.Arg.ToString().StartsWith(TEXT("ruth_")))
+		{
+			if (S.Arg == TEXT("ruth_map_checkpoint")) DoSave(TEXT("ruth_map_test"));
+			else if (S.Arg == TEXT("ruth_map_first"))
+			{
+				if (WCRuthMap::Count(*this) != 1 || WCRuthMap::HasFloor(*this,WCRuthMap::Floor::Upper) || Thing(TEXT("ruth_foyer_envelope"))->CanInteract())
+				{
+					UE_LOG(LogWCAuto, Error, TEXT("WCAUTO FAIL first map scrap visibility"));
+				}
+			}
+			else if (S.Arg == TEXT("ruth_metronome_closed") || S.Arg == TEXT("ruth_tins_closed"))
+			{
+				const FName Hidden = S.Arg == TEXT("ruth_metronome_closed") ? FName(TEXT("ruth_scrap_2")) : FName(TEXT("ruth_scrap_5"));
+				if (Thing(Hidden)->CanInteract())
+				{
+					UE_LOG(LogWCAuto, Error, TEXT("WCAUTO FAIL map scrap exposed before puzzle completion"));
+				}
+			}
+			else if (S.Arg == TEXT("ruth_map_show") || S.Arg == TEXT("ruth_map_close"))
+			{
+				if (const APlayerController* PC = Cast<APlayerController>(P->GetController()))
+					if (AWCHUD* HUD = Cast<AWCHUD>(PC->GetHUD()))
+					{
+						if (S.Arg == TEXT("ruth_map_show"))
+						{
+							HUD->OpenRuthMap(this);
+							HUD->SetPaused(false);
+							int32 Loaded = 0;
+							for (UTexture2D* Plate : HUD->RuthPlates) Loaded += Plate != nullptr;
+							if (Loaded != 1 + WCRuthMap::Count(*this))
+							{
+								UE_LOG(LogWCAuto, Error, TEXT("WCAUTO FAIL Ruth's map loaded an unknown or missing piece"));
+							}
+						}
+						else HUD->CloseRuthMap();
+					}
+			}
+			else if (S.Arg == TEXT("ruth_map_continue"))
+			{
+				if (WCRuthMap::Count(*this) != 7 || !DoLoad() || WCRuthMap::Count(*this) != 7 ||
+					!HasItem(TEXT("ruth_sea_glass")) || !HasItem(TEXT("ruth_compass")) || !HasItem(TEXT("ruth_photo")) ||
+					Thing(TEXT("ruth_scrap_7"))->CanInteract() || Thing(TEXT("ruth_stash_2"))->CanInteract())
+				{
+					UE_LOG(LogWCAuto, Error, TEXT("WCAUTO FAIL Ruth's map or treasure after Continue"));
+				}
+				else
+				{
+					UE_LOG(LogWCAuto, Display, TEXT("WCRUTHMAP all seven scraps and treasure restored on Continue"));
+				}
+			}
+			Next(); return;
+		}
 		if (S.Arg == TEXT("connections_reload"))
 		{
 			if (!DoLoad() || !HasItem(TEXT("key_scullery")) || !Has(TEXT("scullery_open")) ||

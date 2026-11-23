@@ -277,6 +277,7 @@ void AWCDirector::ApplyWorldState()
 
 void AWCDirector::StoryBegin(bool bFromSave)
 {
+	RuthMapBegin();
 	if (APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0))
 	{
 		if (APawn* P = PC->GetPawn()) PC->SetViewTargetWithBlend(P, 0.f);

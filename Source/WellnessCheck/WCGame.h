@@ -5,9 +5,11 @@
 #include "GameFramework/GameModeBase.h"
 #include "GameFramework/HUD.h"
 #include "GameFramework/PlayerController.h"
+#include "WCRuthMap.h"
 #include "WCGame.generated.h"
 
 class UFont;
+class UTexture2D;
 class AWCDirector;
 
 UCLASS()
@@ -28,7 +30,7 @@ public:
 };
 
 UENUM()
-enum class EWCScreen : uint8 { None, Main, Pause, Settings, Controls, Inventory };
+enum class EWCScreen : uint8 { None, Main, Pause, Settings, Controls, Inventory, RuthMap };
 
 UCLASS()
 class WELLNESSCHECK_API AWCHUD : public AHUD
@@ -40,6 +42,7 @@ public:
 	virtual void BeginPlay() override;
 
 private:
+	friend class AWCDirector;
 	struct FItem { FString Label; FString Value; FName Id; bool bSlider = false; float Frac = 0.f; };
 
 	float Px(float P) const;
@@ -54,6 +57,13 @@ private:
 	void DrawNote(AWCDirector* D);
 	void DrawMenu(AWCDirector* D);
 	void DrawCredits(AWCDirector* D);
+	void OpenRuthMap(AWCDirector* D);
+	void CloseRuthMap();
+	void DrawRuthMap(AWCDirector* D);
+	WCRuthMap::Floor RuthFloor = WCRuthMap::Floor::Ground;
+	EWCScreen RuthBack = EWCScreen::None;
+	int32 RuthStash = INDEX_NONE;
+	UPROPERTY(Transient) TArray<TObjectPtr<UTexture2D>> RuthPlates;
 
 	// inventory
 	struct FInvItem { FName Id; FString Name; FString Desc; };

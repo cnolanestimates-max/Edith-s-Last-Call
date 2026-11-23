@@ -196,6 +196,8 @@ void AWCDirector::BeginPlay()
 		SaveSlot = TEXT("WCCorner24Check");
 	if (bAuto && FParse::Param(FCommandLine::Get(), TEXT("WCRoomConnections")))
 		SaveSlot = TEXT("WCRoomConnectionsCheck");
+	if (bAuto && FParse::Param(FCommandLine::Get(), TEXT("WCRuthMapCheck")))
+		SaveSlot = TEXT("WCRuthMapCheck");
 	if (bAuto && FParse::Param(FCommandLine::Get(), TEXT("WCSettlersCheck")))
 		SaveSlot = TEXT("WCSettlersCheck");
 	if (bAuto && FParse::Param(FCommandLine::Get(), TEXT("WCBreathCheck")))
@@ -458,6 +460,7 @@ void AWCDirector::Event(FName Id)
 {
 	if (Mode != EWCMode::Playing) return;
 	UE_LOG(LogWC, Display, TEXT("WCEVENT t=%.1f %s"), PlaySeconds, *Id.ToString());
+	if (RuthMapEvent(Id)) return;
 	CueEvent(Id);
 	StoryEvent(Id);
 }
@@ -581,6 +584,8 @@ bool AWCDirector::DoLoad()
 	NextYardCaw = -1.;
 	Items = TSet<FName>(S->Items);
 	if (Has(TEXT("scullery_key_found"))) Items.Add(TEXT("key_scullery"));
+	RuthMetronomeStep = RuthTinStep = 0;
+	RefreshRuthMap();
 	NotesRead = S->NotesRead;
 	Objective = S->Objective;
 	PlaySeconds = S->PlaySeconds;

@@ -189,6 +189,18 @@ void AWCHUD::DrawHUD()
 	if (D->Mode == EWCMode::Menu && Screen == EWCScreen::None) Open(EWCScreen::Main);
 	if (D->Mode == EWCMode::Playing && Screen == EWCScreen::Main) Open(EWCScreen::None);
 	const bool bEsc = PC->WasInputKeyJustPressed(EKeys::Escape) || PC->WasInputKeyJustPressed(EKeys::Gamepad_Special_Right);
+	const bool bMap = PC->WasInputKeyJustPressed(EKeys::M);
+	if (Screen == EWCScreen::RuthMap && (bMap || bEsc || D->Mode != EWCMode::Playing))
+	{
+		CloseRuthMap();
+		return;
+	}
+	if (bMap && D->Mode == EWCMode::Playing && Screen == EWCScreen::None && !D->ActiveNote.IsValid() &&
+		D->Fade < .5f && !D->HasActiveEncounter() && !D->IsDriving() && !D->IsShedPickupActive())
+	{
+		if (AWCCharacter* P = D->Player(); P && !P->IsDown() && !P->IsInputLocked() && WCRuthMap::Count(*D))
+			OpenRuthMap(D);
+	}
 	if (D->bAuto && Screen == EWCScreen::Pause && RealNow - ScreenOpenedAt > 10.0)
 	{
 		// a test run was paused (somebody touched the keyboard): carry on by itself
@@ -248,6 +260,7 @@ void AWCHUD::DrawHUD()
 	}
 	if (D->Mode == EWCMode::Credits) DrawCredits(D);
 	if (Screen == EWCScreen::Inventory) DrawInventory(D);
+	else if (Screen == EWCScreen::RuthMap) DrawRuthMap(D);
 	else if (Screen != EWCScreen::None) DrawMenu(D);
 	if (!InvTestDir.IsEmpty() && D->Mode == EWCMode::Playing)
 	{
@@ -504,6 +517,7 @@ void AWCHUD::BuildItems(AWCDirector* D, TArray<FItem>& Out) const
 	else if (Screen == EWCScreen::Pause)
 	{
 		Add(TEXT("Resume"), TEXT(""), TEXT("resume"));
+		if (WCRuthMap::Count(*D)) Add(TEXT("Ruth's map"), TEXT(""), TEXT("ruth_map"));
 		Add(TEXT("Reload last checkpoint"), TEXT(""), TEXT("restart"));
 		Add(TEXT("Settings"), TEXT(""), TEXT("settings"));
 		Add(TEXT("Controls"), TEXT(""), TEXT("controls"));
@@ -560,6 +574,7 @@ void AWCHUD::Activate(AWCDirector* D, const FItem& It, int32 Dir)
 	if (Id == TEXT("controls") && bPress) { Back = Screen; Open(EWCScreen::Controls); return; }
 	if (Id == TEXT("quit") && bPress) { UKismetSystemLibrary::QuitGame(this, GetOwningPlayerController(), EQuitPreference::Quit, false); return; }
 	if (Id == TEXT("resume") && bPress) { Open(EWCScreen::None); SetPaused(false); return; }
+	if (Id == TEXT("ruth_map") && bPress) { OpenRuthMap(D); return; }
 	if (Id == TEXT("restart") && bPress) { SetPaused(false); D->RestartFromCheckpoint(); return; }
 	if (Id == TEXT("tomenu") && bPress) { SetPaused(false); D->QuitToMenu(); return; }
 	if (Id == TEXT("back") && bPress) { Open(Back); return; }
@@ -736,6 +751,9 @@ namespace
 		{ TEXT("keep_ruth"), TEXT("Ruth's music box"), TEXT("Her name is scratched into the bottom in a child's capitals. It still plays."), TEXT("") },
 		{ TEXT("keep_walter"), TEXT("Walter's wedding ring"), TEXT("Worn thin. It was lying with her knots."), TEXT("/Game/WC/Props/SM_Item_Ring.SM_Item_Ring") },
 		{ TEXT("keep_daniel"), TEXT("Daniel's dog tags"), TEXT("HARROW, DANIEL. He went, and in March of 1969 a telegram came instead of him."), TEXT("/Game/WC/Props/SM_Item_Tags.SM_Item_Tags") },
+		{ TEXT("ruth_sea_glass"), TEXT("Ruth's sea glass"), TEXT("A little green piece of bottle glass, rubbed smooth. She put it beside the piano bench for Danny to find."), TEXT("") },
+		{ TEXT("ruth_compass"), TEXT("Danny's brass compass"), TEXT("Along the rim, scratched with a nail: FOR THE CAPTAIN. The needle still moves."), TEXT("") },
+		{ TEXT("ruth_photo"), TEXT("The Harrow photograph"), TEXT("On the back, in Ruth's pencil: Danny says the stairs count as a ladder."), TEXT("") },
 	};
 	// Some things have something hidden on them: turn that side toward him in Inspect and it can be taken.
 	struct FWCHidden { const TCHAR* Item; FVector Side; const TCHAR* Hint; const TCHAR* Prompt; const TCHAR* Found; const TCHAR* Event; };
@@ -791,6 +809,17 @@ void AWCHUD::ShowInvItem(AWCDirector* D, FName Id)
 	FVector Part = FVector::OneVector;
 	const FWCItemInfo* I = FindWCItemInfo(Id);
 	if (I && I->Mesh[0]) Mesh = LoadObject<UStaticMesh>(nullptr, I->Mesh, nullptr, LOAD_NoWarn | LOAD_Quiet);
+	for (const int32 Stash : {0,2,3})
+	{
+		if (Id != WCRuthMap::Stashes[Stash].Item) continue;
+		if (AWCInteractable* A = D->Thing(FName(*FString::Printf(TEXT("ruth_stash_%d"),Stash))); A && A->Mesh)
+		{
+			Mesh = A->Mesh->GetStaticMesh();
+			Part = A->Mesh->GetRelativeScale3D();
+			for (int32 M = 0; M < A->Mesh->GetNumMaterials(); ++M) Mats.Add(A->Mesh->GetMaterial(M));
+		}
+		break;
+	}
 	if (!Mesh)
 	{
 		// the thing itself, as it lay in the house

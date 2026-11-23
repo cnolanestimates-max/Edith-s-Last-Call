@@ -332,6 +332,12 @@ private:
 	bool TryListeningSnicker(AWCCharacter* P);
 	void TickListeningSnicker();
 	void RememberAtCheckpoint(FName Flag, bool bEnabled = true);
+	void RuthMapBegin();
+	void RefreshRuthMap();
+	bool RuthMapEvent(FName EventId);
+	TMap<FName, TWeakObjectPtr<AWCInteractable>> RuthMapActors;
+	int32 RuthMetronomeStep = 0;
+	int32 RuthTinStep = 0;
 	TWeakObjectPtr<UAudioComponent> ListeningSnicker;
 	FVector ListeningStartForward = FVector::ZeroVector;
 	void TickHallClock();
