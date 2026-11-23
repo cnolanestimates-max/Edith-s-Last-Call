@@ -19,6 +19,10 @@
 #include "Components/PointLightComponent.h"
 #include "Components/SpotLightComponent.h"
 #include "Engine/SpotLight.h"
+#include "Misc/FileHelper.h"
+#include "Engine/PostProcessVolume.h"
+#include "Engine/ExponentialHeightFog.h"
+#include "Components/ExponentialHeightFogComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Camera/PlayerCameraManager.h"
 #include "GameFramework/PlayerController.h"
@@ -38,6 +42,88 @@
 DEFINE_LOG_CATEGORY_STATIC(LogWCAuto, Log, All);
 
 enum { A_Go, A_Use, A_Wait, A_WaitFlag, A_Shot, A_Fire, A_Look, A_Light, A_LookHer, A_WaitHer, A_Crouch, A_Tele, A_Her, A_FaceItem, A_Aim, A_Do };
+
+// ================================================================================================ look previews
+// Cheyenne, 2026-11-23: three looks to judge side by side before any of them is kept, switched only from the command line
+// (-WCLook=lighting,grade,camera) so nothing in the game changes until she picks.  -WCLookTour=<file> walks the house and
+// records every frame of each stretch to <-WCShots dir>/<stretch>/f_00000.png for the comparison videos.
+static FString GLookRecDir, GLookRecName;
+static int32 GLookFrame = 0;
+
+static void ApplyLookPreview(UWorld* W, const FString& Looks)
+{
+	if (!W) return;
+	if (Looks.Contains(TEXT("lighting")))
+	{
+		// fuller bounce light from Lumen, thicker air indoors so light reads in it, and the moonlight through the windows as
+		// visible shafts (the flashlight itself is left as it is)
+		APostProcessVolume* V = W->SpawnActor<APostProcessVolume>();
+		V->bUnbound = true; V->Priority = 60.f; V->BlendWeight = 1.f;
+		FPostProcessSettings& S = V->Settings;
+		S.bOverride_IndirectLightingIntensity = true; S.IndirectLightingIntensity = 1.8f;
+		S.bOverride_LumenSceneLightingQuality = true; S.LumenSceneLightingQuality = 2.f;
+		S.bOverride_LumenFinalGatherQuality = true; S.LumenFinalGatherQuality = 2.f;
+		S.bOverride_LumenSceneDetail = true; S.LumenSceneDetail = 2.f;
+		S.bOverride_LumenReflectionQuality = true; S.LumenReflectionQuality = 2.f;
+		for (TActorIterator<AExponentialHeightFog> It(W); It; ++It)
+		{
+			UExponentialHeightFogComponent* F = It->GetComponent();
+			F->SetVolumetricFogScatteringDistribution(0.9f);              // forward scattering: shafts read from the side, no halo
+			F->SetVolumetricFogExtinctionScale(2.0f);
+		}
+		int32 N = 0;
+		for (TActorIterator<ASpotLight> It(W); It; ++It)
+		{
+			if (!It->ActorHasTag(TEXT("Hide_dawn"))) continue;
+			USpotLightComponent* L = It->SpotLightComponent;
+			L->SetWorldLocation(L->GetComponentLocation() - L->GetForwardVector() * 170.f);    // out past the frame, so the window shapes it
+			L->SetAttenuationRadius(L->AttenuationRadius + 220.f);
+			L->SetIntensity(L->Intensity * 2.2f);
+			L->SetVolumetricScatteringIntensity(L->VolumetricScatteringIntensity * 2.6f);
+			L->SetOuterConeAngle(L->OuterConeAngle * 0.8f);
+			++N;
+		}
+		for (const TCHAR* Cmd : { TEXT("r.VolumetricFog.GridPixelSize 8"), TEXT("r.VolumetricFog.GridSizeZ 96") })
+			UKismetSystemLibrary::ExecuteConsoleCommand(W, Cmd, nullptr);
+		UE_LOG(LogWCAuto, Display, TEXT("WCLOOK lighting on (%d window shafts)"), N);
+	}
+	if (Looks.Contains(TEXT("grade")))
+	{
+		// one cinematic grade: colder, harder shadows with warm highlights, heavier film grain under the tape filter, a little
+		// colour fringing at the edges, and the eye adjusting slowly to the dark and to the light
+		APostProcessVolume* V = W->SpawnActor<APostProcessVolume>();
+		V->bUnbound = true; V->Priority = 55.f; V->BlendWeight = 1.f;
+		FPostProcessSettings& S = V->Settings;
+		S.bOverride_ColorSaturation = true; S.ColorSaturation = FVector4(0.74f, 0.80f, 0.90f, 1.f);
+		S.bOverride_ColorContrast = true; S.ColorContrast = FVector4(1.14f, 1.14f, 1.14f, 1.f);
+		S.bOverride_ColorGammaShadows = true; S.ColorGammaShadows = FVector4(0.94f, 1.f, 1.08f, 1.f);
+		S.bOverride_ColorGainHighlights = true; S.ColorGainHighlights = FVector4(1.08f, 1.f, 0.88f, 1.f);
+		S.bOverride_ColorOffsetShadows = true; S.ColorOffsetShadows = FVector4(-0.004f, 0.f, 0.006f, 0.f);
+		S.bOverride_FilmGrainIntensity = true; S.FilmGrainIntensity = 0.42f;
+		S.bOverride_SceneFringeIntensity = true; S.SceneFringeIntensity = 1.1f;
+		S.bOverride_VignetteIntensity = true; S.VignetteIntensity = 0.7f;
+		float Lo = 4.3f, Hi = 5.8f;                                                    // EV100 round the night grade's fixed exposure (about 5)
+		FParse::Value(FCommandLine::Get(), TEXT("WCLookEyeLo="), Lo);
+		FParse::Value(FCommandLine::Get(), TEXT("WCLookEyeHi="), Hi);
+		S.bOverride_AutoExposureMethod = true; S.AutoExposureMethod = EAutoExposureMethod::AEM_Histogram;
+		S.bOverride_AutoExposureBias = true; S.AutoExposureBias = 0.f;
+		S.bOverride_AutoExposureMinBrightness = true; S.AutoExposureMinBrightness = Lo;
+		S.bOverride_AutoExposureMaxBrightness = true; S.AutoExposureMaxBrightness = Hi;
+		S.bOverride_AutoExposureSpeedUp = true; S.AutoExposureSpeedUp = 1.2f;
+		S.bOverride_AutoExposureSpeedDown = true; S.AutoExposureSpeedDown = 0.6f;
+		UE_LOG(LogWCAuto, Display, TEXT("WCLOOK grade on (eye %.1f..%.1f)"), Lo, Hi);
+	}
+	if (Looks.Contains(TEXT("camera")))
+	{
+		// a fuller walk in the camera (WCCharacter.cpp, wc.CameraFeel) and a touch of motion blur on fast turns
+		APostProcessVolume* V = W->SpawnActor<APostProcessVolume>();
+		V->bUnbound = true; V->Priority = 50.f; V->BlendWeight = 1.f;
+		V->Settings.bOverride_MotionBlurAmount = true; V->Settings.MotionBlurAmount = 0.45f;
+		V->Settings.bOverride_MotionBlurMax = true; V->Settings.MotionBlurMax = 2.f;
+		UKismetSystemLibrary::ExecuteConsoleCommand(W, TEXT("wc.CameraFeel 1"), nullptr);
+		UE_LOG(LogWCAuto, Display, TEXT("WCLOOK camera on"));
+	}
+}
 
 void AWCDirector::AutoBegin()
 {
@@ -472,6 +558,89 @@ void AWCDirector::AutoBegin()
 		Do(TEXT("haunt_test")); Wait(.3f); Do(TEXT("light_test")); Wait(.3f);
 		Do(TEXT("ceiling_music_test")); Wait(8.4f);
 		AutoIndex=0; AutoStepStart=Clock; return;
+	}
+	FString LookTour;
+	if (FParse::Value(FCommandLine::Get(), TEXT("WCLookTour="), LookTour))
+	{
+		// the walk for the look previews: one "name|x,y,z,yaw,pitch|x,y;x,y;...|hold" per line; the flashlight on, nothing
+		// scripted, every frame of each stretch recorded (-WCLookTour=<file> -WCShots=<dir> [-WCLook=...] -UseFixedTimeStep -FPS=30)
+		Steps.Reset();
+		Subtitles.Reset();
+		bBusy = true;
+		Fade = FadeTarget = 0.f;
+		if (AWCCharacter* Pl = Player()) Pl->SetFlashlight(true, false);
+		FString Looks;
+		FParse::Value(FCommandLine::Get(), TEXT("WCLook="), Looks);
+		ApplyLookPreview(GetWorld(), Looks);
+		GLookRecDir = FPaths::ConvertRelativePathToFull(AutoShotDir);
+		TArray<FString> Rows;
+		FFileHelper::LoadFileToStringArray(Rows, *LookTour);
+		Wait(4.f);
+		for (const FString& Row : Rows)
+		{
+			TArray<FString> Parts;
+			Row.ParseIntoArray(Parts, TEXT("|"));
+			if (Parts.Num() < 3) continue;
+			AutoSteps.Add({ A_Do, FName(*(TEXT("at:") + Parts[1].TrimStartAndEnd())), 0.f });
+			Wait(1.5f);                                                       // let the light and the eye settle
+			AutoSteps.Add({ A_Do, FName(*(TEXT("rec:") + Parts[0].TrimStartAndEnd())), 0.f });
+			Wait(0.8f);
+			TArray<FString> Pts;
+			Parts[2].ParseIntoArray(Pts, TEXT(";"));
+			for (const FString& Pt : Pts) AutoSteps.Add({ A_Do, FName(*(TEXT("room_walk:") + Pt.TrimStartAndEnd())), 0.f });
+			Wait(Parts.Num() > 3 ? FCString::Atof(*Parts[3]) : 1.2f);
+			AutoSteps.Add({ A_Do, TEXT("rec_off"), 0.f });
+		}
+		UE_LOG(LogWCAuto, Display, TEXT("WCLOOKTOUR %d stretches, looks '%s'"), Rows.Num(), *Looks);
+		AutoIndex = 0; AutoStepStart = Clock;
+		return;
+	}
+	FString ShotFile;
+	if (FParse::Value(FCommandLine::Get(), TEXT("WCShotFile="), ShotFile))
+	{
+		// a photo list for the prop polish pass: one "name|x,y,z,yaw,pitch" per line, a bright work light on the camera,
+		// nothing scripted running (-WCShotFile=<path> -WCFilter=0 -RenderOffscreen)
+		Steps.Reset();
+		Subtitles.Reset();
+		bBusy = true;
+		Fade = FadeTarget = 0.f;
+		const bool bShotFlash = FParse::Param(FCommandLine::Get(), TEXT("WCShotFlash"));   // the game's own light: the deputy's flashlight
+		if (AWCCharacter* Pl = Player(); Pl && bShotFlash)
+		{
+			Pl->SetInputLocked(true);
+			Pl->SetFlashlight(true, false);
+		}
+		else if (Pl)
+		{
+			Pl->SetInputLocked(true);
+			Pl->SetFlashlight(false, false);
+			UPointLightComponent* L = NewObject<UPointLightComponent>(Pl);
+			L->SetupAttachment(Pl->GetRootComponent());
+			L->SetRelativeLocation(FVector(0, 0, 70));
+			L->RegisterComponent();
+			L->SetIntensityUnits(ELightUnits::Lumens);
+			L->SetIntensity(9000.f);
+			L->SetAttenuationRadius(1600.f);
+			L->SetCastShadows(true);
+		}
+		AutoShotDir = FPaths::ConvertRelativePathToFull(AutoShotDir);
+		IFileManager::Get().MakeDirectory(*AutoShotDir, true);
+		TArray<FString> Rows;
+		FFileHelper::LoadFileToStringArray(Rows, *ShotFile);
+		float FirstWait = 3.f;
+		FParse::Value(FCommandLine::Get(), TEXT("WCShotWait="), FirstWait);       // let freshly changed materials finish compiling
+		Wait(FirstWait);
+		for (const FString& Row : Rows)
+		{
+			FString N, At;
+			if (!Row.Split(TEXT("|"), &N, &At)) continue;
+			AutoSteps.Add({ A_Do, FName(*(TEXT("at:") + At.TrimStartAndEnd())), 0.f });
+			Wait(0.7f);
+			AutoSteps.Add({ A_Shot, FName(*N.TrimStartAndEnd()), 0.f });
+		}
+		Wait(1.f);
+		UE_LOG(LogWCAuto, Display, TEXT("WCSHOTFILE %d rows from %s"), Rows.Num(), *ShotFile);
+		AutoIndex = 0; AutoStepStart = Clock; return;
 	}
 	if (FParse::Param(FCommandLine::Get(), TEXT("WCTour")))
 	{
@@ -1025,6 +1194,8 @@ void AWCDirector::AutoTick(float Dt)
 	}
 	AWCCharacter* P = Player();
 	if (!P || AutoIndex < 0) return;
+	if (!GLookRecName.IsEmpty())                                             // the look-preview recorder
+		FScreenshotRequest::RequestScreenshot(GLookRecDir / GLookRecName / FString::Printf(TEXT("f_%05d.png"), GLookFrame++), false, false);
 	{
 		// a short check: stop a few seconds after a given point in the story
 		static FString StopFlag;
@@ -1113,6 +1284,8 @@ void AWCDirector::AutoTick(float Dt)
 	case A_Aim: P->SetAiming(S.F > 0.5f); Next(); return;
 	case A_Crouch: if (S.F > 0.5f) P->Crouch(); else P->UnCrouch(); Next(); return;
 	case A_Do:
+		if (S.Arg.ToString().StartsWith(TEXT("rec:"))) { GLookRecName = S.Arg.ToString().Mid(4); GLookFrame = 0; Next(); return; }
+		if (S.Arg == TEXT("rec_off")) { GLookRecName.Empty(); Next(); return; }
 		if (S.Arg == TEXT("connections_reload"))
 		{
 			if (!DoLoad() || !HasItem(TEXT("key_scullery")) || !Has(TEXT("scullery_open")) ||

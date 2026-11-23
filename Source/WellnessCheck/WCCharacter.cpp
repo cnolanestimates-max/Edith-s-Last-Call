@@ -21,7 +21,10 @@
 #include "Materials/MaterialInterface.h"
 #include "Misc/CommandLine.h"
 #include "Misc/Parse.h"
+#include "HAL/IConsoleManager.h"
 
+// Cheyenne's camera-feel preview (2026-11-23): off unless a look test turns it on (-WCLook=camera)
+static TAutoConsoleVariable<int32> CVarWCCameraFeel(TEXT("wc.CameraFeel"), 0, TEXT("Look preview: a fuller walk in the camera (deeper bob, side sway, a nod on each step, breathing when still)"));
 static const int32 DustCount = 260;
 static const float DustBox = 320.f;
 
@@ -548,6 +551,18 @@ void AWCCharacter::Tick(float Dt)
 	float Z = EyeZ + FMath::Sin(BobTime * 2.f) * 1.6f * BobAmt;
 	float Roll = FMath::Sin(BobTime) * 0.5f * BobAmt;
 	float PitchAdd = 0.f, YawAdd = 0.f;
+	float SideAdd = 0.f;
+	if (CVarWCCameraFeel.GetValueOnGameThread() > 0)
+	{
+		Z = EyeZ + FMath::Sin(BobTime * 2.f) * 2.6f * BobAmt;                 // a deeper rise and fall with each step
+		SideAdd = FMath::Sin(BobTime) * 1.5f * BobAmt;                         // weight shifting from foot to foot
+		Roll = FMath::Sin(BobTime) * 0.95f * BobAmt;
+		PitchAdd += FMath::Sin(BobTime * 2.f + 0.6f) * 0.45f * BobAmt;         // a small nod as each foot lands
+		const float Idle = 1.f - FMath::Clamp(Speed / 60.f, 0.f, 1.f);         // standing still: breathing
+		Z += FMath::Sin(Clock * 1.55f) * 0.45f * Idle;
+		PitchAdd += FMath::Sin(Clock * 1.55f - 0.8f) * 0.22f * Idle;
+		YawAdd += FMath::Sin(Clock * 0.53f) * 0.18f * Idle;
+	}
 
 	Shake = FMath::FInterpTo(Shake, 0.f, Dt, 2.2f);
 	if (S.bCameraShake && Shake > 0.002f)
@@ -576,7 +591,7 @@ void AWCCharacter::Tick(float Dt)
 			if (D) D->Event(TEXT("gotup"));
 		}
 	}
-	Cam->SetRelativeLocation(FVector(0.f, 0.f, Z));
+	Cam->SetRelativeLocation(FVector(0.f, SideAdd, Z));
 	if (!PickupEyeOffset.IsNearlyZero()) Cam->AddWorldOffset(PickupEyeOffset);
 	FRotator View = GetControlRotation();
 	View.Pitch = FMath::Clamp(FRotator::NormalizeAxis(View.Pitch) + PitchAdd, -89.f, 89.f);
