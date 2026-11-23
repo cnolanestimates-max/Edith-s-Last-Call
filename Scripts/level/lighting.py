@@ -74,7 +74,8 @@ def grade(name, ev, extra, priority=0.0, tags=None, enabled=True):
     st = ppv.settings
     base = [("auto_exposure_method", unreal.AutoExposureMethod.AEM_MANUAL), ("auto_exposure_bias", ev),
             ("auto_exposure_apply_physical_camera_exposure", False),
-            ("lens_flare_intensity", 0.0), ("motion_blur_amount", 0.0)]
+            ("lens_flare_intensity", 0.0),
+            ("motion_blur_amount", 0.5), ("motion_blur_max", 3.0)]   # a touch of blur on fast turns (camera option A, 2026-11-23)
     for prop, val in base + extra:
         try:
             st.set_editor_property("override_" + prop, True)

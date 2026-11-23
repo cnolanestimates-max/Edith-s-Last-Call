@@ -23,8 +23,9 @@
 #include "Misc/Parse.h"
 #include "HAL/IConsoleManager.h"
 
-// Cheyenne's camera-feel preview (2026-11-23): off unless a look test turns it on (-WCLook=camera)
-static TAutoConsoleVariable<float> CVarWCCameraFeel(TEXT("wc.CameraFeel"), 0.f, TEXT("Look preview: how much fuller the walk is in the camera (0 off, 1 the first try, 2.5 and 4 the stronger tries): deeper bob, side sway, a nod on each step, a lean into turns, breathing when still"));
+// Camera feel (Cheyenne picked option A, 2026-11-23): the walk in the camera at strength 2.5 (deeper bob, side sway, a nod on
+// each step, a lean into turns, breathing when still).  The Head bob setting turns all of it off; wc.CameraFeel 0 does too.
+static TAutoConsoleVariable<float> CVarWCCameraFeel(TEXT("wc.CameraFeel"), 2.5f, TEXT("How full the walk is in the camera: 0 the old plain bob, 2.5 the chosen feel (option A), 4 stronger"));
 static const int32 DustCount = 260;
 static const float DustBox = 320.f;
 
@@ -552,7 +553,7 @@ void AWCCharacter::Tick(float Dt)
 	float Roll = FMath::Sin(BobTime) * 0.5f * BobAmt;
 	float PitchAdd = 0.f, YawAdd = 0.f;
 	float SideAdd = 0.f;
-	const float Feel = CVarWCCameraFeel.GetValueOnGameThread();
+	const float Feel = S.bHeadBob ? CVarWCCameraFeel.GetValueOnGameThread() : 0.f;
 	if (Feel > 0.f)
 	{
 		static float LastYaw = 0.f, YawRate = 0.f;
