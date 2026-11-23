@@ -60,7 +60,14 @@ static void ApplyLookPreview(UWorld* W, const FString& Looks)
 		APostProcessVolume* V = W->SpawnActor<APostProcessVolume>();
 		V->bUnbound = true; V->Priority = 60.f; V->BlendWeight = 1.f;
 		FPostProcessSettings& S = V->Settings;
-		S.bOverride_IndirectLightingIntensity = true; S.IndirectLightingIntensity = 1.8f;
+		// (Cheyenne, 2026-11-23: keep the thicker air, the light far too much: everything below can be dialled from the command
+		// line, -WCLookBounce= -WCLookShaft= (moonlight strength) -WCLookShaftAir= (how much it lights the air) -WCLookShaftOut= (cm))
+		float Bounce = 1.8f, ShaftMul = 2.2f, ShaftAir = 2.6f, ShaftOut = 170.f;
+		FParse::Value(FCommandLine::Get(), TEXT("WCLookBounce="), Bounce);
+		FParse::Value(FCommandLine::Get(), TEXT("WCLookShaft="), ShaftMul);
+		FParse::Value(FCommandLine::Get(), TEXT("WCLookShaftAir="), ShaftAir);
+		FParse::Value(FCommandLine::Get(), TEXT("WCLookShaftOut="), ShaftOut);
+		S.bOverride_IndirectLightingIntensity = true; S.IndirectLightingIntensity = Bounce;
 		S.bOverride_LumenSceneLightingQuality = true; S.LumenSceneLightingQuality = 2.f;
 		S.bOverride_LumenFinalGatherQuality = true; S.LumenFinalGatherQuality = 2.f;
 		S.bOverride_LumenSceneDetail = true; S.LumenSceneDetail = 2.f;
@@ -76,16 +83,19 @@ static void ApplyLookPreview(UWorld* W, const FString& Looks)
 		{
 			if (!It->ActorHasTag(TEXT("Hide_dawn"))) continue;
 			USpotLightComponent* L = It->SpotLightComponent;
-			L->SetWorldLocation(L->GetComponentLocation() - L->GetForwardVector() * 170.f);    // out past the frame, so the window shapes it
-			L->SetAttenuationRadius(L->AttenuationRadius + 220.f);
-			L->SetIntensity(L->Intensity * 2.2f);
-			L->SetVolumetricScatteringIntensity(L->VolumetricScatteringIntensity * 2.6f);
-			L->SetOuterConeAngle(L->OuterConeAngle * 0.8f);
+			if (ShaftOut > 0.f)
+			{
+				L->SetWorldLocation(L->GetComponentLocation() - L->GetForwardVector() * ShaftOut);    // out past the frame
+				L->SetAttenuationRadius(L->AttenuationRadius + ShaftOut * 1.3f);
+			}
+			L->SetIntensity(L->Intensity * ShaftMul);
+			L->SetVolumetricScatteringIntensity(L->VolumetricScatteringIntensity * ShaftAir);
+			if (ShaftOut > 0.f) L->SetOuterConeAngle(L->OuterConeAngle * 0.8f);
 			++N;
 		}
 		for (const TCHAR* Cmd : { TEXT("r.VolumetricFog.GridPixelSize 8"), TEXT("r.VolumetricFog.GridSizeZ 96") })
 			UKismetSystemLibrary::ExecuteConsoleCommand(W, Cmd, nullptr);
-		UE_LOG(LogWCAuto, Display, TEXT("WCLOOK lighting on (%d window shafts)"), N);
+		UE_LOG(LogWCAuto, Display, TEXT("WCLOOK lighting on (%d window shafts, bounce %.2f, moon x%.2f, air x%.2f, out %.0f)"), N, Bounce, ShaftMul, ShaftAir, ShaftOut);
 	}
 	if (Looks.Contains(TEXT("grade")))
 	{
