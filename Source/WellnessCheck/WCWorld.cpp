@@ -145,6 +145,20 @@ void AWCDoor::Interact(AWCCharacter* By)
 		if (!KeyId.IsNone() && D->HasItem(KeyId))
 		{
 			if (WCId == TEXT("sitting") && D->DeferSittingRoomUnlock()) return;
+			if (WCId == TEXT("cellar"))
+			{
+				// the finale needs every keepsake and the shears: the cellar stays shut until he has them all, so the ending can
+				// always be finished once he is down there (Cheyenne, 2026-11-23: the playtest went down without Ruth's music box)
+				static const TCHAR* Need[][2] = { { TEXT("keep_ruth"), TEXT("Ruth's music box") }, { TEXT("keep_walter"), TEXT("Walter's ring") },
+					{ TEXT("keep_daniel"), TEXT("Daniel's dog tags") }, { TEXT("keep_eye"), TEXT("her glass eye") }, { TEXT("shears"), TEXT("something to cut with") } };
+				for (const auto& N : Need)
+				{
+					if (D->HasItem(FName(N[0]))) continue;
+					D->PlayAt(TEXT("door_locked"), GetActorLocation() + FVector(0, 0, 100), 0.9f);
+					D->Feedback(FString::Printf(TEXT("Not yet. Not without %s."), N[1]));
+					return;
+				}
+			}
 			bLocked = false;
 			D->PlayAt(TEXT("door_unlock"), GetActorLocation() + FVector(0, 0, 100), 0.9f);
 			D->Event(FName(*FString::Printf(TEXT("unlock:%s"), *WCId.ToString())));

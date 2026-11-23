@@ -1078,9 +1078,6 @@ void AWCDirector::AutoBegin()
 	// ---- S4: the head by the ceiling
 	Go(TEXT("A_StairsTop")); Flag(TEXT("ceiling_started"), 20.f * Slow); LookHer(2.5f); Shot(TEXT("17_S4_ceiling")); LookHer(7.5f); Shot(TEXT("18_S4_sprint")); LookHer(3.f);
 	Flag(TEXT("ceiling_done"), 40.f); Wait(8.f);
-	// ---- S7: under the bed
-	Flag(TEXT("kids_open"), 20.f * Slow); Go(TEXT("A_Kids")); Wait(3.9f); Shot(TEXT("19_S7_hand_out")); Wait(2.6f); Shot(TEXT("20_S7_hand_takes")); Flag(TEXT("underbed_done"), 30.f);
-	AutoSteps.Add({ A_Crouch, NAME_None, 1.f }); Use(TEXT("pick_keep_ruth")); AutoSteps.Add({ A_Crouch, NAME_None, 0.f }); Wait(1.f);
 	// ---- prayer room
 	Use(TEXT("up_prayer")); Go(TEXT("A_Prayer")); Wait(3.f); Shot(TEXT("21_prayer")); Use(TEXT("pick_keep_walter")); Wait(3.f); Use(TEXT("note_prayer")); Wait(1.f); Close();
 	// ---- upstairs rear wing: Daniel's room, the aide's room, the sewing room (S9)
@@ -1092,6 +1089,13 @@ void AWCDirector::AutoBegin()
 	// ---- attic: S5
 	Use(TEXT("up_attic")); Go(TEXT("A_Attic")); Wait(2.f); Shot(TEXT("22_attic")); Use(TEXT("trunk")); Flag(TEXT("attic_started"), 5.f); Wait(1.2f); Shot(TEXT("22b_footlocker_tags_key")); Use(TEXT("pick_key_cellar")); Use(TEXT("pick_keep_daniel"));
 	WaitHer(25.f); LookHer(1.2f); Shot(TEXT("23_S5_crawl")); LookHer(2.2f); Shot(TEXT("24_S5_rise")); Flag(TEXT("attic_done"), 30.f); Wait(8.f);
+	// ---- S7: Ruth's door turns after the attic now (the Harrow connections, 2026-11-23); look through the crack, then under the bed
+	Go(TEXT("A_StairsTop"));
+	AutoSteps.Add({ A_Do, TEXT("at:216,28,442,-82,-3"), 0.f }); Flag(TEXT("ruth_door_ajar"), 20.f); Wait(3.5f);    // as the WCCryingDoor test does
+	AutoSteps.Add({ A_Do, TEXT("at:218,-116,442,-70,-5"), 0.f }); AutoSteps.Add({ A_Do, TEXT("wait_door_cry"), 0.f }); Wait(4.f);
+	AutoSteps.Add({ A_Do, TEXT("wait_door_mask"), 0.f }); AutoSteps.Add({ A_Do, TEXT("wait_empty_crack"), 0.f }); Flag(TEXT("kids_open"), 20.f);
+	Go(TEXT("A_Kids")); Wait(3.9f); Shot(TEXT("19_S7_hand_out")); Wait(2.6f); Shot(TEXT("20_S7_hand_takes")); Flag(TEXT("underbed_done"), 30.f);
+	AutoSteps.Add({ A_Crouch, NAME_None, 1.f }); Use(TEXT("pick_keep_ruth")); AutoSteps.Add({ A_Crouch, NAME_None, 0.f }); Wait(1.f);
 	// ---- S6: the cellar door
 	Use(TEXT("cellar")); Flag(TEXT("sprint_started"), 10.f); WaitHer(40.f); LookHer(0.7f); Shot(TEXT("25_S6_sprint")); LookHer(4.f);
 	Flag(TEXT("sprint_done"), 40.f); Wait(5.f); Shot(TEXT("26_cellar"));
