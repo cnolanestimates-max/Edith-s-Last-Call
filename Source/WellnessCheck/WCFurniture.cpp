@@ -171,7 +171,7 @@ bool AWCDirector::FurnitureEvent(FName Id)
     if (Id == TEXT("take:key_ell")) Set(TEXT("walter_keys_taken"));
     if (Id == TEXT("take:tape2"))
     {
-        SetObjective(TEXT("Play recording II on the living-room television")); Checkpoint(TEXT("recording_II")); return true;
+        SetObjective(TEXT("Play Recording II on the living-room television")); Checkpoint(TEXT("recording_II")); return true;
     }
     if (Id == TEXT("closed:note_deskkey") && !Has(TEXT("book_done")))
     {

@@ -79,12 +79,12 @@ def dress():
     shelves=sorted(found('Bookshelf_Tall','/Den'),key=lambda a:a.get_actor_location().y)
     assert len(shelves)==2
     for i,a in enumerate(shelves):mesh(pose(a,yaw=0),'DenBooks'+str(i+1))
-    look('den_books',(1663,-396,108),"A gap in the county histories. Walter's pencilled shelf card: FIRST SETTLERS moved to the living room, beside the stair wall. Desk key inside.",(7,112,73))
+    look('den_books',(1663,-396,108),"A gap in the county histories. Walter's shelf card: FIRST SETTLERS moved to the living room, beside the stair wall. Under it, in her pencil: desk key inside.",(7,112,73))
     for lab,pos in [('Desk_Lamp_Green',(2320,-384,103.4)),('Typewriter_Old',(2340,-307,103.4)),('Book_Stack_Old',(2343,-270,103.4))]:
         for a in found(lab,'/Den'):pose(a,pos)
-    look('den_typewriter',(2330,-310,121),"Walter typed one line until the ribbon gave out. On the margin he pencilled: desk key in the settlers' book, front living room.",(12,15,7))
+    look('den_typewriter',(2330,-310,121),"One line typed over and over until the ribbon gave out: i will not be put in a home. In the margin, in her pencil: W's desk key, settlers' book, front living room.",(12,15,7))
     mesh(pose(found('Wardrobe_Open_Clothes','/Master')[0],yaw=0),'EdithWardrobe')
-    look('master_wardrobe',(88,500,470),"Four dresses on wire hangers. The seams have been let out again and again. A laundry ticket in the pocket reads: Mrs Pruitt, rear upstairs room. Return her videotape.",(12,52,44))
+    look('master_wardrobe',(88,500,470),"Four dresses on wire hangers. The seams have been let out again and again. A laundry ticket in the pocket reads: Mrs. Pruitt, rear upstairs room. Return her videotape.",(12,52,44))
     fridge=pose(get('Fridge'),yaw=180);mesh(fridge,'HarrowFridge').set_collision_profile_name('InvisibleWall')
     # Front faces west. The door hinge is the southern corner in fridge-local coordinates.
     trigger('fridge_door',(1512,479,2),(6,37,44),'Open the refrigerator','HarrowFridgeDoor',180,(4,-42,92))
@@ -97,7 +97,7 @@ def dress():
     trigger('bath_water',(1000,-520,402),(0,0,0),'','BathWater').set_editor_property('enabled',False)
     look('upbath_tub',(1000,-483,404),"A plug chain hangs over the chipped rim.",(66,7,15))
     pickup('key_sitting',(980,-514,369),'BathReward',(12,7,5),'Downstairs sitting-room key')
-    slip('note_tape_receipt',(1714,-399,433.5),15,'Cassette loan slip',"RECORDING II. Borrower: Mrs Pruitt, live-in aide. If she is gone, check the suitcase in her room beyond the upstairs rear-hall lock.")
+    slip('note_tape_receipt',(1714,-399,433.5),15,'Cassette loan slip',"RECORDING II. Borrower: Mrs. Pruitt, live-in aide. If she is gone, check her bed, in her room beyond the upstairs rear-hall lock.")
     slip('note_fridge',(1524,516,40.4),-75,'Grease-stained kitchen note',"Ruth, I found another piano key in the butter dish. If you must hide things, use the drawer in my sitting-room desk. Leave the icebox shut. Mother.")
     # A pull on the bathroom dresser reads as a clue after the call.
     trigger('bath_dresser',(1380,-277,440),(29,9,10),'Inspect the open bathroom drawer')

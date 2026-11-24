@@ -7,7 +7,7 @@ LOOKS = [
     ("porch_rocker", -200, 470, 55, "The seat is worn pale. This was her chair. It is the only thing on the porch without dust on it.", (34, 34, 50)),
     ("grave_walter", -560, 960, 30, "WALTER J. HARROW. 1921 - 1989. The flowers in the jar are dead, but they are not fourteen months dead.", (40, 40, 55)),
     ("grave_daniel", -700, 990, 25, "PVT. DANIEL W. HARROW. 1949 - 1969. No grave in front of it. They never got him back to bury.", (40, 40, 50)),
-    ("clothesline", -1060, 505, 120, "A sheet and a nightgown, grey with rain. Hung out to dry a year ago and never brought in.", (130, 20, 50)),
+    ("clothesline", -1060, 505, 120, "A sheet and a nightgown, gray with rain. Hung out to dry a year ago and never brought in.", (130, 20, 50)),
     ("well", -1500, -620, 40, "Boarded over. The boards are newer than the well.", (60, 60, 60)),
     # (the far half of the bench only: over the whole bench it sat in front of the VHS tape, and "Look" was all he was offered there)
     ("shed_bench", 3896, -672, 62, "Looks like a handyman's workbench. Seed packets, a spool of twine, and a coffee can full of nails rusted into one lump.", (40, 44, 26)),
@@ -24,35 +24,35 @@ LOOKS = [
     ("living_rocker", 690, -500, 60, "A shawl over the arm, still folded. It is rocking. No. It just stopped.", (32, 32, 55)),
     ("living_shelf", 60, -540, 110, "Scrapbooks. Danny's ribbons from the county fair, 1961. Ruth's school reports, 1967 to 1979. The last page of each one is torn out.", (26, 60, 90)),
     # ---- dining room
-    ("dining_table", 420, 400, 95, "Four places laid. The food went to mould months ago, but the napkins have been refolded.", (110, 60, 22)),
+    ("dining_table", 420, 400, 95, "Four places laid. The food went to mold months ago, but the napkins have been refolded.", (110, 60, 22)),
     ("dining_chandelier", 600, 300, 30, "It came down on the table end. Nobody moved it. She just kept setting places around it.", (60, 60, 34)),
     ("dining_clock", 60, 560, 140, "This one stopped at ten past three as well.", (26, 26, 90)),
     # ---- kitchen and pantry
     ("stove", 1180, 545, 95, "Every knob taped down in the off position. Then the tape's been picked at.", (50, 32, 30)),
     ("fridge", 1545, 520, 100, "Don't. ...I did. Don't.", (40, 44, 80)),
     ("kitchen_sink", 1050, 560, 95, "Dishes for four, stacked dirty. One plate has been licked clean.", (44, 30, 24)),
-    ("pantry_shelves", 1930, 550, 110, "Preserves, labelled by year. 1974. 1981. 1988. The newest ones are not fruit.", (60, 22, 90)),
+    ("pantry_shelves", 1930, 550, 110, "Preserves, labeled by year. 1974. 1981. 1988. The newest ones are not fruit.", (60, 22, 90)),
     # ---- her sitting room
-    ("drawings", 824, -410, 160, "Crayon, like a child's. A small woman and a tall black shape, holding hands. MY FREND. She was eighty-six.", (10, 160, 80)),
+    ("drawings", 824, -410, 160, "Crayon, like a child's. A small woman and a tall black shape, holding hands. MY FREND. She was seventy.", (10, 160, 80)),
     
     ("sitting_wardrobe", 1300, -560, 120, "The mirror is cracked from the inside of the glass, if that is a thing that can happen.", (50, 26, 100)),
     # ---- den, bath, sickroom
-    ("gun_cabinet", 2352, -530, 110, "Rack for a shotgun. No shotgun. One box of cartridges left on the shelf.", (26, 46, 90)),
+    ("gun_cabinet", 2352, -530, 110, "Rack for a shotgun. No shotgun. One box of pistol cartridges left on the shelf.", (26, 46, 90)),
     ("den_portrait", 2200, -575, 200, "Walter Harrow. He is the only one in this house she did not scratch out. She turned him to face the wall instead, and somebody has turned him back.", (50, 12, 50)),
     ("den_typewriter", 2330, -310, 115, "One line, typed over and over until the ribbon gave out: i will not be put in a home i will not be put in a home", (22, 22, 18)),
     ("den_books", 1642, -400, 120, "County histories. One spine is cleaner than the rest. 'Customs of the First Settlers.' The chapter on winter is cut out with a razor.", (22, 110, 100)),
     ("bathg_mirror", 2423, -330, 150, "Soap on the glass. A line drawn across at the height of my chin, and a date. Then another, higher. Then another.", (10, 30, 40)),
-    ("bathg_tub", 2690, -400, 50, "A ring of grey hair around the drain, long as my arm.", (44, 80, 34)),
+    ("bathg_tub", 2690, -400, 50, "A ring of gray hair around the drain, long as my arm.", (44, 80, 34)),
     ("sick_bed", 2480, 505, 70, "Leather cuffs on the rails. The buckles are open. The leather is not torn. It is stretched.", (50, 100, 40)),
     ("sick_wheelchair", 2240, 420, 60, "County property tag on the frame. They never came back for it.", (34, 34, 50)),
     ("sick_door_marks", 2200, 216, 150, "Pencil marks up the door frame. 'E.H. March 1992.' Then April, a hand higher. The last mark is above the lintel.", (56, 10, 90)),
     # ---- upstairs front
-    ("master_bed", 560, 440, UZ + 80, "One side slept in. The other side has his pyjamas laid out on the pillow.", (100, 80, 40)),
+    ("master_bed", 560, 440, UZ + 80, "One side slept in. The other side has his pajamas laid out on the pillow.", (100, 80, 40)),
     ("vanity", 420, 560, UZ + 110, "She smashed the mirror. Then she swept up the glass and put the pieces in the drawer, in order.", (60, 22, 60)),
     ("master_wardrobe", 60, 500, UZ + 120, "Her dresses, let out at the seams. Then let out again. Then cut open down the back.", (24, 50, 100)),
     ("kids_dollhouse", 730, -290, UZ + 70, "It's this house. Somebody has put a doll in the cellar and shut the little door on it.", (34, 34, 50)),
     ("kids_cradle", 80, -300, UZ + 50, "Still made up. The blanket has been tucked in very recently.", (30, 40, 36)),
-    ("upbath_tub", 1000, -520, UZ + 50, "Black water to the brim. Something long and grey just under the surface. Hair. Only hair. I'm not putting my hand in to check.", (80, 44, 36)),
+    ("upbath_tub", 1000, -520, UZ + 50, "Black water to the brim. Something long and gray just under the surface. Hair. Only hair. I'm not putting my hand in to check.", (80, 44, 36)),
     # ---- upstairs rear
     ("tricycle", 2300, -110, UZ + 40, "Ruth's, I'd guess. No dust on the seat.", (30, 30, 34)),
     ("daniel_bed", 2230, -450, UZ + 80, "Made up tight, army corners. Dusted. In a house like this. She kept one room for him and let the rest go.", (100, 80, 40)),
@@ -60,13 +60,13 @@ LOOKS = [
     ("family_dolls", 2445, -412, UZ + 122, "Four rag dolls. WALTER. RUTH. DANNY, stitched across their chests. The fourth one has no name. It is taller than the others and it has one eye.", (16, 50, 24)),
     ("sewing_cradle", 2700, -540, UZ + 45, "Empty. It always was.", (30, 40, 36)),
     ("aide_chair", 1905, 268, UZ + 40, "A chair, split along the top rail where it was jammed under the doorknob. From the inside. She slept like that.", (30, 30, 40)),
-    ("aide_suitcase", 2060, 400, UZ + 30, "Mrs. Pruitt's suitcase. The black cassette tucked among her things is marked RECORDING II.", (34, 34, 26)),
+    ("aide_suitcase", 2060, 400, UZ + 30, "Mrs. Pruitt's suitcase, packed and buckled.", (34, 34, 26)),
     ("bath2_tub", 2700, 300, UZ + 55, "Full. The water isn't moving. My light won't go down into it.", (44, 80, 34)),
     # ---- attic and cellar
-    ("attic_easel", 1000, 420, AZ + 120, "A family portrait under a sheet. Four people. Five, now. Someone has painted a tall grey shape in behind them, in house paint.", (40, 40, 80)),
+    ("attic_easel", 1000, 420, AZ + 120, "A family portrait under a sheet. Four people. Five, now. Someone has painted a tall gray shape in behind them, in house paint.", (40, 40, 80)),
     ("attic_wardrobe", 780, 560, AZ + 110, "Christmas boxes. Every tag says 'To Danny' or 'To Ruth.' One for every Christmas since 1969. None opened.", (60, 30, 100)),
     ("furnace", 600, -500, CZ + 70, "Cold. There's bedding in front of it. She was sleeping down here, as close to the ground as she could get.", (44, 44, 60)),
-    ("cellar_jars", 700, 185, CZ + 120, "More preserves. And hair. Jars of grey hair, each one labelled with a name.", (60, 22, 90)),
+    ("cellar_jars", 700, 185, CZ + 120, "More preserves. And hair. Jars of gray hair, each one labeled with a name.", (60, 22, 90)),
 ]
 _z = {"hit": 0}
 for (lid, x, y, z, text, grab) in LOOKS:

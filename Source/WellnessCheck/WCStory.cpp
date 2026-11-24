@@ -59,7 +59,7 @@ static const FWCLine GLines[] = {
 	{ TEXT("d_locked"), TEXT("Deputy Brandt"), TEXT("Locked."), 0 },
 	{ TEXT("d_thump"), TEXT("Deputy Brandt"), TEXT("What was that? ...Sounded like it came from upstairs."), 0 },
 	{ TEXT("m_whisper1"), TEXT(""), TEXT("[a whisper] ...who's there?"), 3 },
-	{ TEXT("d_peek"), TEXT("Deputy Brandt"), TEXT("Ma'am? It's alright. I'm here to help you."), 0 },
+	{ TEXT("d_peek"), TEXT("Deputy Brandt"), TEXT("Ma'am? It's all right. I'm here to help you."), 0 },
 	{ TEXT("d_getout"), TEXT("Deputy Brandt"), TEXT("Screw this. I'm getting out of here."), 0 },
 	{ TEXT("d_masterempty"), TEXT("Deputy Brandt"), TEXT("She was right here. I saw her. There's nowhere to go in here."), 0 },
 	{ TEXT("d_radio1"), TEXT("Deputy Brandt"), TEXT("Dispatch, Fourteen. I've got movement in the house. No contact yet."), 0 },
@@ -105,7 +105,7 @@ static const FWCLine GLines[] = {
 	{ TEXT("m_fin2"), TEXT("Edith"), TEXT("Don't you leave me too."), 3 },
 	{ TEXT("d_knot2"), TEXT("Deputy Brandt"), TEXT("Two."), 0 },
 	{ TEXT("m_fin3"), TEXT("Edith"), TEXT("Everybody leaves. Everybody leaves!"), 3 },
-	{ TEXT("d_knot3"), TEXT("Deputy Brandt"), TEXT("It's alright, Edith. You're not alone. You can let go."), 0 },
+	{ TEXT("d_knot3"), TEXT("Deputy Brandt"), TEXT("It's all right, Edith. You're not alone. You can let go."), 0 },
 	{ TEXT("m_fin4"), TEXT("Edith"), TEXT("STAY!"), 2 },
 	{ TEXT("m_end"), TEXT("Edith"), TEXT("...thank you."), 2 },
 	{ TEXT("m_left"), TEXT(""), TEXT("You left me. You left me. You left me. You left me."), 2 },
@@ -346,7 +346,7 @@ void AWCDirector::DriveDone()
 	{
 		// the test bot goes straight in; a person looks round the outside first
 		if (bAuto && !FParse::Param(FCommandLine::Get(), TEXT("WCOutside"))) { Set(TEXT("shed_seen")); Set(TEXT("back_tried")); Set(TEXT("knocked_first")); Set(TEXT("tape1_taken")); SetObjective(TEXT("Check on Edith Harrow")); }
-		else SetObjective(TEXT("Check on Edith Harrow. Take a look round the outside first."));
+		else SetObjective(TEXT("Check on Edith Harrow. Take a look around the outside first."));
 		Set(TEXT("briefed"));
 	});
 }
@@ -397,9 +397,9 @@ void AWCDirector::OutsideProgress()
 {
 	if (Has(TEXT("inside"))) return;
 	const bool bShed = Has(TEXT("shed_seen")), bBack = Has(TEXT("back_tried"));
-	if (Has(TEXT("tape1_taken"))) SetObjective(TEXT("Go back round to the front door"));
+	if (Has(TEXT("tape1_taken"))) SetObjective(TEXT("Go back around to the front door"));
 	else if (bShed) SetObjective(TEXT("Search the shed"));
-	else if (Has(TEXT("knocked_first"))) SetObjective(bBack ? TEXT("Look in the shed") : TEXT("No answer. Look round the back of the house."));
+	else if (Has(TEXT("knocked_first"))) SetObjective(bBack ? TEXT("Look in the shed") : TEXT("No answer. Look around the back of the house."));
 	UE_LOG(LogWCStory, Display, TEXT("WCOUTSIDE t=%.1f shed %d back door %d"), PlaySeconds, bShed ? 1 : 0, bBack ? 1 : 0);
 }
 
@@ -531,7 +531,7 @@ void AWCDirector::StoryEvent(FName Id)
 		if (Clock > SpeechFreeAt)
 		{
 			SpeechFreeAt = Clock + 5.0;
-			Feedback(TEXT("A strip of tape on the latch: 'Mrs Pruitt, I left the key in the front bathroom upstairs.'"));
+			Feedback(TEXT("A strip of tape on the latch: 'Mrs. Pruitt, I left the key in the front bathroom upstairs.'"));
 			if (Has(TEXT("peek_done")) && !Has(TEXT("bath_drained")))
 				SetObjective(TEXT("Find the sitting-room key in the front upstairs bathroom"));
 		}
@@ -539,7 +539,7 @@ void AWCDirector::StoryEvent(FName Id)
 	}
 	if (Is(Id, TEXT("locked:up_prayer")))
 	{
-		if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 5.0; Feedback(TEXT("Locked. Scratches round the keyhole, from the inside.")); }
+		if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 5.0; Feedback(TEXT("Locked. Scratches around the keyhole, from the inside.")); }
 		return;
 	}
 	if (Id.ToString().StartsWith(TEXT("locked:")) && !Is(Id, TEXT("locked:back")))

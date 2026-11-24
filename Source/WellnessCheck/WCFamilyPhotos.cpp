@@ -169,7 +169,7 @@ void UWCFamilyPhotos::OnWorldBeginPlay(UWorld& World)
 		if (It->WCId == TEXT("look_hall_portrait")) It->Text = TEXT("Little white cuts right across the eyes. The women are still smiling.");
 		else if (It->WCId == TEXT("look_mantel_photos")) It->Text = TEXT("Christmas morning. The cuts run off the photograph and into the frame.");
 		else if (It->WCId == TEXT("look_den_portrait")) It->Text = TEXT("Walter Harrow. Whoever took this got him to smile.");
-		else if (It->WCId == TEXT("look_attic_easel")) It->Text = TEXT("I saw this picture downstairs. There were four of them. The grey one is sitting on top of the print, in thick house paint.");
+		else if (It->WCId == TEXT("look_attic_easel")) It->Text = TEXT("I saw this picture downstairs. There were four of them. The gray one is sitting on top of the print, in thick house paint.");
 	}
 	UE_LOG(LogTemp, Display, TEXT("Harrow album: %d frames, %d different prints, %d claw-marked frames"), Count, Prints.Num(), Clawed);
 }
