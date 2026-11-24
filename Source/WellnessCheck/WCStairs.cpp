@@ -10,7 +10,8 @@
 //      Harrow?"; just before his light reaches the upstairs hall it dies.  He goes on up in the dark.  The light comes
 //      back: at the far end of the hall she is standing, looking at him.  It dies again; "Shit... shit..." as he beats
 //      it against his hand; in the black, perfectly clear, her whisper: "You should never have come here."  A second of
-//      silence, then loud thumping, and his light flickers on her coming down the hall at him on all fours; she has him.
+//      silence; something crawls toward him in the dark; the light stutters on her crawling, one blue eye on him; dark
+//      and silent again; then, out of nowhere, her face in his and she has him.
 #include "WCDirector.h"
 #include "WCCharacter.h"
 #include "WCEntity.h"
@@ -19,6 +20,9 @@
 #include "Kismet/GameplayStatics.h"
 #include "Misc/CommandLine.h"
 #include "Misc/Parse.h"
+#include "Components/PointLightComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "Materials/MaterialInstanceDynamic.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogWCStairs, Log, All);
 
@@ -175,15 +179,14 @@ void AWCDirector::StairsReveal()
 		PlayAt(TEXT("VO/m_never"), Ear, 1.f, 1.f, 350.f);                 // "You should never have come here."
 		FWCSubtitle Sub;
 		Sub.Text = TEXT("You should never have come here.");
-		Sub.Until = Clock + 3.5;
+		Sub.Until = Clock + 4.0;
 		Subtitles.Reset();
 		Subtitles.Add(Sub);
 		SetLoop(TEXT("amb"), TEXT(""), 0.f, 0.4f);
 		UE_LOG(LogWCStairs, Display, TEXT("WCSCARE t=%.1f S3_stairs whisper"), PlaySeconds);
 	});
-	// two full seconds of nothing in the dark; then, still in the dark, her on all fours coming at him, loud; the light
-	// only comes back when she is nearly on him
-	After(27.2f, [this]() { StairsHallRush(); });
+	// a long nothing: complete darkness, complete silence; then something crawling toward him in the dark
+	After(29.4f, [this]() { StairsHallRush(); });
 }
 
 void AWCDirector::StairsHallStand()
@@ -197,6 +200,7 @@ void AWCDirector::StairsHallStand()
 	H->SetScream(0.f);
 	H->SetGlow(2.5f);                        // one eye catches his light: the thing you see first
 	H->SetEyeShine(80.f, 2.6f);                 // bright enough to read at the far end of the hall
+	StairsBlueEye(true);                         // a blue eye, and blue light on her
 	H->SetFarGlow(240.f);                    // only just there: a pale shape at the end of the hall
 	P->SetLightScale(1.f);
 	P->FlickerLight(0.6f, 0.6f);
@@ -208,34 +212,107 @@ void AWCDirector::StairsHallStand()
 
 void AWCDirector::StairsHallRush()
 {
+	// (2026-11-24, Cheyenne: "she needs to be crawling, the light flickers and you need to be able to see her crawling,
+	//  then it goes dark, then silence again, then finally out of nowhere she attacks")
 	AWCCharacter* P = Player();
 	AWCEntity* H = Her();
 	if (!P || !H || GStairs == EStairs::Done) return;
-	// in the dark: she is coming, loud, heavy and fast, on her hands and knees down the boards at him
-	H->Appear(FVector(1460.f, 40.f, 350.f), 180.f, TEXT("Crawl"), true, 2.4f);
+	// in the dark: something crawling toward him down the boards, slowly, one hand at a time
+	H->Appear(FVector(1230.f, 40.f, 350.f), 180.f, TEXT("Crawl"), true, 0.55f);
 	H->FacePlayer(false);
-	H->SetScream(1.f);
-	H->SetGlow(0.f);
-	H->SetEyeShine(1.f, 1.f);
+	H->SetScream(0.3f);
+	H->SetGlow(2.5f);
+	H->SetEyeShine(80.f, 2.6f);
+	StairsBlueEye(true);
 	H->SetFarGlow(0.f);
 	TArray<FVector> Path;
-	Path.Add(FVector(860.f, -60.f, 350.f));
-	Path.Add(P->GetActorLocation() - FVector(0, 0, 88) + FVector(70.f, 0, 0));
-	H->MoveAlong(Path, 300.f, TEXT("Crawl"), [this]() { StairsCatch(0.f); });      // ~2.3 s of her coming in the dark
-	H->SetScream(1.f);
-	GStairs = EStairs::Lunge;
-	GLookHead = true;
-	GLookRate = 90.f;
-	Play2D(TEXT("allfours_rush"), 1.f);
-	UE_LOG(LogWCStairs, Display, TEXT("WCSCARE t=%.1f S3_stairs she comes, in the dark"), PlaySeconds);
-	// his light catches her when she is nearly on him
-	After(2.05f, [this]()
+	Path.Add(FVector(860.f, 20.f, 350.f));
+	H->MoveAlong(Path, 75.f, TEXT("Crawl"));
+	UE_LOG(LogWCStairs, Display, TEXT("WCSCARE t=%.1f S3_stairs crawling, in the dark"), PlaySeconds);
+	for (int32 i = 0; i < 9; ++i)
+		After(0.6f * i, [this, i]()
+		{
+			if (GStairs == EStairs::Done || !Has(TEXT("stairs_crawling"))) return;
+			if (AWCEntity* E = Her()) PlayAt(TEXT("crawl_knocks"), E->GetActorLocation(), 0.75f, FMath::FRandRange(0.78f, 0.9f), 2600.f);
+			if (i % 3 == 1) if (AWCEntity* E = Her()) PlayAt(TEXT("her_breath"), E->HeadLocation(), 0.5f, 0.85f, 2200.f);
+		});
+	Set(TEXT("stairs_crawling"));
+	// his light stutters back on: there she is, coming, on her hands and knees, one blue eye on him
+	After(1.3f, [this]()
 	{
-		if (AWCCharacter* Q = Player()) { Q->SetLightScale(1.f); Q->FlickerLight(0.5f, 0.5f); Q->SetFaceLight(300.f); Q->AddShake(0.5f); }
-		if (AWCEntity* E = Her()) { E->SetFarGlow(500.f); E->SetGlow(0.6f); }
-		Play2D(TEXT("her_scream"), 1.f);
-		Play2D(TEXT("sting_hit"), 1.f, EWCSnd::Music);
-		UE_LOG(LogWCStairs, Display, TEXT("WCSCARE t=%.1f S3_stairs light on her"), PlaySeconds);
+		if (AWCCharacter* Q = Player()) { Q->SetLightScale(1.f); Q->FlickerLight(2.1f, 0.65f); }
+		if (AWCEntity* E = Her()) E->SetFarGlow(950.f);           // cold blue on her: enough to see what she is doing
+		UE_LOG(LogWCStairs, Display, TEXT("WCSCARE t=%.1f S3_stairs light on her crawling"), PlaySeconds);
+	});
+	// and dies again: nothing, no sound at all
+	After(3.4f, [this]()
+	{
+		Flags.Remove(TEXT("stairs_crawling"));
+		if (AWCCharacter* Q = Player()) Q->SetLightScale(0.f);
+		if (AWCEntity* E = Her()) { E->StopMoving(); E->Vanish(); }
+		UE_LOG(LogWCStairs, Display, TEXT("WCSCARE t=%.1f S3_stairs dark and silent"), PlaySeconds);
+	});
+	// then, out of nowhere, she is on him
+	After(6.6f, [this]() { StairsAttack(); });
+}
+
+void AWCDirector::StairsBlueEye(bool bBlue)
+{
+	AWCEntity* H = Her();
+	if (!H || !H->Iris) return;
+	if (bBlue)
+	{
+		if (UMaterialInterface* M = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/WC/Materials/M_GlowBlue.M_GlowBlue"))) H->Iris->SetMaterial(0, M);
+		H->EyeGlint->SetLightColor(FLinearColor(0.2f, 0.45f, 1.f));
+		H->FarLight->SetLightColor(FLinearColor(0.32f, 0.5f, 1.f));
+	}
+	else
+	{
+		if (H->IrisMID) H->Iris->SetMaterial(0, H->IrisMID);
+		H->EyeGlint->SetLightColor(FLinearColor(0.75f, 0.85f, 1.f));
+		H->FarLight->SetLightColor(FLinearColor(0.72f, 0.82f, 1.f));
+	}
+}
+
+void AWCDirector::StairsAttack()
+{
+	AWCCharacter* P = Player();
+	AWCEntity* H = Her();
+	if (!P || !H || GStairs == EStairs::Done) return;
+	GClimbToX = 0.f;
+	GStairs = EStairs::Lunge;
+	const FVector Eye = P->EyeLocation();
+	FVector Fwd = P->GetControlRotation().Vector().GetSafeNormal2D();
+	if (Fwd.IsNearlyZero()) Fwd = FVector(1, 0, 0);
+	const FVector Spot = Eye + Fwd * 80.f;
+	const float StepZ = FMath::Max(0.f, (Spot.X - 400.f) * 0.875f);
+	H->Appear(FVector(Spot.X, Spot.Y, FMath::Min(350.f, FMath::Max(StepZ, Eye.Z - 150.f))), (-Fwd).Rotation().Yaw, TEXT("Lunge"), false, 0.f);
+	H->Body->SetPlayRate(0.f);
+	H->FacePlayer(false);
+	StairsBlueEye(false);
+	H->SetEyeShine(1.f, 1.f);
+	H->SetGlow(0.5f);
+	H->SetFarGlow(0.f);
+	H->SetScream(1.f);
+	P->SetLightScale(1.f);
+	P->SetFaceLight(420.f);
+	P->AddShake(0.9f);
+	Play2D(TEXT("her_scream"), 1.f);
+	Play2D(TEXT("sting_hit"), 1.f, EWCSnd::Music);
+	Tension = 1.f;
+	UE_LOG(LogWCStairs, Display, TEXT("WCSCARE t=%.1f S3_stairs attack"), PlaySeconds);
+	After(0.02f, [this, Eye, Fwd]()
+	{
+		if (AWCEntity* E = Her()) E->AddActorWorldOffset(Eye + Fwd * 62.f + FVector(0, 0, -4.f) - E->HeadLocation());
+		GLookHead = true;
+		GLookRate = 400.f;
+	});
+	After(0.35f, [this]()
+	{
+		if (AWCEntity* E = Her()) E->Body->SetPlayRate(1.8f);
+		if (AWCCharacter* Q = Player()) Q->SetInputLocked(false);
+		bBusy = false;
+		StairsCatch(0.f);
 	});
 }
 
@@ -300,6 +377,7 @@ void AWCDirector::StairsCatch(float In)
 	if (GStairs == EStairs::Done) return;
 	GStairs = EStairs::Done;
 	GClimbToX = 0.f;
+	StairsBlueEye(false);
 	if (AWCCharacter* Pl = Player()) { Pl->SetFaceLight(0.f); Pl->SetLightScale(1.f); }
 	if (AWCEntity* E = Her()) E->SetFarGlow(AWCEntity::DefaultFarGlow);
 	UE_LOG(LogWCStairs, Display, TEXT("WCSCARE t=%.1f S3_stairs caught (%d shots)"), PlaySeconds, ShotsAtHer);

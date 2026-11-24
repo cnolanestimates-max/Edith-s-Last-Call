@@ -251,6 +251,8 @@ private:
 	void StairsLunge();
 	void StairsHallStand();
 	void StairsHallRush();
+	void StairsBlueEye(bool bBlue);
+	void StairsAttack();
 	void StairsCatch(float In);
 	void ScarePhone();
 	void ScareCeiling();
