@@ -1417,9 +1417,14 @@ void AWCDirector::AtticTagsTaken()
 	After(T + 1.4f, [this]()
 	{
 		const float AtticZ = Pos(TEXT("Her_AtticFar")).Z;
-		WhenQuiet([this]() { AtticCrawl(); },
+		// Like the cellar door: he took the tags, this is her answer, so the rest left from the sewing room does not hold her
+		// back (it used to keep her waiting about a minute, and anyone who went back down the ladder in that minute never saw
+		// her).  Anything else running still comes first, and the old rest comes back once she has been.
+		const double HeldRest = NextScareAt;
+		NextScareAt = FMath::Min(NextScareAt, Clock);
+		WhenQuiet([this, HeldRest]() { NextScareAt = FMath::Max(NextScareAt, HeldRest); AtticCrawl(); },
 			[this, AtticZ]() { AWCCharacter* Pl = Player(); return Pl && Pl->GetActorLocation().Z > AtticZ - 40.f; },
-			[this]() { Set(TEXT("attic_done")); Rest(60.f); SetObjective(TEXT("Unlock the cellar")); Checkpoint(TEXT("attic_done")); }, 50.f);
+			[this, HeldRest]() { NextScareAt = FMath::Max(NextScareAt, HeldRest); Set(TEXT("attic_done")); Rest(60.f); SetObjective(TEXT("Unlock the cellar")); Checkpoint(TEXT("attic_done")); }, 50.f);
 	});
 }
 
@@ -1482,10 +1487,16 @@ void AWCDirector::ScareCellarDoor()
 	float T = Say(TEXT("d_cellar_open"), 0.6f);
 	After(T + 0.5f, [this]()
 	{
-		// she comes when it has been quiet for a while; if he is already at the bottom by then, the door just shuts on him
-		WhenQuiet([this]() { CellarSprint(); },
+		// He opened the door himself, so this is her answer, not a timed scare: the rest left over from the last scare does
+		// not hold her back.  (Waiting out that rest is why she came only about one run in three: the rest after the hand
+		// under the bed outlasts the walk to the cellar, so most players were already at the bottom and got the quiet door.)
+		// She still waits for anything else that is running (a hunt, a grab), and the old rest comes back once she has been.
+		// If he is already at the bottom by then, the door just shuts on him.
+		const double HeldRest = NextScareAt;
+		NextScareAt = FMath::Min(NextScareAt, Clock);
+		WhenQuiet([this, HeldRest]() { NextScareAt = FMath::Max(NextScareAt, HeldRest); CellarSprint(); },
 			[this]() { AWCCharacter* Pl = Player(); return Pl && Pl->GetActorLocation().Z > -230.f; },
-			[this]() { CellarQuiet(); }, 150.f);
+			[this, HeldRest]() { NextScareAt = FMath::Max(NextScareAt, HeldRest); CellarQuiet(); }, 150.f);
 	});
 }
 
