@@ -195,8 +195,8 @@ void AWCDirector::StairsHallStand()
 	H->Appear(FVector(1520.f, 40.f, 350.f), 180.f, TEXT("Idle"), true, 0.6f);
 	H->FacePlayer(true);
 	H->SetScream(0.f);
-	H->SetGlow(0.25f);
-	H->SetEyeShine(1.f);
+	H->SetGlow(2.5f);                        // one eye catches his light: the thing you see first
+	H->SetEyeShine(80.f, 2.6f);                 // bright enough to read at the far end of the hall
 	H->SetFarGlow(240.f);                    // only just there: a pale shape at the end of the hall
 	P->SetLightScale(1.f);
 	P->FlickerLight(0.6f, 0.6f);
@@ -216,12 +216,12 @@ void AWCDirector::StairsHallRush()
 	H->FacePlayer(false);
 	H->SetScream(1.f);
 	H->SetGlow(0.f);
-	H->SetEyeShine(1.f);
+	H->SetEyeShine(1.f, 1.f);
 	H->SetFarGlow(0.f);
 	TArray<FVector> Path;
 	Path.Add(FVector(860.f, -60.f, 350.f));
 	Path.Add(P->GetActorLocation() - FVector(0, 0, 88) + FVector(70.f, 0, 0));
-	H->MoveAlong(Path, 450.f, TEXT("Crawl"), [this]() { StairsCatch(0.f); });
+	H->MoveAlong(Path, 300.f, TEXT("Crawl"), [this]() { StairsCatch(0.f); });      // ~2.3 s of her coming in the dark
 	H->SetScream(1.f);
 	GStairs = EStairs::Lunge;
 	GLookHead = true;
@@ -229,7 +229,7 @@ void AWCDirector::StairsHallRush()
 	Play2D(TEXT("allfours_rush"), 1.f);
 	UE_LOG(LogWCStairs, Display, TEXT("WCSCARE t=%.1f S3_stairs she comes, in the dark"), PlaySeconds);
 	// his light catches her when she is nearly on him
-	After(1.1f, [this]()
+	After(2.05f, [this]()
 	{
 		if (AWCCharacter* Q = Player()) { Q->SetLightScale(1.f); Q->FlickerLight(0.5f, 0.5f); Q->SetFaceLight(300.f); Q->AddShake(0.5f); }
 		if (AWCEntity* E = Her()) { E->SetFarGlow(500.f); E->SetGlow(0.6f); }
