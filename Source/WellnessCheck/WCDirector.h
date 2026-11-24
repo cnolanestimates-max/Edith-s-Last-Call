@@ -252,7 +252,9 @@ private:
 	void StairsHallStand();
 	void StairsHallRush();
 	void StairsBlueEye(bool bBlue);
-	void StairsAttack();
+	void StairsAttack(const FVector& Dir);
+	void StairsStandLight(int32 Opt);
+	void StairsStandPreview(int32 Opt);
 	void StairsCatch(float In);
 	void ScarePhone();
 	void ScareCeiling();

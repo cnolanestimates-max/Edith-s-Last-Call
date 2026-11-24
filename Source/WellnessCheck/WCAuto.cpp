@@ -212,6 +212,14 @@ void AWCDirector::AutoBegin()
 			Do(TEXT("room_walk:3118,-343")); Shot(TEXT("06_boxes_to_sewing"));
 			Do(TEXT("connections_reload"));
 		}
+		else if (FParse::Param(FCommandLine::Get(),TEXT("WCStandLook")))
+		{
+			// stills of her standing at the end of the upstairs hall under each blue light option, from the top of the stairs
+			Do(TEXT("flag:inside")); Do(TEXT("at:720,-60,372,9,6")); Wait(2.f);
+			Do(TEXT("stand_opt:1")); Wait(1.6f); Shot(TEXT("stand_1"));
+			Do(TEXT("stand_opt:2")); Wait(1.6f); Shot(TEXT("stand_2"));
+			Do(TEXT("stand_opt:3")); Wait(1.6f); Shot(TEXT("stand_3"));
+		}
 		else if (FParse::Param(FCommandLine::Get(),TEXT("WCStairsScene")))
 		{
 			// the stairwell scene on its own, recorded (2026-11-24): the back door just found nailed shut, he walks the hall
@@ -222,7 +230,7 @@ void AWCDirector::AutoBegin()
 			Do(TEXT("room_walk:1300,40")); Flag(TEXT("stairs_listen"),6.f); Wait(12.f); Shot(TEXT("01_listen"));
 			Flag(TEXT("stairs_waiting"),20.f); Wait(1.5f);
 			Do(TEXT("room_walk:700,60")); Do(TEXT("room_walk:250,60")); Do(TEXT("room_walk:370,-80"));
-			Flag(TEXT("lockin_started"),10.f); Wait(6.f); Shot(TEXT("02_climb")); Wait(9.f); Shot(TEXT("03_stand")); Wait(5.f); Shot(TEXT("04_dark")); Wait(11.5f); Shot(TEXT("05_crawl")); Wait(4.65f); Shot(TEXT("06_attack"));
+			Flag(TEXT("lockin_started"),10.f); Wait(6.f); Shot(TEXT("02_climb")); Wait(9.f); Shot(TEXT("03_stand")); Wait(5.f); Shot(TEXT("04_dark")); Wait(9.9f); Shot(TEXT("05_crawl")); Wait(3.8f); Shot(TEXT("06_empty")); Do(TEXT("turn_round")); Wait(.3f); Shot(TEXT("07_attack"));
 			Flag(TEXT("lockin_done"),90.f); Wait(4.f); Do(TEXT("rec_off")); Do(TEXT("finish_stairs_mix")); Wait(.6f);
 		}
 		else if (FParse::Param(FCommandLine::Get(),TEXT("WCCorner24")))
@@ -1341,6 +1349,24 @@ void AWCDirector::AutoTick(float Dt)
 	case A_Aim: P->SetAiming(S.F > 0.5f); Next(); return;
 	case A_Crouch: if (S.F > 0.5f) P->Crouch(); else P->UnCrouch(); Next(); return;
 	case A_Do:
+		if (S.Arg.ToString().StartsWith(TEXT("stand_opt:")))
+		{
+			static bool bDark = false;
+			if (!bDark) { bDark = true; Set(TEXT("power_out")); bPowerOut = true; KillLights(0.f, true); }
+			StairsStandPreview(FCString::Atoi(*S.Arg.ToString().Mid(10)));
+			Next(); return;
+		}
+		if (S.Arg == TEXT("turn_round"))
+		{
+			// the test player looks back over his shoulder, quickly (half a turn in under a second)
+			static float Left = -1.f;
+			if (Left < 0.f) Left = 180.f;
+			const float Step = FMath::Min(Left, 240.f * Dt);
+			if (AController* C = P->GetController()) C->SetControlRotation(C->GetControlRotation() + FRotator(0.f, Step, 0.f));
+			Left -= Step;
+			if (Left <= 0.f) { Left = -1.f; Next(); }
+			return;
+		}
 		if (S.Arg == TEXT("sprint_on") || S.Arg == TEXT("sprint_off")) { P->SetSprinting(S.Arg == TEXT("sprint_on")); if (S.Arg == TEXT("sprint_on")) P->SetAiming(false); Next(); return; }
 		if (S.Arg == TEXT("record_mix_long")) { UAudioMixerBlueprintLibrary::StartRecordingOutput(this, 300.f); UE_LOG(LogWCAuto, Display, TEXT("WCMIX start t=%.3f"), PlaySeconds); Next(); return; }
 		if (S.Arg == TEXT("finish_stairs_mix")) { UAudioMixerBlueprintLibrary::StopRecordingOutputToAnyPath(this,EAudioRecordingExportType::WavFile,TEXT("stairs_mix"),AutoShotDir); Next(); return; }
