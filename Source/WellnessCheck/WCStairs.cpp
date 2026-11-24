@@ -6,8 +6,10 @@
 //   2. The stairs.  When he sets foot on the first steps, he is taken again.  He looks up the flight into the dark.  One long
 //      arm comes down out of it onto a step, then the other, a step lower.  "Mrs. Harrow?"  The pistol comes up.  Her face
 //      comes into the light, head first down the stairs, and she screams at him with her tongue out.
-//   3. The scream is the lunge: she throws herself down the flight at him as she screams, and has him; the first memory.
-// Everything up to the lunge is slow; her reaches are one arm at a time.
+//   2b. (2026-11-24, third pass) Nothing shows on the stairs.  The game walks him slowly up a few steps calling
+//      "Mrs. ...... Harrow?"; just before his light reaches the upstairs hall it dies.  In the dark, hands on the steps
+//      above him, her breath.  He goes up a little more.  The light comes back with her face right in front of his,
+//      screaming, and she has him in the same instant: the first memory.
 #include "WCDirector.h"
 #include "WCCharacter.h"
 #include "WCEntity.h"
@@ -30,6 +32,8 @@ namespace
 	FVector GLookAt = FVector::ZeroVector;
 	float GLookRate = 6.f;                // degrees a second the game turns his head while it has him
 	bool GLookHead = false;               // follow her face instead of a fixed point
+	float GClimbToX = 0.f;                // while the game has him on the stairs: walk him up to here (0 = stand)
+	float GClimbScale = 0.4f;
 
 	// the ground flight: foot at X 400 (Z 0), head at X 800 (Z 350), Y -184..8; she comes down it head first
 	const float StairPitch = -41.2f;
@@ -113,45 +117,83 @@ void AWCDirector::StairsReveal()
 	GLookAt = OnFlight(190.f) + FVector(0, 0, 35);
 	GLookRate = 7.f;
 	GLookHead = false;
-	// up there in the dark, on her front, head first down the flight; only her reach comes into the light at first
-	H->Appear(OnFlight(40.f), 180.f, TEXT("Crawl"), true, 0.f);
+	// (Cheyenne, 2026-11-24: "make the cop come up the stairs a little ... as soon as his flashlight is about to crest the
+	//  hallway make it go out ... after he gets up a little more it comes back on and she lunges in front of him and grabs
+	//  him instantly")  Nothing on the stairs while he climbs: an empty flight and the dark at the top.  She is put in
+	//  front of him only while his light is dead.
+	H->Vanish();
+	GLookAt = OnFlight(-60.f) + FVector(0, 0, 150);            // up the flight, to where the upstairs hall opens
+	GLookRate = 5.f;
+	GLookHead = false;
+	GClimbToX = 520.f;                                       // a few slow steps up
+	GClimbScale = 0.42f;
+	Tension = 0.85f;
+	After(1.2f, [this]() { Say(TEXT("d_stairs_call"), 0.f); });             // "Mrs. ...... Harrow?" up into the dark
+	After(3.0f, [this]() { PlayAt(TEXT("creak"), OnFlight(-20.f), 0.5f, 0.75f, 3500.f); });
+	// just before his light reaches the top, it dies
+	After(6.6f, [this]() { if (AWCCharacter* Q = Player()) Q->FlickerLight(0.9f, 0.85f); });
+	After(7.5f, [this]()
+	{
+		if (AWCCharacter* Q = Player()) { Q->SetLightScale(0.f); Q->AddShake(0.08f); }
+		Play2D(TEXT("bulb_die"), 0.8f);
+		GClimbToX = 0.f;                                     // he stops dead
+		Tension = 0.95f;
+		UE_LOG(LogWCStairs, Display, TEXT("WCSCARE t=%.1f S3_stairs light out"), PlaySeconds);
+	});
+	// in the dark: something on the stairs above him, one hand, then the other, closer; her breath
+	After(8.9f, [this]() { PlayAt(TEXT("crawl_knocks"), OnFlight(120.f), 0.9f, 0.85f, 2500.f); });
+	After(10.0f, [this]() { PlayAt(TEXT("crawl_knocks"), OnFlight(180.f), 1.f, 0.8f, 2500.f); });
+	After(10.6f, [this]() { PlayAt(TEXT("her_breath"), OnFlight(220.f) + FVector(0, 0, 120), 0.8f, 0.85f, 2000.f); });
+	// and he goes on up anyway, a little, in the dark
+	After(11.4f, [this]() { GClimbToX = 600.f; GClimbScale = 0.32f; });
+	// the light comes back: she is right there, and she has him
+	After(14.4f, [this]() { StairsFace(); });
+}
+
+void AWCDirector::StairsFace()
+{
+	AWCCharacter* P = Player();
+	AWCEntity* H = Her();
+	if (!P || !H || GStairs == EStairs::Done) return;
+	GClimbToX = 0.f;
+	const FVector Eye = P->EyeLocation();
+	FVector Fwd = P->GetControlRotation().Vector().GetSafeNormal2D();
+	if (Fwd.IsNearlyZero()) Fwd = FVector(1, 0, 0);
+	// a little above him on the flight, her face at his: she was crawling down to him the whole time it was dark
+	const FVector Spot = Eye + Fwd * 80.f;
+	const float StepZ = FMath::Max(0.f, (Spot.X - 400.f) * 0.875f);
+	H->Appear(FVector(Spot.X, Spot.Y, FMath::Max(StepZ, Eye.Z - 150.f)), (-Fwd).Rotation().Yaw, TEXT("Lunge"), false, 0.f);
 	H->Body->SetPlayRate(0.f);
-	H->SetActorRotation(FRotator(StairPitch, 180.f, 0.f));
 	H->FacePlayer(false);
-	H->SetScream(0.f);
-	H->SetGlow(0.f);
-	H->SetFarGlow(260.f);                     // dim: pale hands and a shape, at the edge of his light
-	Tension = 0.9f;
-	After(0.4f, [this]() { PlayAt(TEXT("her_breath"), OnFlight(60.f), 0.7f, 0.9f, 2500.f); });
-	After(1.2f, [this]() { StairsStep(115.f, 1.5f, 0.9f, false); });         // one long arm comes down out of the dark onto a step
-	After(4.4f, [this]() { StairsStep(185.f, 1.5f, 1.f, false); });          // then the other, a step lower
-	After(7.2f, [this]()
+	H->SetEyeShine(1.f);
+	H->SetGlow(0.5f);
+	H->SetFarGlow(0.f);
+	H->SetScream(1.f);
+	P->SetLightScale(1.f);
+	P->SetFaceLight(420.f);                                  // his light full on her face, no flicker: the one moment to see her
+	P->AddShake(0.9f);
+	Play2D(TEXT("her_scream"), 1.f);
+	Play2D(TEXT("sting_hit"), 1.f, EWCSnd::Music);
+	Tension = 1.f;
+	UE_LOG(LogWCStairs, Display, TEXT("WCSCARE t=%.1f S3_stairs face"), PlaySeconds);
+	// her face square in front of his, at his eye height (the pose only exists after a frame), and his eyes snap to it
+	After(0.02f, [this, Eye, Fwd]()
 	{
-		const float T = Say(TEXT("d_stairs_call"), 0.f);          // "Mrs. ...... Harrow?"
-		After(T + 0.3f, [this]() { if (AWCCharacter* Q = Player()) { Q->SetAiming(true); Q->AddShake(0.1f); } });
+		if (AWCEntity* E = Her())
+		{
+			const FVector Want = Eye + Fwd * 62.f + FVector(0, 0, -4.f);
+			E->AddActorWorldOffset(Want - E->HeadLocation());
+		}
+		GLookHead = true;
+		GLookRate = 400.f;
 	});
-	// her face comes down into the light
-	After(10.2f, [this]()
+	// and in the same breath, she has him
+	After(0.5f, [this]()
 	{
-		StairsStep(255.f, 1.9f, 0.8f, false);
-		if (AWCEntity* E = Her()) { E->SetEyeShine(1.f); E->SetGlow(0.35f); E->SetFarGlow(380.f); }
-		PlayAt(TEXT("her_breath"), OnFlight(300.f), 1.f, 0.8f, 2500.f);
-		GLookHead = true; GLookRate = 5.f;
-	});
-	// and she screams at him, tongue out, and in the same moment throws herself down the stairs at him: that is the grab
-	// (Cheyenne, 2026-11-24: "one arm, step then two, the scream lunge")
-	After(13.4f, [this]()
-	{
-		if (AWCEntity* E = Her()) { E->SetScream(1.f); E->SetGlow(1.2f); E->SetFarGlow(900.f); }
-		Play2D(TEXT("her_scream"), 1.f);
-		Play2D(TEXT("sting_hit"), 1.f, EWCSnd::Music);
-		if (AWCCharacter* Q = Player()) { Q->AddShake(0.8f); Q->SetFaceLight(85.f); Q->SetInputLocked(false); }
+		if (AWCEntity* E = Her()) E->Body->SetPlayRate(1.8f);
+		if (AWCCharacter* Q = Player()) Q->SetInputLocked(false);
 		bBusy = false;
-		GLookHead = false;
-		Tension = 1.f;
-		UE_LOG(LogWCStairs, Display, TEXT("WCSCARE t=%.1f S3_stairs scream"), PlaySeconds);
-		GStairs = EStairs::Crawl;
-		After(0.15f, [this]() { StairsLunge(); });
+		StairsCatch(0.f);
 	});
 }
 
@@ -215,7 +257,8 @@ void AWCDirector::StairsCatch(float In)
 {
 	if (GStairs == EStairs::Done) return;
 	GStairs = EStairs::Done;
-	if (AWCCharacter* Pl = Player()) Pl->SetFaceLight(0.f);
+	GClimbToX = 0.f;
+	if (AWCCharacter* Pl = Player()) { Pl->SetFaceLight(0.f); Pl->SetLightScale(1.f); }
 	if (AWCEntity* E = Her()) E->SetFarGlow(AWCEntity::DefaultFarGlow);
 	UE_LOG(LogWCStairs, Display, TEXT("WCSCARE t=%.1f S3_stairs caught (%d shots)"), PlaySeconds, ShotsAtHer);
 	// the grab: the first time she has him, he sees the first memory (Grab), then he wakes on the floor ("gotup")
@@ -250,6 +293,9 @@ void AWCDirector::TickStairs(float Dt)
 		if (L.Z > 40.f && L.Z < 200.f && FMath::Abs(L.Y) < 230.f && L.X > 820.f && L.X < 1350.f) StairsListen();
 		return;
 	}
+	// the game walks him slowly up the flight
+	if (GStairs == EStairs::Reveal && GClimbToX > 0.f && P->GetActorLocation().X < GClimbToX)
+		P->AddMovementInput(FVector(1.f, 0.f, 0.f), GClimbScale);
 	// while the game has him, it turns his head, slowly
 	if ((GStairs == EStairs::Listening || GStairs == EStairs::Reveal) && P->IsInputLocked())
 	{

@@ -222,8 +222,7 @@ void AWCDirector::AutoBegin()
 			Do(TEXT("room_walk:1300,40")); Flag(TEXT("stairs_listen"),6.f); Wait(12.f); Shot(TEXT("01_listen"));
 			Flag(TEXT("stairs_waiting"),20.f); Wait(1.5f);
 			Do(TEXT("room_walk:700,60")); Do(TEXT("room_walk:250,60")); Do(TEXT("room_walk:370,-80"));
-			Flag(TEXT("lockin_started"),10.f); Wait(9.6f); Shot(TEXT("02_arms")); Wait(3.9f); Shot(TEXT("03_scream"));
-			LookHer(25.f);
+			Flag(TEXT("lockin_started"),10.f); Wait(6.f); Shot(TEXT("02_climb")); Wait(4.f); Shot(TEXT("03_dark")); Wait(4.6f); Shot(TEXT("04_face"));
 			Flag(TEXT("lockin_done"),90.f); Wait(4.f); Do(TEXT("rec_off")); Do(TEXT("finish_stairs_mix")); Wait(.6f);
 		}
 		else if (FParse::Param(FCommandLine::Get(),TEXT("WCCorner24")))
@@ -1075,8 +1074,8 @@ void AWCDirector::AutoBegin()
 	// ---- S3: the stairwell (2026-11-24): the back door is nailed shut, the hall, the sounds overhead, then her on the stairs
 	Go(TEXT("A_BackDoor")); Flag(TEXT("stairs_armed"), 20.f);
 	AutoSteps.Add({ A_Do, TEXT("at:1060,40,92,180,0"), 0.f }); Flag(TEXT("stairs_listen"), 10.f); Wait(13.f); Shot(TEXT("11_S3_listen")); Flag(TEXT("stairs_waiting"), 20.f);
-	AutoSteps.Add({ A_Do, TEXT("at:360,-88,92,0,0"), 0.f }); Flag(TEXT("lockin_started"), 10.f); Wait(9.5f); Shot(TEXT("11b_S3_arms")); Wait(4.1f); Shot(TEXT("12_S3_scream"));
-	Wait(2.6f); Fire(3); LookHer(2.f); Shot(TEXT("12b_S3_chase")); LookHer(30.f);
+	AutoSteps.Add({ A_Do, TEXT("at:360,-88,92,0,0"), 0.f }); Flag(TEXT("lockin_started"), 10.f); Wait(6.f); Shot(TEXT("11b_S3_climb")); Wait(8.6f); Shot(TEXT("12_S3_face"));
+	LookHer(30.f);
 	Flag(TEXT("lockin_done"), 80.f); Wait(10.f); Shot(TEXT("13_after_S3"));
 	// ---- the fuse
 	Go(TEXT("A_Pantry")); Use(TEXT("fusebox")); Wait(2.f); Shot(TEXT("13b_fuse"));
