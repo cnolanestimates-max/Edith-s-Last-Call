@@ -51,6 +51,25 @@ enum { A_Go, A_Use, A_Wait, A_WaitFlag, A_Shot, A_Fire, A_Look, A_Light, A_LookH
 static FString GLookRecDir, GLookRecName;
 static int32 GLookFrame = 0;
 
+// trailer footage (2026-11-24): a soft warm fill carried with the camera (-WCFloatFill=<lumens>, 0 = none), so the rooms and
+// props read on a store page; the flashlight stays on top of it
+static void AddTrailerFill(AActor* Pl)
+{
+	float Lm = 0.f;
+	FParse::Value(FCommandLine::Get(), TEXT("WCFloatFill="), Lm);
+	if (!Pl || Lm <= 0.f) return;
+	UPointLightComponent* L = NewObject<UPointLightComponent>(Pl);
+	L->SetupAttachment(Pl->GetRootComponent());
+	L->SetRelativeLocation(FVector(-40, 0, 90));
+	L->RegisterComponent();
+	L->SetIntensityUnits(ELightUnits::Lumens);
+	L->SetIntensity(Lm);
+	L->SetLightColor(FLinearColor(1.f, 0.82f, 0.62f));
+	L->SetAttenuationRadius(1100.f);
+	L->SetSourceRadius(40.f);
+	L->SetCastShadows(true);
+}
+
 static void ApplyLookPreview(UWorld* W, const FString& Looks)
 {
 	if (!W) return;
@@ -717,6 +736,37 @@ void AWCDirector::AutoBegin()
 		AutoIndex = 0; AutoStepStart = Clock;
 		return;
 	}
+	FString FloatTour;
+	if (FParse::Value(FCommandLine::Get(), TEXT("WCFloat="), FloatTour))
+	{
+		// trailer footage (2026-11-24): slow floating camera moves, one "name|x,y,z,yaw,pitch|x,y,z,yaw,pitch|seconds[|dark]" per
+		// line (z as in at:, the eye is 66 cm higher); the camera glides from the first point to the second with gentle ease in
+		// and out, nothing scripted runs, every frame is recorded to <-WCShots dir>/<name>/.  "dark" = flashlight off.
+		Steps.Reset();
+		Subtitles.Reset();
+		bBusy = true;
+		Fade = FadeTarget = 0.f;
+		GLookRecDir = FPaths::ConvertRelativePathToFull(AutoShotDir);
+		AddTrailerFill(Player());
+		TArray<FString> Rows;
+		FFileHelper::LoadFileToStringArray(Rows, *FloatTour);
+		Wait(4.f);
+		for (const FString& Row : Rows)
+		{
+			TArray<FString> Parts;
+			Row.ParseIntoArray(Parts, TEXT("|"));
+			if (Parts.Num() < 4 || Row.StartsWith(TEXT("#"))) continue;
+			AutoSteps.Add({ A_Do, FName(*(TEXT("at:") + Parts[1].TrimStartAndEnd())), 0.f });
+			if (Parts.Num() > 4 && Parts[4].Contains(TEXT("dark"))) AutoSteps.Add({ A_Do, TEXT("flash_off"), 0.f });
+			Wait(1.5f);
+			AutoSteps.Add({ A_Do, FName(*(TEXT("rec:") + Parts[0].TrimStartAndEnd())), 0.f });
+			AutoSteps.Add({ A_Do, FName(*(TEXT("float:") + Parts[1].TrimStartAndEnd() + TEXT(">") + Parts[2].TrimStartAndEnd() + TEXT(">") + Parts[3].TrimStartAndEnd())), 0.f });
+			AutoSteps.Add({ A_Do, TEXT("rec_off"), 0.f });
+		}
+		UE_LOG(LogWCAuto, Display, TEXT("WCFLOAT %d shots"), Rows.Num());
+		AutoIndex = 0; AutoStepStart = Clock;
+		return;
+	}
 	FString ShotFile;
 	if (FParse::Value(FCommandLine::Get(), TEXT("WCShotFile="), ShotFile))
 	{
@@ -731,6 +781,7 @@ void AWCDirector::AutoBegin()
 		{
 			Pl->SetInputLocked(true);
 			Pl->SetFlashlight(true, false);
+			AddTrailerFill(Pl);
 		}
 		else if (Pl)
 		{
@@ -1181,7 +1232,11 @@ void AWCDirector::AutoBegin()
 	AutoSteps.Add({ A_Do, TEXT("at:218,-116,442,-70,-5"), 0.f }); AutoSteps.Add({ A_Do, TEXT("wait_door_cry"), 0.f }); Wait(4.f);
 	AutoSteps.Add({ A_Do, TEXT("wait_door_mask"), 0.f }); AutoSteps.Add({ A_Do, TEXT("wait_empty_crack"), 0.f }); Flag(TEXT("kids_open"), 20.f);
 	Go(TEXT("A_Kids")); Wait(3.9f); Shot(TEXT("19_S7_hand_out")); Wait(2.6f); Shot(TEXT("20_S7_hand_takes")); Flag(TEXT("underbed_done"), 30.f);
-	AutoSteps.Add({ A_Crouch, NAME_None, 1.f }); Use(TEXT("pick_keep_ruth")); AutoSteps.Add({ A_Crouch, NAME_None, 0.f }); Wait(1.f);
+	const int32 UnderBedPickupStep = AutoSteps.Num();
+	AutoSteps.Add({ A_Do, TEXT("room_walk:638,-307"), 0.f });
+	AutoSteps.Add({ A_Crouch, NAME_None, 1.f });
+	AutoSteps.Add({ A_Use, TEXT("pick_keep_ruth"), 0.f });
+	AutoSteps.Add({ A_Crouch, NAME_None, 0.f }); Wait(1.f);
 	// ---- S6: the cellar door
 	Use(TEXT("cellar")); Flag(TEXT("sprint_started"), 10.f); WaitHer(40.f); LookHer(0.7f); Shot(TEXT("25_S6_sprint")); LookHer(4.f);
 	Flag(TEXT("sprint_done"), 40.f); Wait(5.f); Shot(TEXT("26_cellar"));
@@ -1196,7 +1251,8 @@ void AWCDirector::AutoBegin()
 	Go(TEXT("A_Foyer")); Shot(TEXT("33_dawn_foyer")); Go(TEXT("A_Porch")); Shot(TEXT("34_dawn_porch"));
 	Go(TEXT("A_Cruiser")); Flag(TEXT("ended"), 20.f); Wait(30.f); Shot(TEXT("35_ending")); Wait(20.f); Shot(TEXT("36_credits"));
 
-	AutoIndex = 0;
+	AutoIndex = FParse::Param(FCommandLine::Get(), TEXT("WCResumeUnderbed")) && Has(TEXT("underbed_done")) && !HasItem(TEXT("keep_ruth"))
+		? UnderBedPickupStep : 0;
 	AutoStepStart = Clock;
 	AutoStuckAt = Clock;
 	if (!AutoShotDir.IsEmpty())
@@ -1443,6 +1499,41 @@ void AWCDirector::AutoTick(float Dt)
 			GLookFrame = 0; Next(); return;
 		}
 		if (S.Arg == TEXT("rec_off")) { GLookRecName.Empty(); Next(); return; }
+		if (S.Arg == TEXT("flash_off")) { P->SetFlashlight(false, false); Next(); return; }
+		if (S.Arg.ToString().StartsWith(TEXT("float:")))
+		{
+			// the trailer camera (-WCFloat): glide between two points, eased at both ends
+			TArray<FString> Seg, A, B;
+			S.Arg.ToString().Mid(6).ParseIntoArray(Seg, TEXT(">"));
+			if (Seg.Num() < 3) { Next(); return; }
+			Seg[0].ParseIntoArray(A, TEXT(","));
+			Seg[1].ParseIntoArray(B, TEXT(","));
+			const float Dur = FMath::Max(0.1f, FCString::Atof(*Seg[2]));
+			if (A.Num() < 5 || B.Num() < 5) { Next(); return; }
+			static int32 FloatInit = -1;
+			if (FloatInit != AutoIndex)
+			{
+				FloatInit = AutoIndex;
+				P->GetCharacterMovement()->DisableMovement();
+				P->SetActorEnableCollision(false);
+			}
+			const float T = FMath::Clamp((float)In / Dur, 0.f, 1.f);
+			const float E = FMath::Lerp(T, T * T * (3.f - 2.f * T), 0.6f);   // mostly steady, softened at the ends
+			auto F = [](const TArray<FString>& V, int32 I) { return FCString::Atof(*V[I]); };
+			const FVector Pos = FMath::Lerp(FVector(F(A, 0), F(A, 1), F(A, 2)), FVector(F(B, 0), F(B, 1), F(B, 2)), E);
+			const float Yaw = F(A, 3) + FMath::FindDeltaAngleDegrees(F(A, 3), F(B, 3)) * E;
+			const float Pitch = FMath::Lerp(F(A, 4), F(B, 4), E);
+			P->SetActorLocation(Pos, false, nullptr, ETeleportType::TeleportPhysics);
+			P->SetActorRotation(FRotator(0.f, Yaw, 0.f));
+			if (AController* C = P->GetController()) C->SetControlRotation(FRotator(Pitch, Yaw, 0.f));
+			if (T >= 1.f)
+			{
+				P->SetActorEnableCollision(true);
+				P->GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+				Next();
+			}
+			return;
+		}
 		// (the snag, ceiling, cellar and attic checks, 2026-11-24; up here because the chain below is at the compiler's nesting limit)
 		if (S.Arg.ToString().StartsWith(TEXT("item:"))) { Items.Add(FName(*S.Arg.ToString().Mid(5))); Next(); return; }
 		if (S.Arg.ToString().StartsWith(TEXT("rest:"))) { Rest(FCString::Atof(*S.Arg.ToString().Mid(5))); Next(); return; }
@@ -2218,14 +2309,15 @@ void AWCDirector::AutoTick(float Dt)
 		else if (S.Arg == TEXT("check_direct_fuse_route"))
 		{
 			const bool bCompleted = !Has(TEXT("phone_done")) && Has(TEXT("bath_chain_released")) &&
-				Has(TEXT("sitting_open")) && Has(TEXT("fuse_done")) && !HasItem(TEXT("fuse")) && !bPowerOut;
-			if (!bCompleted || !DoLoad() || !Has(TEXT("fuse_done")))
+				Has(TEXT("sitting_open")) && Has(TEXT("fuse_done")) && !HasItem(TEXT("fuse")) && !bPowerOut &&
+				Objective.Contains(TEXT("settlers' book"));
+			if (!bCompleted || !DoLoad() || !Has(TEXT("fuse_done")) || !Objective.Contains(TEXT("settlers' book")))
 			{
 				UE_LOG(LogWCAuto, Error, TEXT("WCAUTO FAIL direct fuse route or checkpoint"));
 			}
 			else
 			{
-				UE_LOG(LogWCAuto, Display, TEXT("WCFUSE restored pantry power without answering the phone; checkpoint verified"));
+				UE_LOG(LogWCAuto, Display, TEXT("WCFUSE restored pantry power without answering the phone; book objective and checkpoint verified"));
 			}
 		}
 		else if (S.Arg == TEXT("check_book_focus"))

@@ -26,6 +26,9 @@
 
 DEFINE_LOG_CATEGORY_STATIC(LogWCStory, Log, All);
 
+// Her_Under is 60 cm inside the bed edge. Leave the reclaimed box within crouching reach.
+static constexpr float BedBoxRestOffset = 25.f;
+
 // ---------------------------------------------------------------------------------------------- lines
 // Kind: 0 deputy (close), 1 dispatch over the radio, 2 Edith heard everywhere, 3 Edith from where she stands, 4 Edith on the phone
 struct FWCLine { const TCHAR* Id; const TCHAR* Speaker; const TCHAR* Text; int32 Kind; };
@@ -223,7 +226,7 @@ void AWCDirector::ApplyWorldState()
 	{
 		const bool bTaken = HasItem(TEXT("keep_ruth"));
 		Box->bEnabled = Has(TEXT("underbed_done")) && !bTaken;
-		if (!bTaken) Box->SetActorLocation(Pos(TEXT("Her_Under")) + FVector(0, Has(TEXT("underbed_done")) ? -15.f : 150.f, 1.f));
+		if (!bTaken) Box->SetActorLocation(Pos(TEXT("Her_Under")) + FVector(0, Has(TEXT("underbed_done")) ? BedBoxRestOffset : 150.f, 1.f));
 	}
 	const bool DresserOpen = Has(TEXT("bath_chain_released")) || Has(TEXT("phone_done"));
 	ShowTagged(TEXT("Show_drawer"), DresserOpen);
@@ -730,6 +733,14 @@ void AWCDirector::StoryEvent(FName Id)
 		Say(TEXT("d_musicbox"), 1.0f);
 		if (!Has(TEXT("book_done")) && !HasItem(TEXT("key_desk")) && !Has(TEXT("walter_keys_taken")))
 			SetObjective(TEXT("Check Customs of the First Settlers on the living-room shelf beside the stairs"));
+		else if (!HasItem(TEXT("key_cellar")))
+			SetObjective(TEXT("Find the cellar key in the attic footlocker"));
+		else if (!HasItem(TEXT("shears")))
+			SetObjective(TEXT("Find something to cut with in the upstairs sewing room"));
+		else if (HasItem(TEXT("keep_walter")) && HasItem(TEXT("keep_daniel")) && HasItem(TEXT("keep_eye")))
+			SetObjective(TEXT("Unlock the cellar"));
+		else
+			SetObjective(TEXT("Find the remaining keepsakes"));
 		Checkpoint(TEXT("underbed")); return;
 	}
 	
@@ -1359,7 +1370,7 @@ void AWCDirector::TickUnderBed(float Dt)
 	const float Pull = FMath::SmoothStep(5.45f, 7.85f, T);
 	const float Withdraw = FMath::SmoothStep(7.95f, 8.7f, T);
 	const FVector Under = Pos(TEXT("Her_Under"));
-	const FVector HideAt(Under.X, Under.Y - 15.f, BedBoxStart.Z);
+	const FVector HideAt(Under.X, Under.Y + BedBoxRestOffset, BedBoxStart.Z);
 	const FVector Drag = (HideAt - BedBoxStart) * Pull;
 	Arm->SetWorldLocation(BedWristAtBox + FVector(0,-165.f*(1.f-Reach)-78.f*Withdraw, 2.f*FMath::Sin(PI*Reach)-1.5f*Grip) + Drag);
 	const float Searching = FMath::Sin(Reach * PI);
@@ -1393,6 +1404,7 @@ void AWCDirector::TickUnderBed(float Dt)
 	Rest(140.f);
 	ApplyWorldState();
 	Think(TEXT("...It took it. It's under the bed."));
+	SetObjective(TEXT("Crouch beside Ruth's bed and retrieve her music box"));
 	ShowHint(TEXT("C: crouch"), 6.f);
 	Checkpoint(TEXT("hand"));
 }

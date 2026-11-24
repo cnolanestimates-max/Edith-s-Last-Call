@@ -455,7 +455,7 @@ void AWCDirector::StairsAttackAt(FVector Head, const TCHAR* Where)
 		PlayAt(TEXT("body_fall"), Eye - FVector(0, 0, 150.f), 1.f, 0.9f, 1500.f);
 		if (AWCCharacter* Q = Player()) Q->AddShake(1.f);
 	});
-	After(0.4f, [this]()
+	After(0.3f, [this]()
 	{
 		if (AWCCharacter* Q = Player()) Q->SetInputLocked(false);
 		bBusy = false;
@@ -530,13 +530,14 @@ void AWCDirector::StairsCatch(float In)
 	if (AWCEntity* E = Her()) E->SetFarGlow(AWCEntity::DefaultFarGlow);
 	UE_LOG(LogWCStairs, Display, TEXT("WCSCARE t=%.1f S3_stairs caught (%d shots)"), PlaySeconds, ShotsAtHer);
 	// the grab: the first time she has him, he sees the first memory (Grab), then he wakes on the floor ("gotup")
-	Grab(1.3f, [this]()
+	// straight into the memory: her face is only on screen for the instant she has him
+	Grab(0.15f, [this]()
 	{
 		if (AWCCharacter* Pl = Player()) Pl->Knockdown(3.0f);
 		FadeTo(1.f, 0.3f);
 		After(0.7f, [this]() { if (AWCEntity* E = Her()) E->Vanish(); });
 		After(2.8f, [this]() { FadeTo(0.f, 1.6f); });
-	});
+	}, true);
 }
 
 bool AWCDirector::IsStairsChase() const

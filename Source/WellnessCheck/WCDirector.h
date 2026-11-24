@@ -283,7 +283,7 @@ private:
 	TWeakObjectPtr<class UStaticMeshComponent> SettlersPages, SettlersCover, SettlersGlove, SettlersKey;
 	TWeakObjectPtr<class UPointLightComponent> SettlersFill;
 	/** She has him: she screams in his face for Hold seconds (the view is pulled to her), then Then() runs. */
-	void Grab(float Hold, TFunction<void()> Then);
+	void Grab(float Hold, TFunction<void()> Then, bool bQuiet = false);   // bQuiet: the scene already screamed
 	double GrabHoldUntil = 0.0;
 	double ShedPickupAt = -1.;
 	bool bShedImpactPlayed = false;

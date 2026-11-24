@@ -356,7 +356,15 @@ bool AWCDirector::HouseEvent(FName Id)
 		PlayAt(TEXT("switch_click"), Pos(TEXT("FusePoint")), 1.f, 0.8f);
 		PlayAt(TEXT("bulb_buzz"), Pos(TEXT("FusePoint")), 0.8f);
 		After(0.7f, [this]() { SwitchRoom(TEXT("pantry"), true, false); Feedback(TEXT("That's got it.")); });
-		if (Objective.Contains(TEXT("fuse"))) SetObjective(TEXT("Search the house for Edith Harrow"));
+		if (Objective.Contains(TEXT("fuse")))
+		{
+			if (!Has(TEXT("book_done")))
+				SetObjective(TEXT("Find the settlers' book on the living-room shelf beside the stairs"));
+			else if (HasItem(TEXT("key_desk")) && !Has(TEXT("desk_open")))
+				SetObjective(TEXT("Use the book's small key on Walter's desk in the downstairs den"));
+			else
+				SetObjective(TEXT("Search the house for Edith Harrow"));
+		}
 		Checkpoint(TEXT("fuse_done"));
 		return true;
 	}
@@ -1221,7 +1229,7 @@ void AWCDirector::ScareBook()
 static float GrabSink = 30.f;       // how far she stoops to him (cm); -WCGrabSink=<n> to try others
 static float GrabDist = 150.f;      // how far her feet are from his; -WCGrabDist=<n>
 
-void AWCDirector::Grab(float Hold, TFunction<void()> Then)
+void AWCDirector::Grab(float Hold, TFunction<void()> Then, bool bQuiet)
 {
 	FParse::Value(FCommandLine::Get(), TEXT("WCGrabSink="), GrabSink);
 	FParse::Value(FCommandLine::Get(), TEXT("WCGrabDist="), GrabDist);
@@ -1241,8 +1249,11 @@ void AWCDirector::Grab(float Hold, TFunction<void()> Then)
 	H->Play(TEXT("Lunge"), false);
 	H->SetScream(1.f);
 	H->SetGlow(2.2f);
-	Play2D(TEXT("her_scream"), 1.f);
-	Play2D(TEXT("sting_hit"), 1.f, EWCSnd::Music);
+	if (!bQuiet)
+	{
+		Play2D(TEXT("her_scream"), 1.f);
+		Play2D(TEXT("sting_hit"), 1.f, EWCSnd::Music);
+	}
 	P->AddShake(1.f);
 	P->SetLightScale(1.f);
 	P->FlickerLight(Hold, 0.45f);

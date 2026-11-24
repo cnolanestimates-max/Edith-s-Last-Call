@@ -31,7 +31,8 @@ void AWCInteractable::BeginPlay()
 	Super::BeginPlay();
 	if (!GrabExtent.IsNearlyZero())
 	{
-		Grab->SetBoxExtent(GrabExtent);
+		const bool bSmallPuzzlePickup = WCId == TEXT("pick_screwdriver") || WCId == TEXT("pick_key_sitting") || WCId == TEXT("pick_shears");
+		Grab->SetBoxExtent(bSmallPuzzlePickup ? GrabExtent + FVector(4.f, 4.f, 3.f) : GrabExtent);
 		Grab->SetRelativeLocation(GrabOffset);
 		Grab->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 		Grab->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);

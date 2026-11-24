@@ -192,4 +192,8 @@ void AWCDirector::RestoreHarrowHints()
             Has(TEXT("bath_chain_released")) || Has(TEXT("phone_done")) ? TEXT("Pull the plug in the upstairs bath") :
             TEXT("Check the dresser in the front upstairs bathroom"));
     else if (Objective == TEXT("Find what the long key opens")) SetObjective(TEXT("Take the long key to the attic door upstairs"));
+    else if (LastCheckpoint == TEXT("hand") && Has(TEXT("underbed_done")) && !HasItem(TEXT("keep_ruth")))
+        SetObjective(TEXT("Crouch beside Ruth's bed and retrieve her music box"));
+    else if (Has(TEXT("fuse_done")) && !Has(TEXT("book_done")) && Objective == TEXT("Search the house for Edith Harrow"))
+        SetObjective(TEXT("Find the settlers' book on the living-room shelf beside the stairs"));
 }
