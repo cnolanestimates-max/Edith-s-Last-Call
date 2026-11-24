@@ -914,7 +914,7 @@ void AWCDirector::TickStalk(float Dt)
 			Play2D(TEXT("her_scream_short"), 1.f);
 			Play2D(TEXT("sting_rise"), 0.9f, EWCSnd::Music);
 		}
-		else if (!Has(TEXT("stalk_hint"))) { Set(TEXT("stalk_hint")); ShowHint(TEXT("Right Mouse: raise your pistol.  She cannot be killed, but enough shots drive her off."), 9.f); }
+		else if (!Has(TEXT("stalk_hint"))) { Set(TEXT("stalk_hint")); ShowHint(TEXT("Right Mouse: raise your pistol.  Left Mouse: fire."), 9.f); }
 		UE_LOG(LogWCHouse, Display, TEXT("WCSTALK t=%.1f begin #%d at %s (needs %d)"), PlaySeconds, StalksDone + 1, *Best.ToString(), StalkNeed);
 		return;
 	}

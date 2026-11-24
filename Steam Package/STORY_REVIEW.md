@@ -29,6 +29,16 @@ Shows in game after the next C++ build and level/items step (the editor was open
 | Gun cabinet | "box of cartridges" by a shotgun rack | "box of pistol cartridges" | He takes them for his pistol |
 | Everywhere | Mrs Pruitt, mould, labelled, pyjamas, grey, round the, any more, Synthesised, alright | Mrs., mold, labeled, pajamas, gray, around, anymore, Synthesized, all right | 1993 rural America |
 
+## Fixed 2026-11-24 17:30 UTC (Cheyenne: "fix 2 and 3", text only)
+
+- Item 3 below: the flashlight is "County issue, three cells.", the pistol "Service issue. Eight to the magazine.", and the
+  first-hunt hint is "Right Mouse: raise your pistol.  Left Mouse: fire." He still learns it in the moment.
+- Item 2: the photo text now matches "Every one but hers": the hall portrait has "Every pair but hers", and Walter's eyes
+  are cut like the rest.
+- Item 5: tape 1 adds "Ruth would have been grown by then." (Edith calling a grandchild Ruthie); tape 2 is labelled
+  "Living room - early Thanksgiving, Nov. 24, 1991", matching its stamp.
+- Item 6: the title card arrival is 1:52 a.m., so "almost five hours" lands at first light. No re-record needed.
+
 ## Needs Cheyenne: voice or story beats (not changed)
 
 1. **The knock contradicts the call (re-record `d_knock`).** He says "Your daughter asked us to check on you," but dispatch

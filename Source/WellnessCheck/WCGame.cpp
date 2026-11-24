@@ -636,7 +636,7 @@ void AWCHUD::DrawMenu(AWCDirector* D)
 	if (Screen == EWCScreen::Main)
 	{
 		Text(TEXT("EDITH'S LAST CALL"), Left, Px(150.f), Px(96.f), FLinearColor(0.9f, 0.88f, 0.82f, 1.f), 0, true);
-		Text(TEXT("1140 County Road 9.  3:07 a.m."), Left + Px(4.f), Px(262.f), Px(24.f), Dim);
+		Text(TEXT("1140 County Road 9.  1:52 a.m."), Left + Px(4.f), Px(262.f), Px(24.f), Dim);
 		Y = Px(400.f);
 		Text(TEXT("Contains horror, sudden loud sounds and flickering light.   Headphones recommended."), Left, H - Px(70.f), Px(19.f), Dim);
 	}
@@ -727,13 +727,13 @@ namespace
 {
 	struct FWCItemInfo { const TCHAR* Id; const TCHAR* Name; const TCHAR* Desc; const TCHAR* Mesh; };
 	const FWCItemInfo GWCItemInfo[] = {
-		{ TEXT("flashlight"), TEXT("Flashlight"), TEXT("County issue, three cells. It goes dim when she is close, and out when she is closer."), TEXT("/Game/HorrorHouseKit/Meshes/Lights_Ambience/SM_Flashlight_Off.SM_Flashlight_Off") },
-		{ TEXT("pistol"), TEXT("Service pistol"), TEXT("Eight to the magazine. It does not hurt her. She cannot stand the noise and the flash: three or four shots and she goes, for a while."), TEXT("/Game/WC/Props/SM_Item_Pistol.SM_Item_Pistol") },
+		{ TEXT("flashlight"), TEXT("Flashlight"), TEXT("County issue, three cells."), TEXT("/Game/HorrorHouseKit/Meshes/Lights_Ambience/SM_Flashlight_Off.SM_Flashlight_Off") },
+		{ TEXT("pistol"), TEXT("Service pistol"), TEXT("Service issue. Eight to the magazine."), TEXT("/Game/WC/Props/SM_Item_Pistol.SM_Item_Pistol") },
 		{ TEXT("radio"), TEXT("Radio"), TEXT("Clear as a bell in the car. Inside this house it gives nothing but static."), TEXT("/Game/WC/Props/SM_Item_Radio.SM_Item_Radio") },
 		{ TEXT("keep_eye"), TEXT("Glass eye"), TEXT("Pale blue, painted by hand, older than I am. It was wrapped in a handkerchief. Hers."), TEXT("/Game/WC/Props/SM_Item_GlassEye.SM_Item_GlassEye") },
 		{ TEXT("screwdriver"), TEXT("Screwdriver"), TEXT("A flat-head with a turned wooden handle. The tip is bright: somebody has used it not long ago."), TEXT("/Game/WC/Props/SM_Item_Screwdriver.SM_Item_Screwdriver") },
-		{ TEXT("tape1"), TEXT("VHS tape"), TEXT("A home video cassette. The label says 'Ruthie - bedtime, Oct. 1991' in ballpoint."), TEXT("/Game/WC/Props/SM_Item_Tape1.SM_Item_Tape1") },
-		{ TEXT("tape2"), TEXT("VHS tape"), TEXT("Another cassette. 'Living room, Thanksgiving 1991.'"), TEXT("/Game/WC/Props/SM_Item_Tape2.SM_Item_Tape2") },
+		{ TEXT("tape1"), TEXT("VHS tape"), TEXT("A home video cassette. The label says 'Ruthie - bedtime, Oct. 1991' in ballpoint. Ruth would have been grown by then."), TEXT("/Game/WC/Props/SM_Item_Tape1.SM_Item_Tape1") },
+		{ TEXT("tape2"), TEXT("VHS tape"), TEXT("Another cassette. 'Living room - early Thanksgiving, Nov. 24, 1991.'"), TEXT("/Game/WC/Props/SM_Item_Tape2.SM_Item_Tape2") },
 		{ TEXT("tape3"), TEXT("VHS tape"), TEXT("'Mother - porch, Nov. 1991.' The handwriting is not Edith's."), TEXT("/Game/WC/Props/SM_Item_Tape3.SM_Item_Tape3") },
 		{ TEXT("doll"), TEXT("Rag doll"), TEXT("A child's rag doll, pushed deep into the duct. One button eye is gone. There is something hard inside her."), TEXT("/Game/WC/Props/SM_Item_Doll.SM_Item_Doll") },
 		{ TEXT("doll_empty"), TEXT("Rag doll"), TEXT("Ruth's, I would guess. The seam down her back has been cut and sewn up again more than once."), TEXT("/Game/WC/Props/SM_Item_DollEmpty.SM_Item_DollEmpty") },
