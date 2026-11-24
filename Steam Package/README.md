@@ -1,4 +1,4 @@
-# Steam Package
+﻿# Steam Package
 
 Everything for getting Edith's Last Call ready for Steam, in one place. Nothing here has been uploaded to Steam.
 
@@ -9,8 +9,8 @@ Everything for getting Edith's Last Call ready for Steam, in one place. Nothing 
 | [TAGS.md](TAGS.md) | Twenty Steam tags in order, genres, comparable games |
 | [STORE_ASSETS.md](STORE_ASSETS.md) | Which image goes in which Steamworks slot, and how the art was made |
 | [capsules/](capsules/) | Header, small, main and vertical capsules, library capsule, hero and logo, page background, event images, full-size key art |
-| [screenshots/](screenshots/) | Seven 1920x1080 gameplay screenshots, no HUD ([where each came from](screenshots/SOURCES.md)) |
-| [trailer/](trailer/) | 70-second announcement trailer (1080p), thumbnail, and [notes and music credits](trailer/TRAILER_NOTES.md) |
+| [screenshots/](screenshots/) | Ten 1920x1080 gameplay screenshots, no HUD, Edith in one only ([where each came from](screenshots/SOURCES.md)) |
+| [trailer/](trailer/) | 93-second announcement trailer (1080p), second cut, thumbnail, and [notes and music credits](trailer/TRAILER_NOTES.md) |
 | [Tools/](Tools/) | Scripts that rebuild the capsules, cards, screenshots and trailer |
 | [STORY_REVIEW.md](STORY_REVIEW.md) | Story and dialogue review (2026-11-24): what was fixed, and the open items that need Cheyenne's call or new voice takes |
 

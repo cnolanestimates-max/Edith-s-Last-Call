@@ -1,44 +1,49 @@
-# Announcement trailer (70 seconds)
+# Announcement trailer (93 seconds, second cut)
 
-`EdithsLastCall_Trailer_1080p.mp4`: 1920x1080, 30 fps, H.264 about 6 Mbps, AAC 256k, -16 LUFS. This is the copy in git
-(Git LFS, 51 MB). The higher-quality master (CRF 17, 284 MB) is kept out of git on the dev laptop at
+`EdithsLastCall_Trailer_1080p.mp4`: 1920x1080, 30 fps, H.264 about 6.5 Mbps, AAC 256k, -16 LUFS (Git LFS, 64 MB). The
+higher-quality master is kept out of git on the dev laptop at
 `C:\GameDev\Unreal\WellnessCheck\Saved\SteamPackage\EdithsLastCall_Trailer_master.mp4`; upload that one to Steam.
+`thumbnail.jpg` is the dining-room frame (no Edith). Nothing has been uploaded anywhere.
 
-Nothing has been uploaded anywhere. Nobody has watched it with sound yet: please listen once on headphones and once on the
-laptop speakers before it goes up.
+## Why it is cut this way (2026-11-24)
+
+Cheyenne rejected the first cut: it showed Edith five times, gave away the scares, and used an out-of-date take of the
+bookshelf scare. This cut follows how comparable Steam trailers are built. Looked at frame by frame: *Visage* (Early Access
+teaser: one slow low dolly across a floor of toys to a door, then the title, the monster only in the key art), *MADiSON*
+(long slow moves through rooms and props, the threat only as a blur, black, title, Wishlist, a short stinger after the
+title), *The Mortuary Assistant* (environment and props, short black cuts, one body shot near the end), *Fears to Fathom:
+Home Alone* (the setup told through dialogue over ordinary rooms). The shared pattern: setup, atmosphere, a quickening, at
+most a glimpse, black, title, stinger.
 
 ## The cut
 
 | Time | Picture | Sound |
 |---|---|---|
-| 0:00 | Black | A telephone rings twice |
-| 0:03 | Card: ASHBY COUNTY / NOVEMBER 9, 1993 | Radio static; the house music fades in |
-| 0:07 | Over the forest, following the cruiser (the game's own title appears) | Dispatch: the welfare check on Edith Harrow |
-| 0:12 | The road in the headlights | |
-| 0:19 | The house comes out of the trees | Dispatch: "...said she needs company, and hung up." |
-| 0:25 | The house | Deputy: "...Needs company. Copy." |
-| 0:28 | Card: A WELFARE CHECK. / TEN MINUTES. | A knock |
-| 0:31 | The long hall, a figure under the lamp | Deputy: "Cord's cut clean through..." |
-| 0:36 | The eye behind the settlers' book | Dispatch: "It came from Mrs. Harrow's own telephone. From inside that house." |
-| 0:40 | The bathroom door, and her in it | A swell |
-| 0:43 | Black | |
-| 0:46 | Card: SHE HAS BEEN WAITING / A LONG TIME FOR COMPANY | The stalk drone comes in |
-| 0:50 | Her on the ceiling | Heavy thumps |
-| 0:53 | Round the door frame in the moonlight | |
-| 0:55 | She lunges | Braam and her scream, then everything cuts |
-| 0:58 | Black | Edith whispers "Stay." The phone rings once. "Sit down. Supper's getting cold." |
-| 1:02 | Title, WISHLIST NOW ON STEAM | A hit, then silence |
+| 0:00 | Black | The telephone rings twice |
+| 0:03 | ASHBY COUNTY / NOVEMBER 9, 1993 | Radio static. Deputy: "Dispatch, Fourteen. I'm out on County Road Nine..." |
+| 0:06 | Over the forest, following the cruiser | Dispatch: the welfare check on Edith Harrow, 72, lives alone, family out of state |
+| 0:11 | The road in the headlights, the house through the trees | The house score comes in |
+| 0:23 | The house | Dispatch: "...said she needs company, and hung up." Deputy: "...Needs company. Copy." |
+| 0:33 | Black | A knock |
+| 0:35 | Floating: the hall and the stairs | A door creaks. "God, that smell. ...Mrs. Harrow?" |
+| 0:40 | The dining table | "Table's set for four. This food's been sitting here for months." |
+| 0:46 | Her kitchen, her drawings, the children's room, the prayer room, the attic, the cellar | "Her drawings. The same figure in every one..." / Dispatch: the call came from inside the house / "That phone's cut off at the wall." |
+| 1:12 | Quickening: sickroom, den, bedroom, cellar, piano (1 to 0.6 s each) | The stalk drone, thumps, a bulb buzzing, a door slam, a bulb pops |
+| 1:17 | One glimpse: her body in a doorway, face out of frame (0.6 s) | A hit, then the music cuts dead |
+| 1:18 | Black | Edith: "Nobody comes. Nobody comes to see me anymore." |
+| 1:23 | Title, WISHLIST NOW ON STEAM | A hit |
+| 1:30 | Black | The phone rings once. Edith: "You came." |
 
-No ending, no cellar, no knots.
+No scares, no ending, no bookshelf, no cellar body.
 
 ## Sources
 
-- **Picture:** every shot is a frame the game rendered, recorded frame by frame at 30 fps with the HUD off. The forest,
-  road and house were captured for this trailer on 2026-11-24 (`Saved/steam_open`, `-WCVideo` at 1920x1080, subtitles off).
-  The interior shots come from earlier recorded takes in `Saved` (HallLightScareRec, SettlersTake2, BathChairFinal,
-  Corner24Work, Moon64, MoonFront); the three at 1152x648 are upscaled. Text cards and the end title were added in the edit.
-- **Sound:** the game's own files from `SourceArt/Audio` (voice lines, phone ring, radio static, knock, thumps, stings, scream),
-  mixed in the edit, since frame-by-frame captures have no usable sound.
+- **Picture:** all from the game. The forest, road and house are the in-game drive, recorded 2026-11-24 (`Saved/steam_open`).
+  The interiors are slow floating-camera moves recorded from the current build on 2026-11-24 with `-WCFloat` (WCAuto.cpp;
+  the moves are in `Tools/float_shots.py`) and `-WCFloatFill=2500` (a soft warm light carried with the camera so the rooms
+  read; the flashlight is on as in play), lifted a little in the edit (gamma 1.28). The one glimpse is the cropped frame
+  also used as screenshot 05 (a take from 2026-11-20).
+- **Sound:** the game's own files in `SourceArt/Audio` (voice lines, phone, radio, knock, creaks, thumps, bulbs, stings).
 - **Music:** `music_house` (edited excerpts of "Apprehension" by Kevin MacLeod, incompetech.com, CC BY 4.0, and "She's
   Watching Me" by Darren Curtis, darrencurtismusic.com, used with the composer's permission) and `music_stalk`
   (InMotionAudio "The Death Whistle", Sonniss GDC bundle, royalty-free).
@@ -50,13 +55,13 @@ No ending, no cellar, no knots.
 
 ## Rebuilding it
 
-`Tools/trailer.py <out.mp4>` re-cuts it from the frames in `Saved` (edit the shot list and the cue list at the top), using
-the cards made by `Tools/cards.py`. To free disk space, the opening capture was trimmed to its first 1,800
-frames (the drive and the house, which is all the cut uses); the yard, shed and front door part was deleted and would
-need a new capture.
+1. `python Tools/float_shots.py Saved/trailer2` writes the move list.
+2. With nothing else in Unreal: `UnrealEditor.exe WellnessCheck.uproject /Game/WC/Maps/House -game -RenderOffscreen
+   -resx=1920 -resy=1080 -UseFixedTimeStep -FPS=30 -WCAuto -WCFloat=Saved/trailer2/float.txt -WCFloatFill=2500
+   -WCShots=Saved/trailer2/video -ini:GameUserSettings:[WellnessCheck]:Subtitles=False` (about 15 minutes; ~3 MB a frame).
+3. `python Tools/trailer.py <out.mp4>` (needs `cards/` and `glimpse.jpg` next to it).
 
 ## Worth doing before launch
 
-- Re-record the interior shots from the current build at 1080p (the takes are from 2026-11-20 and 21), and add a shot of the
-  kitchen table set for four and the cut phone cord, which the narration mentions but the picture doesn't show.
-- A 30 second cut for social posts, and a version with burned-in subtitles (most people watch store trailers muted).
+- A version with burned-in subtitles (most store trailers play muted), and a 30-second cut for social posts.
+- Re-record the house exterior without the lit window if the window is meant to be dark on arrival.

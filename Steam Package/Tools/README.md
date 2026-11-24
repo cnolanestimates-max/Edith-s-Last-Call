@@ -1,4 +1,4 @@
-# Tools that made the store assets
+﻿# Tools that made the store assets
 
 Run with the system Python (Pillow) and ffmpeg on the dev laptop.
 
@@ -7,8 +7,9 @@ Run with the system Python (Pillow) and ffmpeg on the dev laptop.
   `ka/keyart_vert_1.png` next to it; the clean full-size copies are `../capsules/key_art_wide_clean_3840x2160.jpg` and
   `../capsules/key_art_vertical_clean_3712x4608.jpg` (the original PNGs were 5504x3072 and 3712x4608).
 - `cards.py <out dir>`: the trailer's text cards and end title.
-- `trailer.py <out.mp4>`: the trailer cut (shot list and sound cues at the top). Needs `cards/` next to it and the recorded
-  frames in `C:\GameDev\Unreal\WellnessCheck\Saved`.
+- `trailer.py <out.mp4>`: the trailer cut (shot list and sound cues inside). Needs `cards/` and `glimpse.jpg` next to it and the
+  recorded frames in `C:\GameDev\Unreal\WellnessCheck\Saved`. See `../trailer/TRAILER_NOTES.md`.
+- `float_shots.py <dir>`: the floating-camera moves for `-WCFloat` (and start/end stills for `-WCShotFile`).
 - `shots.py <out dir> "name|folder|frame" ...`: exports chosen frames as 1920x1080 screenshots.
 
 The opening capture was recorded with the game's own flags, off-screen:

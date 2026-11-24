@@ -1,4 +1,4 @@
-# Store assets: what each file is and where it goes in Steamworks
+﻿# Store assets: what each file is and where it goes in Steamworks
 
 Made 2026-11-24. Nothing has been uploaded to Steam.
 
@@ -18,7 +18,7 @@ Made 2026-11-24. Nothing has been uploaded to Steam.
 | `event_header_1920x622.jpg` | 1920x622 | Events > header image |
 | `key_art_wide_clean_3840x2160.jpg`, `key_art_wide_titled_3840x2160.jpg`, `key_art_vertical_clean_3712x4608.jpg` | | Press kit, social posts, itch.io, trailer thumbnail |
 
-**How the art was made.** The two key art paintings were generated on Higgsfield (Nano Banana Pro, 4K, 4 credits each, 8 in all) with in-game captures of Edith and the house as reference, so her look follows the game. The title lettering is set in Baskerville Old Face (a Windows/Office font) with hand-made wear; `Tools/` has the scripts that rebuild every capsule from the two paintings. Steam's AI disclosure form must mention the AI-made store art (see `STORE_PAGE.md`).
+**How the art was made.** The two key art paintings were generated on Higgsfield (Nano Banana Pro, 4K, 4 credits each, 8 in all) with in-game captures of Edith and the house as reference. On 2026-11-24 Edith was edited out of both (Nano Banana Pro edit, 4 credits each, 16 in all) because Cheyenne wants the monster kept out of the promo: the house now has an empty open doorway and the hallway is empty. The title lettering is set in Baskerville Old Face (a Windows/Office font) with hand-made wear; `Tools/` has the scripts that rebuild every capsule from the two paintings. Steam's AI disclosure form must mention the AI-made store art (see `STORE_PAGE.md`).
 
 **Things to check before upload:** Steam rejects capsules whose text is unreadable at small size; the small capsule is the one to look at on a phone. Either painting can be regenerated for 4 credits if a detail is wrong for the game.
 
