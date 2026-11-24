@@ -252,7 +252,10 @@ private:
 	void StairsHallStand();
 	void StairsHallRush();
 	void StairsBlueEye(bool bBlue);
-	void StairsAttack(const FVector& Dir);
+	void StairsAttackBehind();
+	void StairsAttackTop();
+	void StairsAttackAt(FVector Head, const TCHAR* Where);
+	bool StairsClearSpot(float YawFrom, const float* Angles, int32 N, float Dist, float DropZ, FVector& Out);
 	void StairsStandLight(int32 Opt);
 	void StairsStandPreview(int32 Opt);
 	void StairsCatch(float In);

@@ -292,6 +292,17 @@ void AWCDirector::StairsHallRush()
 	P->FlickerLight(1.0f, 0.5f);
 	P->AddShake(0.25f);
 	if (UAudioComponent* A = Play2D(TEXT("allfours_rush"), 1.f)) GRushSound = A;
+	// and under it, heavy, fast, hands and knees on the boards, getting louder as she comes
+	for (int32 i = 0; i < 8; ++i)
+		After(0.075f * i, [this, i]()
+		{
+			if (GStairs != EStairs::Reveal) return;
+			if (AWCEntity* E = Her()) if (E->IsShown())
+			{
+				PlayAt(i % 2 ? TEXT("thump_heavy") : TEXT("crawl_knocks"), E->GetActorLocation() + FVector(0, 0, 20), 1.f, FMath::FRandRange(0.85f, 1.1f), 5000.f);
+				if (AWCCharacter* Q = Player()) Q->AddShake(0.06f);
+			}
+		});
 	UE_LOG(LogWCStairs, Display, TEXT("WCSCARE t=%.1f S3_stairs she crawls at him in the flicker"), PlaySeconds);
 	// within fifteen feet: gone, and so is the light, and so is the sound
 	After(0.62f, [this]()
@@ -346,9 +357,57 @@ void AWCDirector::StairsBlueEye(bool bBlue)
 	}
 }
 
-void AWCDirector::StairsAttack(const FVector& Dir)
+bool AWCDirector::StairsClearSpot(float YawFrom, const float* Angles, int32 N, float Dist, float DropZ, FVector& Out)
 {
-	// her face in his, wherever he is looking (Dir), and his eyes snap to it; she has him
+	// the first spot around him with room for all of her: clear from his eyes to her face, to the back of her head, and
+	// down to her chest and hips.  So she is never partly inside a wall.
+	AWCCharacter* P = Player();
+	if (!P) return false;
+	const FVector Eye = P->EyeLocation();
+	FCollisionQueryParams Q(SCENE_QUERY_STAT(WCStairsSpot), false, P);
+	if (AWCEntity* H = Her()) Q.AddIgnoredActor(H);
+	for (int32 i = 0; i < N; ++i)
+	{
+		const FVector Dir = FRotator(0.f, YawFrom + Angles[i], 0.f).Vector();
+		const FVector Head = Eye + Dir * Dist - FVector(0, 0, DropZ);
+		const FVector Checks[] = { Head, Head + Dir * 45.f, Head - FVector(0, 0, 55.f) + Dir * 20.f, Head - FVector(0, 0, 110.f) + Dir * 25.f };
+		bool bClear = true;
+		for (const FVector& C : Checks)
+		{
+			FHitResult Hit;
+			if (GetWorld()->SweepSingleByChannel(Hit, Eye, C, FQuat::Identity, ECC_Visibility, FCollisionShape::MakeSphere(16.f), Q)) { bClear = false; break; }
+		}
+		if (bClear) { Out = Head; return true; }
+	}
+	return false;
+}
+
+void AWCDirector::StairsAttackBehind()
+{
+	// she is on the stairs below him, where the flight is open, never in its walls.  His head is turned to her.
+	AWCCharacter* P = Player();
+	if (!P) return;
+	static const float Angles[] = { 180.f, 165.f, 195.f, 150.f, 210.f };
+	FVector Head = P->EyeLocation() + FVector(-70.f, 0.f, -18.f);
+	StairsClearSpot(0.f, Angles, UE_ARRAY_COUNT(Angles), 85.f, 22.f, Head);
+	StairsAttackAt(Head, TEXT("behind him on the stairs"));
+}
+
+void AWCDirector::StairsAttackTop()
+{
+	// he has come up into the hall: she was round the corner of the stairwell wall, beside the top step, and she throws
+	// herself at him from there; she is only ever where there is room for her.
+	AWCCharacter* P = Player();
+	if (!P) return;
+	const float Yaw = P->GetControlRotation().Yaw;
+	static const float Angles[] = { 70.f, -70.f, 45.f, -45.f, 100.f, -100.f, 0.f };
+	FVector Head = P->EyeLocation() + FRotator(0.f, Yaw, 0.f).Vector() * 90.f;
+	StairsClearSpot(Yaw, Angles, UE_ARRAY_COUNT(Angles), 95.f, 6.f, Head);
+	StairsAttackAt(Head, TEXT("round the wall at the top of the stairs"));
+}
+
+void AWCDirector::StairsAttackAt(FVector Head, const TCHAR* Where)
+{
 	AWCCharacter* P = Player();
 	AWCEntity* H = Her();
 	if (!P || !H || GStairs == EStairs::Done || GStairs == EStairs::Lunge) return;
@@ -357,9 +416,16 @@ void AWCDirector::StairsAttack(const FVector& Dir)
 	P->SetInputLocked(true);
 	bBusy = true;
 	const FVector Eye = P->EyeLocation();
-	FVector Fwd = Dir.GetSafeNormal2D();
-	if (Fwd.IsNearlyZero()) Fwd = FVector(1, 0, 0);
-	H->Appear(Eye + Fwd * 80.f - FVector(0, 0, 150.f), (-Fwd).Rotation().Yaw, TEXT("Lunge"), false, 0.f);
+	// never inside a wall: if anything solid is between his eyes and her face, bring her in front of it
+	{
+		FHitResult Hit;
+		FCollisionQueryParams Q(SCENE_QUERY_STAT(WCStairsGrab), false, P);
+		Q.AddIgnoredActor(H);
+		if (GetWorld()->SweepSingleByChannel(Hit, Eye, Head, FQuat::Identity, ECC_Visibility, FCollisionShape::MakeSphere(22.f), Q))
+			Head = Eye + (Head - Eye).GetSafeNormal() * FMath::Max(Hit.Distance - 30.f, 75.f);
+	}
+	const FVector ToHim = (Eye - Head).GetSafeNormal2D();
+	H->Appear(Head - FVector(0, 0, 150.f), ToHim.Rotation().Yaw, TEXT("Lunge"), false, 0.f);
 	H->Body->SetPlayRate(0.f);
 	H->FacePlayer(false);
 	StairsBlueEye(false);
@@ -373,17 +439,24 @@ void AWCDirector::StairsAttack(const FVector& Dir)
 	Play2D(TEXT("her_scream"), 1.f);
 	Play2D(TEXT("sting_hit"), 1.f, EWCSnd::Music);
 	Tension = 1.f;
-	UE_LOG(LogWCStairs, Display, TEXT("WCSCARE t=%.1f S3_stairs attack"), PlaySeconds);
-	After(0.02f, [this, Eye, Fwd]()
+	UE_LOG(LogWCStairs, Display, TEXT("WCSCARE t=%.1f S3_stairs attack (%s)"), PlaySeconds, Where);
+	// the pose exists after a frame: put her face exactly where it belongs, and his eyes on it
+	After(0.02f, [this, Head]()
 	{
-		if (AWCEntity* E = Her()) E->AddActorWorldOffset(Eye + Fwd * 62.f + FVector(0, 0, -4.f) - E->HeadLocation());
-		GLookAt = Eye + Fwd * 62.f;
+		if (AWCEntity* E = Her()) E->AddActorWorldOffset(Head - E->HeadLocation());
+		GLookAt = Head;
 		GLookHead = true;
-		GLookRate = 600.f;
+		GLookRate = 700.f;
 	});
-	After(0.38f, [this]()
+	// she drives into him and takes him down
+	After(0.22f, [this, Eye]()
 	{
-		if (AWCEntity* E = Her()) E->Body->SetPlayRate(1.8f);
+		if (AWCEntity* E = Her()) E->Body->SetPlayRate(0.5f);       // only the start of her lunge: her face stays in front of his, never inside it
+		PlayAt(TEXT("body_fall"), Eye - FVector(0, 0, 150.f), 1.f, 0.9f, 1500.f);
+		if (AWCCharacter* Q = Player()) Q->AddShake(1.f);
+	});
+	After(0.4f, [this]()
+	{
 		if (AWCCharacter* Q = Player()) Q->SetInputLocked(false);
 		bBusy = false;
 		StairsCatch(0.f);
@@ -523,12 +596,14 @@ void AWCDirector::TickStairs(float Dt)
 		// the hall is empty and he has himself back.  Turn round, and she is right behind him.  Go on up, or just stand
 		// there long enough, and she comes at him round the wall at the top of the stairs.
 		const FRotator Ctl = P->GetControlRotation();
-		if (FMath::Abs(FRotator::NormalizeAxis(Ctl.Yaw)) > 115.f) { StairsAttack(Ctl.Vector()); return; }
-		if (P->GetActorLocation().X > 790.f || Clock - GStairsAt > 8.0)
+		if (FMath::Abs(FRotator::NormalizeAxis(Ctl.Yaw)) > 100.f) { StairsAttackBehind(); return; }
+		if (P->GetActorLocation().X > 785.f) { StairsAttackTop(); return; }
+		// he just stands there: a step creaks right behind him, his head jerks round, and she is there
+		if (Clock - GStairsAt > 7.0 && !Has(TEXT("stairs_creak_behind")))
 		{
-			const FVector Fwd = FRotator(0.f, Ctl.Yaw, 0.f).Vector();
-			const FVector Side = -FRotationMatrix(FRotator(0.f, Ctl.Yaw, 0.f)).GetUnitAxis(EAxis::Y);
-			StairsAttack(Side + Fwd * 0.35f);
+			Set(TEXT("stairs_creak_behind"));
+			PlayAt(TEXT("creak"), P->GetActorLocation() - FVector(80.f, 0.f, 60.f), 1.f, 0.7f, 1500.f);
+			After(0.5f, [this]() { StairsAttackBehind(); });
 		}
 		return;
 	}
