@@ -282,7 +282,7 @@ void AWCWatcher::BeginPlay()
 	Home = GetActorLocation();
 	HomeQuat = GetActorQuat();
 	UMaterialInterface* Black = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/WC/Materials/M_EyeBlack.M_EyeBlack"));
-	UMaterialInterface* Pale = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/WC/Materials/M_EyeIris.M_EyeIris"));
+	UMaterialInterface* PaleIris = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/WC/Materials/M_EyeIris.M_EyeIris"));
 	UMaterialInterface* Hair = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/WC/Materials/M_Hair.M_Hair"));
 	auto Part = [this](UStaticMesh* Mesh, const FVector& Loc, const FVector& Scale, UMaterialInterface* Mat, const FRotator& Rot = FRotator::ZeroRotator)
 	{
@@ -335,7 +335,7 @@ void AWCWatcher::BeginPlay()
 		{
 			const float R = Radius;
 			Part(Sphere, FVector::ZeroVector, FVector(R / 50.f), Black);
-			Part(Sphere, FVector(R * 0.80f, 0.f, 0.f), FVector(R * 0.30f / 50.f, R * 0.34f / 50.f, R * 0.34f / 50.f), Pale);
+			Part(Sphere, FVector(R * 0.80f, 0.f, 0.f), FVector(R * 0.30f / 50.f, R * 0.34f / 50.f, R * 0.34f / 50.f), PaleIris);
 			Part(Sphere, FVector(R * 0.985f, 0.f, 0.f), FVector(R * 0.14f / 50.f, R * 0.16f / 50.f, R * 0.16f / 50.f), Black);
 		}
 	}

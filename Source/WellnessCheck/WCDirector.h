@@ -241,6 +241,12 @@ private:
 	// scares
 	void ScarePeek();
 	void ScareLockIn();
+	// S3 rebuilt as the stairwell (WCStairs.cpp, 2026-11-24)
+	void StairsReset();
+	void StairsListen();
+	void StairsReveal();
+	void TickStairs(float Dt);
+	bool IsStairsChase() const;
 	void ScarePhone();
 	void ScareCeiling();
 	void ScareUnderBed();

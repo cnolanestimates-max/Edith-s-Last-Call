@@ -212,6 +212,20 @@ void AWCDirector::AutoBegin()
 			Do(TEXT("room_walk:3118,-343")); Shot(TEXT("06_boxes_to_sewing"));
 			Do(TEXT("connections_reload"));
 		}
+		else if (FParse::Param(FCommandLine::Get(),TEXT("WCStairsScene")))
+		{
+			// the stairwell scene on its own, recorded (2026-11-24): the back door just found nailed shut, he walks the hall
+			// toward the front, the sounds overhead, then the stairs, her, three shots, the grab and the first memory
+			Do(TEXT("record_mix_long")); Do(TEXT("flag:inside")); Do(TEXT("flag:briefed")); Do(TEXT("flag:want_leave"));
+			Do(TEXT("flag:stairs_armed")); Do(TEXT("at:1560,40,92,180,0")); Wait(1.f);
+			Do(TEXT("rec:stairs")); Wait(1.f);
+			Do(TEXT("room_walk:1300,40")); Flag(TEXT("stairs_listen"),6.f); Wait(12.f); Shot(TEXT("01_listen"));
+			Flag(TEXT("stairs_waiting"),20.f); Wait(1.5f);
+			Do(TEXT("room_walk:700,60")); Do(TEXT("room_walk:250,60")); Do(TEXT("room_walk:370,-80"));
+			Flag(TEXT("lockin_started"),10.f); Wait(9.6f); Shot(TEXT("02_arms")); Wait(3.9f); Shot(TEXT("03_scream"));
+			Wait(1.25f); Fire(2); Do(TEXT("sprint_on")); Do(TEXT("room_walk:220,60")); Do(TEXT("room_walk:300,300")); Do(TEXT("sprint_off")); Shot(TEXT("04_chase")); LookHer(25.f);
+			Flag(TEXT("lockin_done"),90.f); Wait(4.f); Do(TEXT("rec_off")); Do(TEXT("finish_stairs_mix")); Wait(.6f);
+		}
 		else if (FParse::Param(FCommandLine::Get(),TEXT("WCCorner24")))
 		{
 			Do(TEXT("record_mix")); Do(TEXT("flag:inside")); Do(TEXT("corner24_light"));
@@ -1058,9 +1072,11 @@ void AWCDirector::AutoBegin()
 	Go(TEXT("Her_Peek"));                       // she is only found close to: walk to the doorway with the light on it
 	Flag(TEXT("peek_done"), 40.f); Wait(5.f);
 	Go(TEXT("A_Master")); Flag(TEXT("master_seen"), 10.f); Shot(TEXT("10_master")); Use(TEXT("jewelbox")); Flag(TEXT("box_open"), 4.f); Wait(0.8f); Shot(TEXT("10b_jewelry_box_open")); Use(TEXT("pick_keep_eye")); Flag(TEXT("want_leave"), 60.f);
-	// ---- S3: the long hall
-	Go(TEXT("A_BackDoor")); Flag(TEXT("lockin_started"), 20.f);
-	WaitHer(15.f); LookHer(3.5f); Shot(TEXT("11_S3_hall")); Fire(3); LookHer(4.f); Shot(TEXT("12_S3_mid")); LookHer(40.f);
+	// ---- S3: the stairwell (2026-11-24): the back door is nailed shut, the hall, the sounds overhead, then her on the stairs
+	Go(TEXT("A_BackDoor")); Flag(TEXT("stairs_armed"), 20.f);
+	AutoSteps.Add({ A_Do, TEXT("at:1060,40,92,180,0"), 0.f }); Flag(TEXT("stairs_listen"), 10.f); Wait(13.f); Shot(TEXT("11_S3_listen")); Flag(TEXT("stairs_waiting"), 20.f);
+	AutoSteps.Add({ A_Do, TEXT("at:360,-88,92,0,0"), 0.f }); Flag(TEXT("lockin_started"), 10.f); Wait(9.5f); Shot(TEXT("11b_S3_arms")); Wait(4.1f); Shot(TEXT("12_S3_scream"));
+	Wait(2.6f); Fire(3); LookHer(2.f); Shot(TEXT("12b_S3_chase")); LookHer(30.f);
 	Flag(TEXT("lockin_done"), 80.f); Wait(10.f); Shot(TEXT("13_after_S3"));
 	// ---- the fuse
 	Go(TEXT("A_Pantry")); Use(TEXT("fusebox")); Wait(2.f); Shot(TEXT("13b_fuse"));
@@ -1237,7 +1253,7 @@ void AWCDirector::AutoTick(float Dt)
 	AWCCharacter* P = Player();
 	if (!P || AutoIndex < 0) return;
 	if (!GLookRecName.IsEmpty())                                             // the look-preview recorder
-		FScreenshotRequest::RequestScreenshot(GLookRecDir / GLookRecName / FString::Printf(TEXT("f_%05d.png"), GLookFrame++), false, false);
+		FScreenshotRequest::RequestScreenshot(GLookRecDir / GLookRecName / FString::Printf(TEXT("f_%05d.png"), GLookFrame++), FParse::Param(FCommandLine::Get(), TEXT("WCRecUI")), false);
 	{
 		// a short check: stop a few seconds after a given point in the story
 		static FString StopFlag;
@@ -1326,7 +1342,18 @@ void AWCDirector::AutoTick(float Dt)
 	case A_Aim: P->SetAiming(S.F > 0.5f); Next(); return;
 	case A_Crouch: if (S.F > 0.5f) P->Crouch(); else P->UnCrouch(); Next(); return;
 	case A_Do:
-		if (S.Arg.ToString().StartsWith(TEXT("rec:"))) { GLookRecName = S.Arg.ToString().Mid(4); GLookFrame = 0; Next(); return; }
+		if (S.Arg == TEXT("sprint_on") || S.Arg == TEXT("sprint_off")) { P->SetSprinting(S.Arg == TEXT("sprint_on")); if (S.Arg == TEXT("sprint_on")) P->SetAiming(false); Next(); return; }
+		if (S.Arg == TEXT("record_mix_long")) { UAudioMixerBlueprintLibrary::StartRecordingOutput(this, 300.f); UE_LOG(LogWCAuto, Display, TEXT("WCMIX start t=%.3f"), PlaySeconds); Next(); return; }
+		if (S.Arg == TEXT("finish_stairs_mix")) { UAudioMixerBlueprintLibrary::StopRecordingOutputToAnyPath(this,EAudioRecordingExportType::WavFile,TEXT("stairs_mix"),AutoShotDir); Next(); return; }
+		if (S.Arg.ToString().StartsWith(TEXT("rec:")))
+		{
+			// -WCNoFrames: the same run for its sound only (a frame-by-frame run is slower than real time, so its mix is useless)
+			UE_LOG(LogWCAuto, Display, TEXT("WCREC start t=%.3f"), PlaySeconds);
+			if (FParse::Param(FCommandLine::Get(), TEXT("WCRecUI"))) UKismetSystemLibrary::ExecuteConsoleCommand(this, TEXT("DisableAllScreenMessages"), nullptr);
+			if (GLookRecDir.IsEmpty()) GLookRecDir = FPaths::ConvertRelativePathToFull(AutoShotDir);
+			if (!FParse::Param(FCommandLine::Get(), TEXT("WCNoFrames"))) GLookRecName = S.Arg.ToString().Mid(4);
+			GLookFrame = 0; Next(); return;
+		}
 		if (S.Arg == TEXT("rec_off")) { GLookRecName.Empty(); Next(); return; }
 		if (S.Arg.ToString().StartsWith(TEXT("ruth_")))
 		{

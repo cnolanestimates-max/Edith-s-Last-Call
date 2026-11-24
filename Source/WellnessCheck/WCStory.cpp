@@ -638,7 +638,8 @@ void AWCDirector::StoryEvent(FName Id)
 	}
 		if (Is(Id, TEXT("shot_her"))) { ++ShotsAtHer; return; }
 	if (Is(Id, TEXT("shot"))) { if (bLockInActive) ++LockInShots; return; }
-	if (Is(Id, TEXT("trig:t_backhall")) && Has(TEXT("want_leave")) && !Has(TEXT("lockin_started")) && !bBusy && !bEventBusy && StalkState == 0) { ScareLockIn(); return; }
+	// S3 is the stairwell now (WCStairs.cpp): the back hall arms it, and it waits for him on his way back to the front
+	if (Is(Id, TEXT("trig:t_backhall")) && Has(TEXT("want_leave")) && !Has(TEXT("lockin_started"))) { Set(TEXT("stairs_armed")); return; }
 	if (Is(Id, TEXT("gotup")))
 	{
 		bBusy = false;
@@ -682,7 +683,7 @@ void AWCDirector::StoryEvent(FName Id)
 		if (Is(Id, TEXT("locked:back")))
 	{
 		if (Clock > SpeechFreeAt) { SpeechFreeAt = Clock + 4.0; Feedback(TEXT("Nailed shut from the inside. Every board.")); }
-		if (Has(TEXT("want_leave")) && !Has(TEXT("lockin_started")) && !bBusy && !bEventBusy && StalkState == 0) { After(1.5f, [this]() { ScareLockIn(); }); return; }
+		if (Has(TEXT("want_leave")) && !Has(TEXT("lockin_started"))) { Set(TEXT("stairs_armed")); return; }
 		if (Has(TEXT("lockin_done"))) Set(TEXT("backdoor_tried"));      // the phone rings later, when things have gone quiet (StoryTick)
 		return;
 	}
@@ -844,6 +845,7 @@ void AWCDirector::StoryTick(float Dt)
 	AWCCharacter* P = Player();
 	AWCEntity* H = Her();
 	if (!P) return;
+	TickStairs(Dt);
 
 	const EListeningSpace Space = SpaceAt(P->GetActorLocation());
 	const bool bIndoors = Space != EListeningSpace::Exterior;

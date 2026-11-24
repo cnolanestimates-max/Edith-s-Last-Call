@@ -200,6 +200,8 @@ void AWCDirector::BeginPlay()
 		SaveSlot = TEXT("WCRuthMapCheck");
 	if (bAuto && FParse::Param(FCommandLine::Get(), TEXT("WCSettlersCheck")))
 		SaveSlot = TEXT("WCSettlersCheck");
+	if (bAuto && FParse::Param(FCommandLine::Get(), TEXT("WCStairsScene")))
+		SaveSlot = TEXT("WCStairsScene");
 	if (bAuto && FParse::Param(FCommandLine::Get(), TEXT("WCBreathCheck")))
 		SaveSlot = TEXT("WCDeputyBreathCheck");
 	if (FParse::Param(FCommandLine::Get(), TEXT("WCFast"))) TestPace = 0.08f;
@@ -974,7 +976,7 @@ void AWCDirector::TickDeputyBreathing(float Dt)
 		return;
 	}
 
-	const bool bChased = StalkState == 2 || bSprintActive || (bLockInActive && bLockInRun) || Clock < GrabHoldUntil;
+	const bool bChased = StalkState == 2 || bSprintActive || (bLockInActive && bLockInRun) || IsStairsChase() || Clock < GrabHoldUntil;
 	const float Unease = .55f * FMath::SmoothStep(.24f, .95f, Tension);
 	const float Target = bChased ? 1.f : Unease;
 	BreathFear = FMath::FInterpConstantTo(BreathFear, Target, Dt, Target > BreathFear ? 1.1f : .047f);

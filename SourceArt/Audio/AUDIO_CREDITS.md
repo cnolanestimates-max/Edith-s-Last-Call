@@ -126,3 +126,7 @@ Synthesized dialogue uses Google Gemini TTS (see VO/_manifest.json). Radio and p
 ## Ruth's door
 
 The sobs in this encounter use Epic Stock Media's *AAA Game Character British Female Detective* (Crying Vocal Female Low Energy Weep) and SoundBits' *Vox Hominis* (Crying Female 04 05). The recordings came from volumes 2 and 5 of Cheyenne's Sonniss GDC 2026 collection under the included Game Audio GDC Bundle license. The late vocal distortion is ordinary pitch and saturation processing. The wordless whisper and background scream use the game's own breath and scream recordings. The scene mix can be rebuilt with Scripts/audio/make_door_voices.py.
+
+## The stairwell
+
+The five `bone_crack` hits are synthesized from noise and tone with ffmpeg; nothing recorded is used. `stair_moan` is Edith's own `m_moan2` voice line (see Voices), raised in pitch, slowed, given a waver and a stairwell echo. Both can be rebuilt with `Scripts/audio/make_stair_sounds.py`. The rest of the scene reuses sounds already listed above.

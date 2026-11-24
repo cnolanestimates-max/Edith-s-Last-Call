@@ -32,6 +32,7 @@ public:
 	void SetFlashlight(bool bOn, bool bClick = true);
 	/** Scripted brightness multiplier (0 = dead). The player's switch still works; the bulb just gives nothing. */
 	void SetLightScale(float Scale) { LightScale = Scale; }
+	void SetSprinting(bool b) { bSprinting = b; }      // the test bot runs
 	/** Stops the camera down by so many stops (0 = normal): real black, when the house lights are meant to be out. */
 	void SetDarkAdapt(float Stops);
 	float GetLightScale() const { return LightScale; }
