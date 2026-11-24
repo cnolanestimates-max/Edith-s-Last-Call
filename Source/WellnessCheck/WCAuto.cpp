@@ -220,6 +220,67 @@ void AWCDirector::AutoBegin()
 			Do(TEXT("stand_opt:2")); Wait(1.6f); Shot(TEXT("stand_2"));
 			Do(TEXT("stand_opt:3")); Wait(1.6f); Shot(TEXT("stand_3"));
 		}
+		else if (FParse::Param(FCommandLine::Get(),TEXT("WCSnagCheck")))
+		{
+			// the six snag spots of the 2026-11-23 playthrough (Scripts/level/snag_fixes.py): walk the way in that stuck, then
+			// check what he can reach from where a player stands.  Each walk logs WCCONNECTIONS reached or WCAUTO FAIL.
+			Do(TEXT("flag:inside")); Do(TEXT("flag:briefed")); Do(TEXT("flag:peek_done")); Do(TEXT("flag:attic_started"));
+			// Edith's bathroom: straight in through the door, past the wheelchair, to the tub end
+			Do(TEXT("at:2600,-120,92,-90,0")); Wait(.5f); Do(TEXT("room_walk:2600,-300")); Do(TEXT("room_walk:2560,-470")); Shot(TEXT("snag_1_bath"));
+			Do(TEXT("at:2600,-150,92,-90,-12")); Wait(.6f); Shot(TEXT("snag_1b_bath_from_door"));
+			// front upstairs bathroom: round the hole in the floor
+			Do(TEXT("at:1225,-372,442,0,0")); Wait(.5f); Do(TEXT("room_walk:1258,-372")); Do(TEXT("room_walk:1255,-470")); Do(TEXT("room_walk:1470,-472"));
+			Do(TEXT("room_walk:1475,-290")); Shot(TEXT("snag_2_upbath"));
+			// the piano: up to the keys, then the drawer key
+			Do(TEXT("at:250,-330,92,180,0")); Wait(.5f); Do(TEXT("room_walk:185,-392")); Do(TEXT("aimat:138,-420,66")); Wait(.4f); Do(TEXT("focus")); Shot(TEXT("snag_3_piano"));
+			// the bedside table: the jewelry box and the screwdriver from the side he walks in on, and from the foot of it
+			Do(TEXT("at:605,300,442,0,0")); Wait(.4f); Do(TEXT("aimat:726,315,432")); Wait(.4f); Do(TEXT("focus"));
+			Do(TEXT("aimat:692,324,429")); Wait(.4f); Do(TEXT("focus")); Shot(TEXT("snag_4_bedside_west"));
+			Do(TEXT("at:726,372,442,-90,0")); Wait(.4f); Do(TEXT("aimat:726,315,432")); Wait(.4f); Do(TEXT("focus")); Shot(TEXT("snag_4_bedside_north"));
+			// the attic footlocker: the tags from its front
+			Do(TEXT("at:752,-345,790,-90,0")); Wait(.4f); Do(TEXT("aimat:752,-403,773")); Wait(.4f); Do(TEXT("focus")); Shot(TEXT("snag_5_attic"));
+			// the sewing room: in through the door
+			Do(TEXT("at:3220,-110,442,-90,0")); Wait(.5f); Touch(TEXT("up_sewing")); Wait(1.5f); Do(TEXT("room_walk:3220,-300")); Do(TEXT("room_walk:3200,-420")); Shot(TEXT("snag_6_sewing"));
+			Do(TEXT("at:3220,-150,442,-90,-10")); Wait(.6f); Shot(TEXT("snag_6b_sewing_from_door"));
+		}
+		else if (FParse::Param(FCommandLine::Get(),TEXT("WCCeilingScene")))
+		{
+			// the head by the ceiling on its own, recorded frame by frame (2026-11-24): the check for a black frame in it.
+			// Memories 1 to 3 are already seen by then in a real game, so the grab goes straight to the knock-down.
+			Do(TEXT("flag:inside")); Do(TEXT("flag:briefed")); Do(TEXT("flag:peek_done")); Do(TEXT("flag:lockin_done"));
+			Do(TEXT("flag:mem1")); Do(TEXT("flag:mem2")); Do(TEXT("flag:mem3")); Do(TEXT("item:key_prayer"));
+			Do(TEXT("at:1180,40,442,180,0")); Wait(1.5f);       // just short of the landing trigger, so the scare starts on cue
+			Do(TEXT("rec:ceiling")); Wait(.5f); Do(TEXT("ceiling"));
+			Flag(TEXT("ceiling_done"),40.f); Wait(3.f); Do(TEXT("rec_off")); Wait(.5f);
+		}
+		else if (FParse::Param(FCommandLine::Get(),TEXT("WCCellarScene")))
+		{
+			// the cellar door straight after the hand under the bed, the way most players reach it, with that scare's rest still
+			// running (2026-11-24): she must come anyway.  -WCCellarWalk: he starts down the stairs as soon as the door opens.
+			for (const TCHAR* F : { TEXT("inside"), TEXT("briefed"), TEXT("peek_done"), TEXT("lockin_done"), TEXT("ceiling_done"), TEXT("attic_done"),
+				TEXT("underbed_done"), TEXT("mem1"), TEXT("mem2"), TEXT("mem3") })
+				Do(*(FString(TEXT("flag:")) + F));
+			for (const TCHAR* I : { TEXT("keep_ruth"), TEXT("keep_walter"), TEXT("keep_daniel"), TEXT("keep_eye"), TEXT("shears"), TEXT("key_cellar") })
+				Do(*(FString(TEXT("item:")) + I));
+			Do(TEXT("rest:140"));
+			Do(TEXT("at:855,-58,92,-139,-5")); Wait(1.f);
+			Touch(TEXT("cellar")); Flag(TEXT("sprint_started"),5.f);
+			if (FParse::Param(FCommandLine::Get(),TEXT("WCCellarWalk"))) { Wait(.6f); Do(TEXT("room_walk:744,-200")); }
+			WaitHer(30.f); LookHer(1.f); Shot(TEXT("cellar_sprint"));
+			Flag(TEXT("sprint_done"),40.f); Wait(3.f);
+		}
+		else if (FParse::Param(FCommandLine::Get(),TEXT("WCAtticScene")))
+		{
+			// the attic tags straight after the sewing room, with that scare's rest still running (2026-11-24): she must come
+			for (const TCHAR* F : { TEXT("inside"), TEXT("briefed"), TEXT("peek_done"), TEXT("lockin_done"), TEXT("ceiling_done"), TEXT("sewing_done"),
+				TEXT("mem1"), TEXT("mem2"), TEXT("mem3") })
+				Do(*(FString(TEXT("flag:")) + F));
+			Do(TEXT("rest:120"));
+			Do(TEXT("at:752,-330,790,-90,-35")); Wait(1.f);
+			Touch(TEXT("trunk")); Flag(TEXT("attic_started"),5.f); Wait(1.2f); Touch(TEXT("pick_keep_daniel"));
+			WaitHer(30.f); LookHer(1.f); Shot(TEXT("attic_crawl"));
+			Flag(TEXT("attic_done"),40.f); Wait(3.f);
+		}
 		else if (FParse::Param(FCommandLine::Get(),TEXT("WCStairsScene")))
 		{
 			// the stairwell scene on its own, recorded (2026-11-24): the back door just found nailed shut, he walks the hall
@@ -1101,7 +1162,7 @@ void AWCDirector::AutoBegin()
 	Go(TEXT("A_Book")); Use(TEXT("book_settlers")); Wait(0.9f); Shot(TEXT("16b_S10_book_eye")); Flag(TEXT("book_done"),12.f); Shot(TEXT("16c_S10_after"));
 	Go(TEXT("A_Den")); Use(TEXT("desk")); Flag(TEXT("desk_open"), 6.f); Wait(2.f); Shot(TEXT("16b_desk_open_keys")); Use(TEXT("pick_key_ell")); Use(TEXT("pick_ammo_desk")); Wait(1.f);
 	// ---- S4: the head by the ceiling
-	Go(TEXT("A_StairsTop")); Flag(TEXT("ceiling_started"), 20.f * Slow); LookHer(2.5f); Shot(TEXT("17_S4_ceiling")); LookHer(7.5f); Shot(TEXT("18_S4_sprint")); LookHer(3.f);
+	Go(TEXT("A_StairsTop")); Flag(TEXT("ceiling_started"), 20.f * Slow); LookHer(2.5f); Shot(TEXT("17_S4_ceiling")); LookHer(6.2f); Shot(TEXT("18_S4_sprint"));   // (7.5 s landed in the knock-down blackout: a black picture, not a bug) LookHer(3.f);
 	Flag(TEXT("ceiling_done"), 40.f); Wait(8.f);
 	// ---- prayer room
 	Use(TEXT("up_prayer")); Go(TEXT("A_Prayer")); Wait(3.f); Shot(TEXT("21_prayer")); Use(TEXT("pick_keep_walter")); Wait(3.f); Use(TEXT("note_prayer")); Wait(1.f); Close();
@@ -1113,7 +1174,7 @@ void AWCDirector::AutoBegin()
 	Go(TEXT("A_Sewing")); Wait(2.f); Shot(TEXT("21f_sewing")); Use(TEXT("pick_shears")); Flag(TEXT("sewing_done"), 6.f); Wait(3.4f); LookHer(1.4f); Shot(TEXT("21g_S9_rocker")); LookHer(4.5f); Wait(5.f);
 	// ---- attic: S5
 	Use(TEXT("up_attic")); Go(TEXT("A_Attic")); Wait(2.f); Shot(TEXT("22_attic")); Use(TEXT("trunk")); Flag(TEXT("attic_started"), 5.f); Wait(1.2f); Shot(TEXT("22b_footlocker_tags_key")); Use(TEXT("pick_key_cellar")); Use(TEXT("pick_keep_daniel"));
-	WaitHer(25.f); LookHer(1.2f); Shot(TEXT("23_S5_crawl")); LookHer(2.2f); Shot(TEXT("24_S5_rise")); Flag(TEXT("attic_done"), 30.f); Wait(8.f);
+	WaitHer(25.f); LookHer(1.2f); Shot(TEXT("23_S5_crawl")); LookHer(2.2f); Shot(TEXT("24_S5_rise")); Flag(TEXT("attic_done"), 60.f); Wait(8.f);
 	// ---- S7: Ruth's door turns after the attic now (the Harrow connections, 2026-11-23); look through the crack, then under the bed
 	Go(TEXT("A_StairsTop"));
 	AutoSteps.Add({ A_Do, TEXT("at:216,28,442,-82,-3"), 0.f }); Flag(TEXT("ruth_door_ajar"), 20.f); Wait(3.5f);    // as the WCCryingDoor test does
@@ -1382,6 +1443,25 @@ void AWCDirector::AutoTick(float Dt)
 			GLookFrame = 0; Next(); return;
 		}
 		if (S.Arg == TEXT("rec_off")) { GLookRecName.Empty(); Next(); return; }
+		// (the snag, ceiling, cellar and attic checks, 2026-11-24; up here because the chain below is at the compiler's nesting limit)
+		if (S.Arg.ToString().StartsWith(TEXT("item:"))) { Items.Add(FName(*S.Arg.ToString().Mid(5))); Next(); return; }
+		if (S.Arg.ToString().StartsWith(TEXT("rest:"))) { Rest(FCString::Atof(*S.Arg.ToString().Mid(5))); Next(); return; }
+		if (S.Arg == TEXT("ceiling")) { if (!Has(TEXT("ceiling_started"))) { bBusy = false; ScareCeiling(); } Next(); return; }
+		if (S.Arg.ToString().StartsWith(TEXT("aimat:")))
+		{
+			TArray<FString> V;
+			S.Arg.ToString().Mid(6).ParseIntoArray(V, TEXT(","));
+			if (V.Num() == 3)
+				if (AController* C = P->GetController())
+					C->SetControlRotation((FVector(FCString::Atof(*V[0]), FCString::Atof(*V[1]), FCString::Atof(*V[2])) - P->EyeLocation()).Rotation());
+			Next(); return;
+		}
+		if (S.Arg == TEXT("focus"))
+		{
+			const AWCInteractable* Focused = P->GetFocus();
+			UE_LOG(LogWCAuto, Display, TEXT("WCFOCUS from %s: %s"), *P->GetActorLocation().ToCompactString(), Focused ? *Focused->WCId.ToString() : TEXT("nothing"));
+			Next(); return;
+		}
 		if (S.Arg.ToString().StartsWith(TEXT("ruth_")))
 		{
 			if (S.Arg == TEXT("ruth_map_checkpoint")) DoSave(TEXT("ruth_map_test"));
