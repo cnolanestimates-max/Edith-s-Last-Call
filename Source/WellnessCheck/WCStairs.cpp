@@ -6,10 +6,11 @@
 //   2. The stairs.  When he sets foot on the first steps, he is taken again.  He looks up the flight into the dark.  One long
 //      arm comes down out of it onto a step, then the other, a step lower.  "Mrs. Harrow?"  The pistol comes up.  Her face
 //      comes into the light, head first down the stairs, and she screams at him with her tongue out.
-//   2b. (2026-11-24, third pass) Nothing shows on the stairs.  The game walks him slowly up a few steps calling
-//      "Mrs. ...... Harrow?"; just before his light reaches the upstairs hall it dies.  In the dark, hands on the steps
-//      above him, her breath.  He goes up a little more.  The light comes back with her face right in front of his,
-//      screaming, and she has him in the same instant: the first memory.
+//   2b. (2026-11-24, fourth pass) Nothing shows on the stairs.  The game walks him slowly up calling "Mrs. ......
+//      Harrow?"; just before his light reaches the upstairs hall it dies.  He goes on up in the dark.  The light comes
+//      back: at the far end of the hall she is standing, looking at him.  It dies again; "Shit... shit..." as he beats
+//      it against his hand; in the black, perfectly clear, her whisper: "You should never have come here."  A second of
+//      silence, then loud thumping, and his light flickers on her coming down the hall at him on all fours; she has him.
 #include "WCDirector.h"
 #include "WCCharacter.h"
 #include "WCEntity.h"
@@ -140,60 +141,91 @@ void AWCDirector::StairsReveal()
 		Tension = 0.95f;
 		UE_LOG(LogWCStairs, Display, TEXT("WCSCARE t=%.1f S3_stairs light out"), PlaySeconds);
 	});
-	// in the dark: something on the stairs above him, one hand, then the other, closer; her breath
-	After(8.9f, [this]() { PlayAt(TEXT("crawl_knocks"), OnFlight(120.f), 0.9f, 0.85f, 2500.f); });
-	After(10.0f, [this]() { PlayAt(TEXT("crawl_knocks"), OnFlight(180.f), 1.f, 0.8f, 2500.f); });
-	After(10.6f, [this]() { PlayAt(TEXT("her_breath"), OnFlight(220.f) + FVector(0, 0, 120), 0.8f, 0.85f, 2000.f); });
-	// and he goes on up anyway, a little, in the dark
-	After(11.4f, [this]() { GClimbToX = 600.f; GClimbScale = 0.32f; });
-	// the light comes back: she is right there, and she has him
-	After(14.4f, [this]() { StairsFace(); });
+	// in the dark, something up there moves away from him along the hall
+	After(8.8f, [this]() { PlayAt(TEXT("steps_above"), FVector(1200.f, 40.f, 360.f), 0.7f, 0.9f, 3000.f); });
+	// he goes on up anyway, until his eyes are over the top step
+	After(9.6f, [this]() { GClimbToX = 720.f; GClimbScale = 0.5f; GLookAt = FVector(1560.f, 40.f, 500.f); });
+	// the light comes back: the hall, and at the far end of it, her, standing, looking at him
+	After(13.6f, [this]() { StairsHallStand(); });
+	// it goes again
+	After(17.4f, [this]()
+	{
+		if (AWCCharacter* Q = Player()) { Q->FlickerLight(0.5f, 0.9f); }
+		After(0.45f, [this]()
+		{
+			if (AWCCharacter* Q = Player()) Q->SetLightScale(0.f);
+			Play2D(TEXT("bulb_die"), 0.7f);
+			UE_LOG(LogWCStairs, Display, TEXT("WCSCARE t=%.1f S3_stairs light out again"), PlaySeconds);
+		});
+	});
+	// "Shit... shit..." and he beats the dead flashlight against his hand
+	After(18.3f, [this]() { Say(TEXT("d_stairs_shit"), 0.f); });
+	const float Smacks[] = { 18.5f, 19.0f, 19.35f, 20.1f, 20.45f, 21.2f };
+	for (float T : Smacks)
+		After(T, [this]()
+		{
+			Play2D(TEXT("flashlight_click"), 0.9f);
+			if (AWCCharacter* Q = Player()) { PlayAt(TEXT("knock"), Q->EyeLocation() + FVector(0, 0, -50), 0.55f, FMath::FRandRange(1.35f, 1.6f), 600.f); Q->AddShake(0.05f); }
+		});
+	// then, in the black, perfectly clear and close: her
+	After(22.0f, [this]()
+	{
+		if (AWCEntity* E = Her()) E->Vanish();
+		Say(TEXT("m_never"), 0.f);                           // "You should never have come here."
+		SetLoop(TEXT("amb"), TEXT(""), 0.f, 0.4f);
+	});
+	// a full second of nothing; then she comes, loud, on all fours, and his light flickers back on her
+	After(26.6f, [this]() { StairsHallRush(); });
 }
 
-void AWCDirector::StairsFace()
+void AWCDirector::StairsHallStand()
 {
 	AWCCharacter* P = Player();
 	AWCEntity* H = Her();
 	if (!P || !H || GStairs == EStairs::Done) return;
 	GClimbToX = 0.f;
-	const FVector Eye = P->EyeLocation();
-	FVector Fwd = P->GetControlRotation().Vector().GetSafeNormal2D();
-	if (Fwd.IsNearlyZero()) Fwd = FVector(1, 0, 0);
-	// a little above him on the flight, her face at his: she was crawling down to him the whole time it was dark
-	const FVector Spot = Eye + Fwd * 80.f;
-	const float StepZ = FMath::Max(0.f, (Spot.X - 400.f) * 0.875f);
-	H->Appear(FVector(Spot.X, Spot.Y, FMath::Max(StepZ, Eye.Z - 150.f)), (-Fwd).Rotation().Yaw, TEXT("Lunge"), false, 0.f);
-	H->Body->SetPlayRate(0.f);
-	H->FacePlayer(false);
+	H->Appear(FVector(1520.f, 40.f, 350.f), 180.f, TEXT("Idle"), true, 0.6f);
+	H->FacePlayer(true);
+	H->SetScream(0.f);
+	H->SetGlow(0.25f);
 	H->SetEyeShine(1.f);
-	H->SetGlow(0.5f);
-	H->SetFarGlow(0.f);
-	H->SetScream(1.f);
+	H->SetFarGlow(1100.f);                   // a pale figure at the end of the hall, clear enough to know what it is
 	P->SetLightScale(1.f);
-	P->SetFaceLight(420.f);                                  // his light full on her face, no flicker: the one moment to see her
-	P->AddShake(0.9f);
+	P->FlickerLight(0.6f, 0.6f);
+	GLookHead = true;
+	GLookRate = 6.f;
+	Play2D(TEXT("sting_low"), 0.7f, EWCSnd::Music);
+	UE_LOG(LogWCStairs, Display, TEXT("WCSCARE t=%.1f S3_stairs she stands at the end of the hall"), PlaySeconds);
+}
+
+void AWCDirector::StairsHallRush()
+{
+	AWCCharacter* P = Player();
+	AWCEntity* H = Her();
+	if (!P || !H || GStairs == EStairs::Done) return;
+	// she is already coming: loud, heavy, fast, on her hands and knees down the boards at him
+	H->Appear(FVector(1460.f, 40.f, 350.f), 180.f, TEXT("Crawl"), true, 2.4f);
+	H->FacePlayer(false);
+	H->SetScream(1.f);
+	H->SetGlow(0.6f);
+	H->SetEyeShine(1.f);
+	H->SetFarGlow(1100.f);
+	TArray<FVector> Path;
+	Path.Add(FVector(860.f, -60.f, 350.f));
+	Path.Add(P->GetActorLocation() - FVector(0, 0, 88) + FVector(70.f, 0, 0));
+	H->MoveAlong(Path, 820.f, TEXT("Crawl"), [this]() { StairsCatch(0.f); });
+	H->SetScream(1.f);
+	GStairs = EStairs::Lunge;
+	GLookHead = true;
+	GLookRate = 90.f;
+	for (int32 i = 0; i < 9; ++i)
+		After(0.11f * i, [this, i]() { if (AWCEntity* E = Her()) PlayAt(i % 3 == 0 ? TEXT("thump_heavy") : TEXT("crawl_knocks"), E->GetActorLocation(), 1.f, FMath::FRandRange(0.9f, 1.15f), 4000.f); });
 	Play2D(TEXT("her_scream"), 1.f);
-	Play2D(TEXT("sting_hit"), 1.f, EWCSnd::Music);
-	Tension = 1.f;
-	UE_LOG(LogWCStairs, Display, TEXT("WCSCARE t=%.1f S3_stairs face"), PlaySeconds);
-	// her face square in front of his, at his eye height (the pose only exists after a frame), and his eyes snap to it
-	After(0.02f, [this, Eye, Fwd]()
+	After(0.35f, [this]()
 	{
-		if (AWCEntity* E = Her())
-		{
-			const FVector Want = Eye + Fwd * 62.f + FVector(0, 0, -4.f);
-			E->AddActorWorldOffset(Want - E->HeadLocation());
-		}
-		GLookHead = true;
-		GLookRate = 400.f;
-	});
-	// and in the same breath, she has him
-	After(0.5f, [this]()
-	{
-		if (AWCEntity* E = Her()) E->Body->SetPlayRate(1.8f);
-		if (AWCCharacter* Q = Player()) Q->SetInputLocked(false);
-		bBusy = false;
-		StairsCatch(0.f);
+		if (AWCCharacter* Q = Player()) { Q->SetLightScale(1.f); Q->FlickerLight(0.7f, 0.55f); Q->SetFaceLight(300.f); Q->AddShake(0.5f); }
+		Play2D(TEXT("sting_hit"), 1.f, EWCSnd::Music);
+		UE_LOG(LogWCStairs, Display, TEXT("WCSCARE t=%.1f S3_stairs she comes"), PlaySeconds);
 	});
 }
 

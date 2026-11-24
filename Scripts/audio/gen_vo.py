@@ -50,6 +50,8 @@ DIRECT = {
     "d_call1": "Calling out into a silent house, not loud, a question hanging in the air. Careful, a little uneasy.",
     "d_stairs_call": "Staring up a dark staircase at something he cannot make sense of: a shape coming down head first. Half under his breath, unsure, frightened. Says 'Missus' and stops dead, then a long, confused silence of two or three seconds while he stares, then 'Harrow?' quietly, rising, not believing it.",
     "d_stairs_wtf": "A whisper, barely voiced, to himself, staring up at the ceiling while something heavy is dragged across the floor above him and bones crack. Broken up and shaken: 'What' ... a breath ... 'the' ... a long pause ... 'fuck', almost no voice left. Frightened, disbelieving, very quiet.",
+    "d_stairs_shit": "In pitch darkness at the top of a staircase, his flashlight has just died and something is in the hall with him. Panicked, breathless, under his breath, smacking the dead flashlight against his palm: 'Shit...' a sharp breath, '...shit...', fast and terrified.",
+    "m_never": "A whisper in total darkness, very close and perfectly clear, every word distinct. A very old woman, calm, slow, cold and certain, almost tender. 'You should never have come here.' No breathiness on the last word, it just stops.",
     "d_call2": "Calling out again, a bit louder, then quieter and less sure of himself on the second part.",
     "d_call3": "Calling through the house, official but strained, listening for any answer.",
     "d_shedcall": "Scared out of his wits by a huge metal crash right behind him outdoors at night. The first two words are a shout that cracks, breath knocked out of him. 'Who's there' loud and shaking. 'Sheriff's department' barked, trying to get his voice under control, breathing hard. Then a long held breath, and the last two questions small, quiet and frightened.",
@@ -108,7 +110,7 @@ DIRECT = {
 }
 SPEAK_AS = {"r_static": "mabel", "m_post": "mabel"}
 TEXT = {"r_static": "Stay.", "m_whisper1": "Who's there?", "m_whisper2": "Is that you, Danny?", "m_post": "Come back and visit."}
-EFFECT = {"r_static": "radio", "m_post": "radio", "m_whyleave": "recorded"}
+EFFECT = {"r_static": "radio", "m_post": "radio", "m_whyleave": "recorded", "m_never": "dry"}
 
 
 def key():

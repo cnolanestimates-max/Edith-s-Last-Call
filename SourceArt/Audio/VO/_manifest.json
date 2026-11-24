@@ -105,6 +105,13 @@
   "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. A whisper, barely voiced, to himself, staring up at the ceiling while something heavy is dragged across the floor above him and bones crack. Broken up and shaken: 'What' ... a breath ... 'the' ... a long pause ... 'fuck', almost no voice left. Frightened, disbelieving, very quiet."
  },
  {
+  "id": "d_stairs_shit",
+  "who": "deputy",
+  "text": "Shit... shit...",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. In pitch darkness at the top of a staircase, his flashlight has just died and something is in the hall with him. Panicked, breathless, under his breath, smacking the dead flashlight against his palm: 'Shit...' a sharp breath, '...shit...', fast and terrified."
+ },
+ {
   "id": "d_call2",
   "who": "deputy",
   "text": "Hello? ...Anybody home?",
@@ -572,6 +579,13 @@
   "text": "Stay.",
   "fx": "ghost",
   "style": "A very old, frail woman in her late eighties. Thin, dry, trembling voice, slow, breathy, barely above a whisper, lonely and eerily gentle. Rural American. Whispered, extremely close, right into the listener's ear. One breath. Intimate and wrong."
+ },
+ {
+  "id": "m_never",
+  "who": "mabel",
+  "text": "You should never have come here.",
+  "fx": "dry",
+  "style": "A very old, frail woman in her late eighties. Thin, dry, trembling voice, slow, breathy, barely above a whisper, lonely and eerily gentle. Rural American. A whisper in total darkness, very close and perfectly clear, every word distinct. A very old woman, calm, slow, cold and certain, almost tender. 'You should never have come here.' No breathiness on the last word, it just stops."
  },
  {
   "id": "m_ear2",

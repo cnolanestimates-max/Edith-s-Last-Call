@@ -249,7 +249,8 @@ private:
 	bool IsStairsChase() const;
 	void StairsStep(float ToS, float Seconds, float KnockVolume, bool bScreaming);
 	void StairsLunge();
-	void StairsFace();
+	void StairsHallStand();
+	void StairsHallRush();
 	void StairsCatch(float In);
 	void ScarePhone();
 	void ScareCeiling();
