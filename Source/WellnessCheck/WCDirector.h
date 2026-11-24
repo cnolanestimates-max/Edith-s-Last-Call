@@ -247,6 +247,9 @@ private:
 	void StairsReveal();
 	void TickStairs(float Dt);
 	bool IsStairsChase() const;
+	void StairsStep(float ToS, float Seconds, float KnockVolume, bool bScreaming);
+	void StairsLunge();
+	void StairsCatch(float In);
 	void ScarePhone();
 	void ScareCeiling();
 	void ScareUnderBed();

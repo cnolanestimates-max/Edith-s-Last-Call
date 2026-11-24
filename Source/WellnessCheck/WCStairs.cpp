@@ -6,8 +6,10 @@
 //   2. The stairs.  When he sets foot on the first steps, he is taken again.  He looks up the flight into the dark.  One long
 //      arm comes down out of it onto a step, then the other, a step lower.  "Mrs. Harrow?"  The pistol comes up.  Her face
 //      comes into the light, head first down the stairs, and she screams at him with her tongue out.
-//   3. Run or shoot.  She comes down the stairs and after him with everything she has; when she reaches him, the first memory.
-// Everything up to the chase is slow.
+//   3. He has himself back.  She crawls on down at him, one arm and then the other, three reaches, and then she throws
+//      herself at him: that one lunge is the catch, and the first memory (Cheyenne, 2026-11-24: cut the second lunge and
+//      make the first enough; crawl one arm at a time; three steps, maybe four, before she lunges and catches him).
+// Everything up to the lunge is slow.  (Only if he has got clear away does she run him down first.)
 #include "WCDirector.h"
 #include "WCCharacter.h"
 #include "WCEntity.h"
@@ -21,7 +23,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogWCStairs, Log, All);
 
 namespace
 {
-	enum class EStairs : uint8 { Idle, Listening, Waiting, Reveal, Chase, Done };
+	enum class EStairs : uint8 { Idle, Listening, Waiting, Reveal, Crawl, Lunge, Chase, Done };
 	EStairs GStairs = EStairs::Idle;
 	double GStairsAt = 0.0;               // when the current phase began
 	double GNextLure = 0.0;
@@ -108,28 +110,34 @@ void AWCDirector::StairsReveal()
 	UE_LOG(LogWCStairs, Display, TEXT("WCSCARE t=%.1f S3_stairs reveal"), PlaySeconds);
 	bBusy = true;
 	P->SetInputLocked(true);
-	GLookAt = OnFlight(150.f) + FVector(0, 0, 50);
+	GLookAt = OnFlight(190.f) + FVector(0, 0, 35);
 	GLookRate = 7.f;
 	GLookHead = false;
 	// up there in the dark, on her front, head first down the flight; only her reach comes into the light at first
-	H->Appear(OnFlight(40.f), 180.f, TEXT("Crawl"), true, 0.32f);
+	H->Appear(OnFlight(40.f), 180.f, TEXT("Crawl"), true, 0.f);
+	H->Body->SetPlayRate(0.f);
 	H->SetActorRotation(FRotator(StairPitch, 180.f, 0.f));
 	H->FacePlayer(false);
 	H->SetScream(0.f);
 	H->SetGlow(0.f);
-	H->SetFarGlow(110.f);                     // barely there: pale hands and a shape, at the edge of his light
+	H->SetFarGlow(260.f);                     // dim: pale hands and a shape, at the edge of his light
 	Tension = 0.9f;
-	After(0.6f, [this]() { if (AWCEntity* E = Her()) E->Slide(OnFlight(120.f), 4.2f); PlayAt(TEXT("her_breath"), OnFlight(60.f), 0.7f, 0.9f, 2500.f); });
-	After(3.2f, [this]() { PlayAt(TEXT("crawl_knocks"), OnFlight(200.f), 0.9f, 0.85f, 3000.f); });      // the first hand on a step
-	After(5.0f, [this]() { if (AWCEntity* E = Her()) E->Slide(OnFlight(165.f), 3.0f); });
-	After(6.6f, [this]() { PlayAt(TEXT("crawl_knocks"), OnFlight(250.f), 1.f, 0.8f, 3000.f); });       // the other, a step lower
+	After(0.4f, [this]() { PlayAt(TEXT("her_breath"), OnFlight(60.f), 0.7f, 0.9f, 2500.f); });
+	After(1.2f, [this]() { StairsStep(115.f, 1.5f, 0.9f, false); });         // one long arm comes down out of the dark onto a step
+	After(4.4f, [this]() { StairsStep(185.f, 1.5f, 1.f, false); });          // then the other, a step lower
 	After(7.2f, [this]()
 	{
 		const float T = Say(TEXT("d_call1"), 0.f);
 		After(T + 0.3f, [this]() { if (AWCCharacter* Q = Player()) { Q->SetAiming(true); Q->AddShake(0.1f); } });
 	});
 	// her face comes down into the light
-	After(10.4f, [this]() { if (AWCEntity* E = Her()) { E->Slide(OnFlight(290.f), 2.6f); E->SetEyeShine(1.f); E->SetGlow(0.35f); E->SetFarGlow(380.f); } PlayAt(TEXT("her_breath"), OnFlight(260.f), 1.f, 0.8f, 2500.f); GLookHead = true; GLookRate = 5.f; });
+	After(10.2f, [this]()
+	{
+		StairsStep(255.f, 1.9f, 0.8f, false);
+		if (AWCEntity* E = Her()) { E->SetEyeShine(1.f); E->SetGlow(0.35f); E->SetFarGlow(380.f); }
+		PlayAt(TEXT("her_breath"), OnFlight(300.f), 1.f, 0.8f, 2500.f);
+		GLookHead = true; GLookRate = 5.f;
+	});
 	// and she screams at him, tongue out
 	After(13.4f, [this]()
 	{
@@ -141,42 +149,94 @@ void AWCDirector::StairsReveal()
 		Tension = 1.f;
 		UE_LOG(LogWCStairs, Display, TEXT("WCSCARE t=%.1f S3_stairs scream"), PlaySeconds);
 	});
-	// then she comes.  He has himself back, and a breath to use it: she hangs there screaming, then comes down the flight
-	// head first in a rush and stands up at the bottom.  Run, or stand and shoot.
+	// he has himself back.  She comes on down at him, still screaming: three slow reaches, then the lunge.
 	After(15.2f, [this]()
 	{
 		if (AWCCharacter* Q = Player()) Q->SetInputLocked(false);
 		bBusy = false;
+		GLookHead = false;
 		Play2D(TEXT("sting_rise"), 0.9f, EWCSnd::Music);
-		if (AWCEntity* E = Her()) { E->Play(TEXT("Crawl"), true, 1.4f); E->SetScream(1.f); }
+		GStairs = EStairs::Crawl;
+		GChaseShots = ShotsAtHer;
+		UE_LOG(LogWCStairs, Display, TEXT("WCSCARE t=%.1f S3_stairs crawl"), PlaySeconds);
 	});
-	After(16.2f, [this]()
+	// slow, deliberate reaches with a hold after each (slow is what frightens); only the lunge is fast
+	After(15.7f, [this]() { StairsStep(305.f, 1.2f, 1.f, true); });
+	After(17.6f, [this]() { StairsStep(355.f, 1.1f, 1.f, true); });
+	After(19.4f, [this]() { StairsStep(400.f, 1.0f, 1.f, true); });
+	After(21.0f, [this]() { StairsLunge(); });
+}
+
+void AWCDirector::StairsStep(float ToS, float Seconds, float KnockVolume, bool bScreaming)
+{
+	// one reach: the crawl plays half its cycle (one arm) while she slides that far down the flight, then holds still
+	AWCEntity* E = Her();
+	if (!E || GStairs == EStairs::Done || GStairs == EStairs::Chase || GStairs == EStairs::Lunge) return;
+	const UAnimSequence* Seq = E->Anims.FindRef(TEXT("Crawl"));
+	const float Half = Seq ? Seq->GetPlayLength() * 0.5f : 0.6f;
+	E->Play(TEXT("Crawl"), true, Half / FMath::Max(Seconds, 0.1f));
+	E->SetScream(bScreaming ? 1.f : 0.f);
+	E->Slide(OnFlight(ToS), Seconds, [this, ToS, KnockVolume, bScreaming]()
 	{
-		AWCEntity* E = Her();
-		if (!E) return;
-		E->Play(TEXT("Crawl"), true, 2.6f);
-		E->SetScream(1.f);
-		PlayAt(TEXT("crawl_knocks"), E->GetActorLocation(), 1.f, 1.15f, 3200.f);
-		E->Slide(OnFlight(532.f) + FVector(-25.f, 0.f, 0.f), 1.6f, [this]()
-		{
-			if (AWCEntity* E2 = Her())
-			{
-				E2->SetActorRotation(FRotator(0.f, E2->GetActorRotation().Yaw, 0.f));
-				E2->Play(TEXT("Rise"), false, 2.4f);
-				E2->SetScream(1.f);
-			}
-			After(0.35f, [this]()
-			{
-				GStairs = EStairs::Chase;
-				GStairsAt = Clock;
-				if (AWCEntity* E3 = Her()) E3->SetFarGlow(AWCEntity::DefaultFarGlow);
-				if (AWCCharacter* Q = Player()) { Q->SetFaceLight(0.f); Q->FlickerLight(0.5f, 0.5f); }
-				GChaseStep = 0.0;
-				GChaseShots = ShotsAtHer;
-				Play2D(TEXT("her_scream"), 0.9f);
-				UE_LOG(LogWCStairs, Display, TEXT("WCSCARE t=%.1f S3_stairs chase"), PlaySeconds);
-			});
-		});
+		if (GStairs == EStairs::Done || GStairs == EStairs::Chase || GStairs == EStairs::Lunge) return;
+		if (AWCEntity* E2 = Her()) { E2->Body->SetPlayRate(0.f); E2->SetScream(bScreaming ? 1.f : 0.f); }
+		PlayAt(TEXT("crawl_knocks"), OnFlight(ToS + 70.f), KnockVolume, FMath::FRandRange(0.8f, 0.95f), 3000.f);
+	});
+}
+
+void AWCDirector::StairsLunge()
+{
+	AWCCharacter* P = Player();
+	AWCEntity* H = Her();
+	if (!P || !H || GStairs == EStairs::Done || GStairs == EStairs::Chase || GStairs == EStairs::Lunge) return;
+	const FVector Feet = P->GetActorLocation() - FVector(0, 0, 88);
+	const FVector From = H->GetActorLocation();
+	FHitResult Hit;
+	FCollisionQueryParams Q(SCENE_QUERY_STAT(WCStairsLunge), false, P);
+	Q.AddIgnoredActor(H);
+	const bool bSees = !GetWorld()->LineTraceSingleByChannel(Hit, H->HeadLocation(), P->EyeLocation(), ECC_Visibility, Q);
+	const float Dist = FVector::Dist(From, Feet);
+	if (Dist > 520.f || !bSees)
+	{
+		// he got clear away: she has to run him down first, and lunges when she is on him
+		H->SetActorRotation(FRotator(0.f, (Feet - From).Rotation().Yaw, 0.f));
+		H->Play(TEXT("Rise"), false, 2.4f);
+		GStairs = EStairs::Chase;
+		GStairsAt = Clock;
+		GChaseStep = Clock + 0.35;
+		GChaseShots = ShotsAtHer;
+		P->SetFaceLight(0.f);
+		H->SetFarGlow(AWCEntity::DefaultFarGlow);
+		UE_LOG(LogWCStairs, Display, TEXT("WCSCARE t=%.1f S3_stairs chase (he got %.0f cm away)"), PlaySeconds, Dist);
+		return;
+	}
+	// the lunge: up off the stairs and onto him
+	GStairs = EStairs::Lunge;
+	UE_LOG(LogWCStairs, Display, TEXT("WCSCARE t=%.1f S3_stairs lunge from %.0f cm"), PlaySeconds, Dist);
+	const FVector To = Feet - (Feet - From).GetSafeNormal2D() * 95.f;      // her face fills his view; not inside it
+	H->SetActorRotation(FRotator(0.f, (Feet - From).Rotation().Yaw, 0.f));
+	H->Play(TEXT("Lunge"), false, 1.6f);
+	H->SetScream(1.f);
+	H->SetGlow(0.25f);
+	Play2D(TEXT("her_scream_short"), 1.f);
+	const float In = (float)(Clock - GStairsAt);
+	H->Slide(To, FMath::Clamp(Dist / 900.f, 0.28f, 0.55f), [this, In]() { StairsCatch(In); });
+}
+
+void AWCDirector::StairsCatch(float In)
+{
+	if (GStairs == EStairs::Done) return;
+	GStairs = EStairs::Done;
+	if (AWCCharacter* Pl = Player()) Pl->SetFaceLight(0.f);
+	if (AWCEntity* E = Her()) E->SetFarGlow(AWCEntity::DefaultFarGlow);
+	UE_LOG(LogWCStairs, Display, TEXT("WCSCARE t=%.1f S3_stairs caught (%d shots)"), PlaySeconds, ShotsAtHer);
+	// the grab: the first time she has him, he sees the first memory (Grab), then he wakes on the floor ("gotup")
+	Grab(1.3f, [this]()
+	{
+		if (AWCCharacter* Pl = Player()) Pl->Knockdown(3.0f);
+		FadeTo(1.f, 0.3f);
+		After(0.7f, [this]() { if (AWCEntity* E = Her()) E->Vanish(); });
+		After(2.8f, [this]() { FadeTo(0.f, 1.6f); });
 	});
 }
 
@@ -229,6 +289,13 @@ void AWCDirector::TickStairs(float Dt)
 		}
 		return;
 	}
+	if (GStairs == EStairs::Crawl && ShotsAtHer != GChaseShots)
+	{
+		// shots while she crawls: she jerks at each one, and keeps coming
+		GChaseShots = ShotsAtHer;
+		if (AWCEntity* H = Her()) PlayAt(TEXT("her_flinch"), H->HeadLocation(), 1.f, 1.f, 3500.f);
+		P->FlickerLight(0.2f, 0.6f);
+	}
 	if (GStairs == EStairs::Chase)
 	{
 		AWCEntity* H = Her();
@@ -260,18 +327,12 @@ void AWCDirector::TickStairs(float Dt)
 			H->SetScream(1.f);
 			if (FMath::Fmod((float)In, 2.6f) < 0.25f) PlayAt(TEXT("her_scream_short"), H->HeadLocation(), 0.8f, FMath::FRandRange(0.95f, 1.1f), 3500.f);
 		}
-		if (H->DistToPlayer() < 165.f && FMath::Abs(H->GetActorLocation().Z - (P->GetActorLocation().Z - 88.f)) < 140.f)
+		if (H->DistToPlayer() < 260.f)
 		{
-			GStairs = EStairs::Done;
-			UE_LOG(LogWCStairs, Display, TEXT("WCSCARE t=%.1f S3_stairs caught after %.1f s, %d shots"), PlaySeconds, In, ShotsAtHer);
-			// the grab: the first time she has him, he sees the first memory (Grab), then he wakes on the floor ("gotup")
-			Grab(1.3f, [this]()
-			{
-				if (AWCCharacter* Pl = Player()) Pl->Knockdown(3.0f);
-				FadeTo(1.f, 0.3f);
-				After(0.7f, [this]() { if (AWCEntity* E = Her()) E->Vanish(); });
-				After(2.8f, [this]() { FadeTo(0.f, 1.6f); });
-			});
+			// on him: the lunge
+			H->StopMoving();
+			GStairs = EStairs::Reveal;          // so StairsLunge takes her
+			StairsLunge();
 		}
 	}
 }
