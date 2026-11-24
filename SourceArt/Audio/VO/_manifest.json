@@ -91,6 +91,20 @@
   "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. Calling out into a silent house, not loud, a question hanging in the air. Careful, a little uneasy."
  },
  {
+  "id": "d_stairs_call",
+  "who": "deputy",
+  "text": "Mrs. ... Harrow?",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. Staring up a dark staircase at something he cannot make sense of: a shape coming down head first. Half under his breath, unsure, frightened. Says 'Missus' and stops dead, then a long, confused silence of two or three seconds while he stares, then 'Harrow?' quietly, rising, not believing it."
+ },
+ {
+  "id": "d_stairs_wtf",
+  "who": "deputy",
+  "text": "What... the... fuck...",
+  "fx": "dry",
+  "style": "A rural county sheriff's deputy in his mid-forties, alone in a dark, silent house at night. Low, tense, quiet, natural and understated, like real body-cam audio. American Midwest. No theatrics. A whisper, barely voiced, to himself, staring up at the ceiling while something heavy is dragged across the floor above him and bones crack. Broken up and shaken: 'What' ... a breath ... 'the' ... a long pause ... 'fuck', almost no voice left. Frightened, disbelieving, very quiet."
+ },
+ {
   "id": "d_call2",
   "who": "deputy",
   "text": "Hello? ...Anybody home?",

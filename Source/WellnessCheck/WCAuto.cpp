@@ -223,7 +223,7 @@ void AWCDirector::AutoBegin()
 			Flag(TEXT("stairs_waiting"),20.f); Wait(1.5f);
 			Do(TEXT("room_walk:700,60")); Do(TEXT("room_walk:250,60")); Do(TEXT("room_walk:370,-80"));
 			Flag(TEXT("lockin_started"),10.f); Wait(9.6f); Shot(TEXT("02_arms")); Wait(3.9f); Shot(TEXT("03_scream"));
-			Wait(3.2f); Fire(1); LookHer(1.5f); Shot(TEXT("04_crawl")); LookHer(25.f);
+			LookHer(25.f);
 			Flag(TEXT("lockin_done"),90.f); Wait(4.f); Do(TEXT("rec_off")); Do(TEXT("finish_stairs_mix")); Wait(.6f);
 		}
 		else if (FParse::Param(FCommandLine::Get(),TEXT("WCCorner24")))

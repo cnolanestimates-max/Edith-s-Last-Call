@@ -16,7 +16,7 @@ namespace
 	const FVector GlassCentre(2430., -370., 185.8);
 	const FVector ApprovedEyeLight(2581.2, -340.0, 153.2);
 	constexpr double SeatedScale = 1.25;
-	constexpr double HalfWidth = 130., HalfHeight = 88.8;
+	constexpr double MirrorHalfWidth = 130., MirrorHalfHeight = 88.8;
 }
 
 void AWCDirector::RefreshBathLetter()
@@ -181,8 +181,8 @@ void AWCDirector::CaptureBathMirror(const FVector& Eye)
 	if (!BathCapture || Depth<=2.) return;
 	// Off-axis frustum through the four corners of the real glass. Depth also clips the wall behind it.
 	BathCapture->SetWorldLocationAndRotation(FVector(GlassCentre.X-Depth,Eye.Y,Eye.Z), FRotator::ZeroRotator);
-	BathCapture->CustomProjectionMatrix = FMatrix(FPlane(Depth/HalfWidth,0,0,0),FPlane(0,Depth/HalfHeight,0,0),
-		FPlane((Eye.Y-GlassCentre.Y)/HalfWidth,(Eye.Z-GlassCentre.Z)/HalfHeight,0,1),FPlane(0,0,Depth+.4,0));
+	BathCapture->CustomProjectionMatrix = FMatrix(FPlane(Depth/MirrorHalfWidth,0,0,0),FPlane(0,Depth/MirrorHalfHeight,0,0),
+		FPlane((Eye.Y-GlassCentre.Y)/MirrorHalfWidth,(Eye.Z-GlassCentre.Z)/MirrorHalfHeight,0,1),FPlane(0,0,Depth+.4,0));
 	if (BathReflection) BathReflection->LookAtReflection(FVector(GlassCentre.X-Depth,Eye.Y,Eye.Z));
 	BathCapture->CaptureScene();
 }

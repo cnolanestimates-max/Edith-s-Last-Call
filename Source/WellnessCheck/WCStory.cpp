@@ -45,6 +45,8 @@ static const FWCLine GLines[] = {
 	{ TEXT("d_openup"), TEXT("Deputy Brandt"), TEXT("Mrs. Harrow, people are worried about you. We're just trying to see if you're okay. ...Can you please open up?"), 0 },
 
 	{ TEXT("d_call1"), TEXT("Deputy Brandt"), TEXT("Mrs. Harrow?"), 0 },
+	{ TEXT("d_stairs_call"), TEXT("Deputy Brandt"), TEXT("Mrs. ... Harrow?"), 0 },
+	{ TEXT("d_stairs_wtf"), TEXT("Deputy Brandt"), TEXT("What... the... fuck..."), 0 },
 	{ TEXT("d_call2"), TEXT("Deputy Brandt"), TEXT("Hello? ...Anybody home?"), 0 },
 	{ TEXT("d_call3"), TEXT("Deputy Brandt"), TEXT("Mrs. Harrow, it's the sheriff's office. Can you hear me?"), 0 },
 	{ TEXT("d_shedcall"), TEXT("Deputy Brandt"), TEXT("Jesus Christ! ...Who's there?! Sheriff's department! ...Mrs. Harrow? ...Is that you?"), 0 },

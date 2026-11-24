@@ -6,10 +6,8 @@
 //   2. The stairs.  When he sets foot on the first steps, he is taken again.  He looks up the flight into the dark.  One long
 //      arm comes down out of it onto a step, then the other, a step lower.  "Mrs. Harrow?"  The pistol comes up.  Her face
 //      comes into the light, head first down the stairs, and she screams at him with her tongue out.
-//   3. He has himself back.  She crawls on down at him, one arm and then the other, three reaches, and then she throws
-//      herself at him: that one lunge is the catch, and the first memory (Cheyenne, 2026-11-24: cut the second lunge and
-//      make the first enough; crawl one arm at a time; three steps, maybe four, before she lunges and catches him).
-// Everything up to the lunge is slow.  (Only if he has got clear away does she run him down first.)
+//   3. The scream is the lunge: she throws herself down the flight at him as she screams, and has him; the first memory.
+// Everything up to the lunge is slow; her reaches are one arm at a time.
 #include "WCDirector.h"
 #include "WCCharacter.h"
 #include "WCEntity.h"
@@ -84,9 +82,11 @@ void AWCDirector::StairsListen()
 	for (int32 i = 0; i < 5; ++i)
 		After(Cracks[i], [this, C, i]() { PlayAt(TEXT("bone_crack"), C + FVector(-20.f * i, 10.f, 0.f), 0.95f, FMath::FRandRange(0.82f, 1.12f), 3600.f); });
 	// and then the sound she makes: high, long, drawn out
-	After(14.0f, [this]() { PlayAt(TEXT("stair_moan"), OnFlight(-40.f) + FVector(0, 0, 60), 1.f, 1.f, 5000.f); Tension = 0.85f; GLookAt = FVector(830.f, -40.f, 330.f); GLookRate = 4.f; });
+	// he whispers, to himself, staring up at it
+	After(12.9f, [this]() { Say(TEXT("d_stairs_wtf"), 0.f); });
+	After(16.6f, [this]() { PlayAt(TEXT("stair_moan"), OnFlight(-40.f) + FVector(0, 0, 60), 1.f, 1.f, 5000.f); Tension = 0.85f; GLookAt = FVector(830.f, -40.f, 330.f); GLookRate = 4.f; });
 	// silence.  He has himself back.
-	After(24.0f, [this]()
+	After(26.6f, [this]()
 	{
 		if (AWCCharacter* Q = Player()) Q->SetInputLocked(false);
 		bBusy = false;
@@ -127,7 +127,7 @@ void AWCDirector::StairsReveal()
 	After(4.4f, [this]() { StairsStep(185.f, 1.5f, 1.f, false); });          // then the other, a step lower
 	After(7.2f, [this]()
 	{
-		const float T = Say(TEXT("d_call1"), 0.f);
+		const float T = Say(TEXT("d_stairs_call"), 0.f);          // "Mrs. ...... Harrow?"
 		After(T + 0.3f, [this]() { if (AWCCharacter* Q = Player()) { Q->SetAiming(true); Q->AddShake(0.1f); } });
 	});
 	// her face comes down into the light
@@ -138,33 +138,21 @@ void AWCDirector::StairsReveal()
 		PlayAt(TEXT("her_breath"), OnFlight(300.f), 1.f, 0.8f, 2500.f);
 		GLookHead = true; GLookRate = 5.f;
 	});
-	// and she screams at him, tongue out
+	// and she screams at him, tongue out, and in the same moment throws herself down the stairs at him: that is the grab
+	// (Cheyenne, 2026-11-24: "one arm, step then two, the scream lunge")
 	After(13.4f, [this]()
 	{
 		if (AWCEntity* E = Her()) { E->SetScream(1.f); E->SetGlow(1.2f); E->SetFarGlow(900.f); }
 		Play2D(TEXT("her_scream"), 1.f);
 		Play2D(TEXT("sting_hit"), 1.f, EWCSnd::Music);
-		// his light holds on her face while she screams (no flicker: this is the moment to see her)
-		if (AWCCharacter* Q = Player()) { Q->AddShake(0.8f); Q->SetFaceLight(85.f); }
-		Tension = 1.f;
-		UE_LOG(LogWCStairs, Display, TEXT("WCSCARE t=%.1f S3_stairs scream"), PlaySeconds);
-	});
-	// he has himself back.  She comes on down at him, still screaming: three slow reaches, then the lunge.
-	After(15.2f, [this]()
-	{
-		if (AWCCharacter* Q = Player()) Q->SetInputLocked(false);
+		if (AWCCharacter* Q = Player()) { Q->AddShake(0.8f); Q->SetFaceLight(85.f); Q->SetInputLocked(false); }
 		bBusy = false;
 		GLookHead = false;
-		Play2D(TEXT("sting_rise"), 0.9f, EWCSnd::Music);
+		Tension = 1.f;
+		UE_LOG(LogWCStairs, Display, TEXT("WCSCARE t=%.1f S3_stairs scream"), PlaySeconds);
 		GStairs = EStairs::Crawl;
-		GChaseShots = ShotsAtHer;
-		UE_LOG(LogWCStairs, Display, TEXT("WCSCARE t=%.1f S3_stairs crawl"), PlaySeconds);
+		After(0.15f, [this]() { StairsLunge(); });
 	});
-	// slow, deliberate reaches with a hold after each (slow is what frightens); only the lunge is fast
-	After(15.7f, [this]() { StairsStep(305.f, 1.2f, 1.f, true); });
-	After(17.6f, [this]() { StairsStep(355.f, 1.1f, 1.f, true); });
-	After(19.4f, [this]() { StairsStep(400.f, 1.0f, 1.f, true); });
-	After(21.0f, [this]() { StairsLunge(); });
 }
 
 void AWCDirector::StairsStep(float ToS, float Seconds, float KnockVolume, bool bScreaming)
@@ -220,7 +208,7 @@ void AWCDirector::StairsLunge()
 	H->SetGlow(0.25f);
 	Play2D(TEXT("her_scream_short"), 1.f);
 	const float In = (float)(Clock - GStairsAt);
-	H->Slide(To, FMath::Clamp(Dist / 900.f, 0.28f, 0.55f), [this, In]() { StairsCatch(In); });
+	H->Slide(To, FMath::Clamp(Dist / 750.f, 0.3f, 0.6f), [this, In]() { StairsCatch(In); });
 }
 
 void AWCDirector::StairsCatch(float In)

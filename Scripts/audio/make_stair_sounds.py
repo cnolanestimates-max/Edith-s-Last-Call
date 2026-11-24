@@ -20,3 +20,16 @@ for i in range(1, 6):
 ff(["-i", "VO/m_moan2.wav", "-af", "asetrate=48000*1.36,aresample=48000,atempo=0.62,vibrato=f=4.2:d=0.18,highpass=f=280,"
     "aecho=0.8:0.6:90|170:0.35|0.22,afade=t=in:d=0.6,afade=t=out:st=8.2:d=1.4,volume=1.6,alimiter=limit=0.95", "-ac", "1", "stair_moan.wav"])
 print("stair sounds written to", os.path.abspath(AUDIO))
+
+# "Mrs. ...... Harrow?" (Cheyenne: a long, confused pause between the words).  The TTS take (gen_vo.py, d_stairs_call) pauses
+# about a second; this stretches the pause by a second and a half of its own near-silence (0.8-1.3 s of the take).
+# Run once after gen_vo.py writes VO/d_stairs_call.wav; it keeps that take as VO_dry/d_stairs_call_take.wav (out of VO/,
+# so it is not imported into the game).
+take = os.path.join(AUDIO, "VO_dry", "d_stairs_call_take.wav")
+line = os.path.join(AUDIO, "VO", "d_stairs_call.wav")
+if not os.path.exists(take) and os.path.exists(line):
+    os.replace(line, take)
+if os.path.exists(take):
+    ff(["-i", take, "-filter_complex",
+        "[0]atrim=0:1.05,asetpts=N/SR/TB[a];[0]atrim=0.8:1.3,asetpts=N/SR/TB,aloop=loop=2:size=24000[g];"
+        "[0]atrim=1.05,asetpts=N/SR/TB[b];[a][g][b]concat=n=3:v=0:a=1", "-ar", "48000", "-ac", "1", "VO/d_stairs_call.wav"])

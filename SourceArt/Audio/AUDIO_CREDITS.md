@@ -129,4 +129,4 @@ The sobs in this encounter use Epic Stock Media's *AAA Game Character British Fe
 
 ## The stairwell
 
-The five `bone_crack` hits are synthesized from noise and tone with ffmpeg; nothing recorded is used. `stair_moan` is Edith's own `m_moan2` voice line (see Voices), raised in pitch, slowed, given a waver and a stairwell echo. Both can be rebuilt with `Scripts/audio/make_stair_sounds.py`. The rest of the scene reuses sounds already listed above.
+The five `bone_crack` hits are synthesized from noise and tone with ffmpeg; nothing recorded is used. `stair_moan` is Edith's own `m_moan2` voice line (see Voices), raised in pitch, slowed, given a waver and a stairwell echo. Both can be rebuilt with `Scripts/audio/make_stair_sounds.py`. The deputy's "Mrs. ... Harrow?" on the stairs (`d_stairs_call`) is Gemini TTS like his other lines, with the pause between the words lengthened by the same script. The rest of the scene reuses sounds already listed above.
