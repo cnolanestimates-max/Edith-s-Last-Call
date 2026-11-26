@@ -634,6 +634,23 @@ def amb_cellar():
     return L.limit(x, -8.0)
 
 
+@recipe("car", 2)
+def amb_car():
+    """The cruiser.  The cab recording in the game is a modern car's hum.  This lays a recorded V8 (SoundBits, Mad
+    Mustang Mercury, slow driving) over it: exhaust crackle filtered off and its pops softened, the engine note given
+    harmonics a laptop can play, the level held steady so the nine-second cruise can loop."""
+    cab = old("amb_car")
+    n = len(cab)
+    v8 = L.lp(src("mustang_slow", 5.0, 11.0), 2200, 4)
+    v8 = L.compress(L.transient(v8, -8.0), -24, 3.0, 0.05, 0.8)
+    v8 = L.bass_harm(v8, 180, 1.6, 900, 0.9)
+    v8 = tile_to(L.loop_xfade(v8, 2.0), 3, n)
+    x = cab * L.lin(-5.0) + v8 * L.lin(L.integrated(cab) - L.integrated(v8))
+    x = periodic(lambda v: L.balance(v, 5.0, mono=False), x)
+    x *= L.lin(-17.5 - L.integrated(x))
+    return L.limit(x, -2.0)
+
+
 # =================================================================================================== run
 def build(names):
     rows = []

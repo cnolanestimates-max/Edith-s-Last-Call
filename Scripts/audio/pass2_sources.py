@@ -80,6 +80,8 @@ SONNISS = {
     "light_switch": (3, "MECHClik_USALightSwitch_On05"),
     "book_pages": (1, "PAPRMisc_Antique Books Slow Page Turns 6"),
     "gravel_skid": (5, "VEHSkid_Tire Skids on Gravel 15 06"),
+    "mustang_slow": (5, "VEHCar_Various Driving at Slow Speed 15 06"),
+    "car_town_13": (3, "VEHCar_TownDrivingAmbience13"),
 }
 OTHER = {
     "boots_wood": (LIB + "/Forklight_Footstep_Gap_Additions_2026-10-12.zip", "boots_stomping_wood_sfxmint_37.wav"),

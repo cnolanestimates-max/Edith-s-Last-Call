@@ -126,6 +126,12 @@ def ambience():
     render("04_house_ambience", "House ambience (both raised by the same amount)", [(l, c2, x * g) for l, c2, x in segs], norm=False)
 
 
+def car():
+    a = L.fade(L.load(f"{OLD}/amb_car.wav", 0, 22), 0.5, 1.5)
+    b = L.fade(L.load(f"{NEW}/amb_car.wav", 0, 22), 0.5, 1.5)
+    render("05_cruiser_engine", "Cruiser engine on the drive in", [("BEFORE", "Engine (modern car hum)", a), ("AFTER", "Engine (recorded V8 over the cab)", b)], norm=False)
+
+
 if __name__ == "__main__":
     todo = sys.argv[1:] or ["stings", "wheel", "oneshots", "ambience"]
     for t in todo:
