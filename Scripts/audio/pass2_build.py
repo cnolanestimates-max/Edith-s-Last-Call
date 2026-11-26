@@ -1,7 +1,9 @@
 """Audio pass 2 (2026-11-25): harder stings, punchier one-shots, a richer rolling house score.
 
 Nothing here touches SourceArt/Audio.  Every new file is written to SourceArt/AudioPass2/new/<same name>.wav so the
-old and new can be compared; `pass2_apply.py` copies the approved ones over the originals.
+old and new can be compared; `pass2_apply.py` copies the approved ones over the originals.  The pass was applied in
+full on 2026-11-26 (Cheyenne: "i like it all put it all in game"); the originals are in SourceArt/AudioPass2/before/
+and every recipe starts from those, so a rebuild gives the same result.
 
   <numpy python> pass2_build.py                 build everything
   <numpy python> pass2_build.py stings wheel    build groups (stings, wheel, gun, doors, thumps, steps, creaks, electric, foley, beds)
@@ -19,7 +21,8 @@ import numpy as np
 import pass2_lib as L
 import pass2_sources as S
 
-OLD = S.ROOT + "/SourceArt/Audio"
+OLD = S.ROOT + "/SourceArt/Audio"                       # what the game imports
+BEFORE = S.ROOT + "/SourceArt/AudioPass2/before"         # the files as they were before this pass (recipes start from these)
 NEW = S.ROOT + "/SourceArt/AudioPass2/new"
 RECIPES = {}
 GROUPS = {}
@@ -33,8 +36,14 @@ def recipe(group, ch=1):
     return deco
 
 
+def old_path(name):
+    """The pre-pass file.  Once the pass is applied SourceArt/Audio holds the new sound, so the original is kept in before/."""
+    p = f"{BEFORE}/{name}.wav"
+    return p if os.path.exists(p) else f"{OLD}/{name}.wav"
+
+
 def old(name, start=0.0, dur=None):
-    return L.load(f"{OLD}/{name}.wav", start, dur)
+    return L.load(old_path(name), start, dur)
 
 
 def src(key, start=0.0, dur=None):
@@ -663,7 +672,7 @@ def build(names):
             print(f"{nm}: FAILED {exc}\n{traceback.format_exc()}")
             continue
         L.write(f"{NEW}/{nm}.wav", x, ch)
-        o = old(nm) if os.path.exists(f"{OLD}/{nm}.wav") else None
+        o = old(nm) if os.path.exists(old_path(nm)) else None
         m = ch == 1
         row = (nm, len(x) / L.SR, L.peak(x), L.loud(x, m), L.loud_small(x, m))
         if o is not None:

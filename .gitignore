@@ -33,3 +33,6 @@ SourceArt/TV/refs/figure_face_ref.png
 
 # reference pictures Cheyenne sent (not ours to redistribute)
 SourceArt/Her/refs/
+
+# Audio pass 2 build output: identical to the applied files in SourceArt/Audio (rebuild with Scripts/audio/pass2_build.py)
+SourceArt/AudioPass2/new/

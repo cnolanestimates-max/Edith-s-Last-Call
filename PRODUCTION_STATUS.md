@@ -4,6 +4,23 @@
 Engine: UE 5.9.0. Project: `C:\GameDev\Unreal\WellnessCheck`. Git: local repo on `main`, remote
 `github.com/cnolanestimates-max/Edith-s-Last-Call` (private). Pushed; checkpoints are pushed as work lands.
 
+## AUDIO PASS 2, in the game since 2026-11-26 05:25 UTC (Claude; Cheyenne signed off on five before/after videos: "i like it all put it all in game")
+
+- 101 sounds rebuilt: six stings, the bath wheelchair set, pistol, doors, footsteps, thumps and her steps, creaks, lights,
+  phone, the house score (`music_house`), hunt music (`music_stalk`), `music_drone`, `amb_cellar`, and the cruiser engine
+  (`amb_car`: the recorded Mustang V8 over the cab loop). No C++ changed: every volume number in code is as it was.
+- Why: measured, most stings, thumps, steps and the house score had 80 to 99 % of their energy under 200 Hz, which her
+  laptop speakers do not play; the pistol and door sounds were faint generated clicks.
+- Recipes `Scripts/audio/pass2_build.py`, toolkit `pass2_lib.py`, library picks `pass2_sources.py`, level audit
+  `audit_levels.py`, videos `pass2_compare.py` (into `Saved/AudioPass2/`). Run them with a Python that has numpy and scipy
+  (`C:/Users/cheye/Documents/LocalAI/SF3D/.venv/Scripts/python.exe`). Originals: `SourceArt/AudioPass2/before/`.
+  To change one sound: edit its recipe, `pass2_build.py <name>`, `pass2_apply.py <name>`, `Scripts/tools/pass2_import.ps1
+  -Only <name>` (imports only the listed files and keeps loop flags; refuses while UnrealEditor runs).
+- Untouched on purpose: her screams, whispers, moans, all breathing, voices, crickets and crows, music box, record,
+  television, clock, flashlight shake and smack, the scare lead-ins.
+- **Not verified:** nobody has heard these in a play-through yet, and no game run was made after the import (each asset
+  loaded with the right length and loop flag in the import commandlet). Cheyenne tests by ear; levels are hers to call.
+
 ## HANDOFF 2026-11-19 22:00 UTC (Claude stopped at Cheyenne's request; Codex continues)
 
 **Everything below is committed and pushed.** Read `Docs/TIMELINE.md` before adding anything with a date on it.

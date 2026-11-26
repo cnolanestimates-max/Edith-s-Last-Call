@@ -16,8 +16,17 @@ OUT = S.ROOT + "/Saved/AudioPass2"
 FONT = "C\\:/Windows/Fonts/arialbd.ttf"
 
 
+BEFORE = S.ROOT + "/SourceArt/AudioPass2/before"
+
+
+def path(folder, name):
+    if folder == OLD and os.path.exists(f"{BEFORE}/{name}.wav"):      # after the pass is applied the old files live here
+        return f"{BEFORE}/{name}.wav"
+    return f"{folder}/{name}.wav"
+
+
 def get(folder, name, gain=1.0, rate=1.0):
-    x = L.load(f"{folder}/{name}.wav")
+    x = L.load(path(folder, name))
     if rate != 1.0:
         x = L.pitch(x, rate)
     return x * gain
@@ -115,9 +124,9 @@ def oneshots():
 
 
 def ambience():
-    a = L.load(f"{OLD}/music_house.wav", 20, 50) * 0.55
+    a = L.load(path(OLD, "music_house"), 20, 50) * 0.55
     b = L.load(f"{NEW}/music_house.wav", 20, 50) * 0.55
-    c = L.load(f"{OLD}/music_stalk.wav") * 0.75
+    c = L.load(path(OLD, "music_stalk")) * 0.75
     d = L.load(f"{NEW}/music_stalk.wav") * 0.75
     segs = [("BEFORE", "Main house ambience", L.fade(a, 1.0, 2.0)), ("AFTER", "Main house ambience", L.fade(b, 1.0, 2.0)),
             ("BEFORE", "Hunt music (she is coming)", L.fade(c, 0.5, 1.0)), ("AFTER", "Hunt music (she is coming)", L.fade(d, 0.5, 1.0))]
@@ -127,7 +136,7 @@ def ambience():
 
 
 def car():
-    a = L.fade(L.load(f"{OLD}/amb_car.wav", 0, 22), 0.5, 1.5)
+    a = L.fade(L.load(path(OLD, "amb_car"), 0, 22), 0.5, 1.5)
     b = L.fade(L.load(f"{NEW}/amb_car.wav", 0, 22), 0.5, 1.5)
     render("05_cruiser_engine", "Cruiser engine on the drive in", [("BEFORE", "Engine (modern car hum)", a), ("AFTER", "Engine (recorded V8 over the cab)", b)], norm=False)
 
