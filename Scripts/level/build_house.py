@@ -993,5 +993,6 @@ runpy.run_path(os.path.join(HERE, "mock_round2.py"))["dress"]()           # kitc
 runpy.run_path(os.path.join(HERE, "rear_wing_extension.py"))["dress"]()
 runpy.run_path(os.path.join(HERE, "room_connections.py"))["dress"]()
 runpy.run_path(os.path.join(HERE, "snag_fixes.py"))["dress"]()             # six spots the bot playthrough stuck in (2026-11-24)
+runpy.run_path(os.path.join(HERE, "harrow_playtest.py"))["dress_bath"]()
 if not level_editor.save_current_level():
     raise RuntimeError("Could not save yard routes and bedroom pickup")

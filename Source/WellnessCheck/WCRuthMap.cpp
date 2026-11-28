@@ -24,15 +24,15 @@ namespace
 		TEXT("ruth_tin_moon"), TEXT("ruth_attic_case"), TEXT("ruth_shark_tin")
 	};
 	const TCHAR* PuzzlePrompts[] = {
-		TEXT("Open Ruth's envelope"), TEXT("Set the metronome to the wave"), TEXT("Lift the washboard"), TEXT("Pull the ribbon on the checked pillowcase"),
+		TEXT("Take the first piece of Ruth's map"), TEXT("Set the metronome to the wave"), TEXT("Lift the washboard"), TEXT("Pull the ribbon on the checked pillowcase"),
 		TEXT("Press the moon tin"), TEXT("Lift the loose lining in Danny's case"), TEXT("Turn the tin with the scratched shark")
 	};
 	const FVector PuzzlePositions[] = {
-		{328,132,79}, {1041,-932,96}, {2358,811,102}, {2820,504,438},
+		{326,180,143}, {1041,-932,96}, {2358,811,102}, {2820,504,438},
 		{2632,-515,434}, {900,-380,741}, {610,-514,-264}
 	};
 	const FVector ScrapPositions[] = {
-		{328,132,79}, {1023,-926,79}, {2344,789,79}, {2802,498,429},
+		{326,180,143}, {1023,-926,79}, {2344,789,79}, {2802,498,429},
 		{2658,-497,429}, {879,-390,748}, {585,-507,-269}
 	};
 	const FVector StashPositions[] = {
@@ -212,10 +212,25 @@ void AWCDirector::RuthMapBegin()
 	{
 		const bool bTin = I == 4 || I == 6;
 		Add(PuzzleTargets[I],PuzzlePrompts[I],PuzzlePositions[I],
-			I == 2 ? FVector(18,13,21) : FVector(10,9,9),
-			I == 0 ? Envelope : bTin ? Cylinder : nullptr,
-			bTin ? Tin : nullptr,bTin ? FVector(.14,.14,.10) : FVector::OneVector, I == 0 ? -17.f : 0.f);
+			I == 0 ? FVector(21,6,17) : I == 2 ? FVector(18,13,21) : FVector(10,9,9),
+			I == 0 ? (Envelope ? Envelope : Cube) : bTin ? Cylinder : nullptr,
+			I == 0 && !Envelope ? Paper : bTin ? Tin : nullptr,
+			I == 0 ? (Envelope ? FVector(1.55,1.55,1.) : FVector(.32,.24,.01)) : bTin ? FVector(.14,.14,.10) : FVector::OneVector);
 		Add(ScrapTarget(I),TEXT("Take Ruth's map scrap"),ScrapPositions[I],FVector(9,6,5),Cube,Paper,FVector(.13,.085,.006),-11.f + 7.f * I);
+	}
+	if (AWCInteractable* FirstScrap = RuthMapActors.FindRef(PuzzleTargets[0]).Get())
+	{
+		FirstScrap->Mesh->SetRelativeRotation(FRotationMatrix::MakeFromXZ(FVector::ForwardVector, -FVector::RightVector).Rotator());
+		UTextRenderComponent* Title = NewObject<UTextRenderComponent>(FirstScrap);
+		Title->SetupAttachment(FirstScrap->Root);
+		Title->SetRelativeLocation(FVector(0,-1.4,-4));
+		Title->SetRelativeRotation(FRotator(0,-90,0));
+		Title->SetHorizontalAlignment(EHTA_Center);
+		Title->SetVerticalAlignment(EVRTA_TextCenter);
+		Title->SetWorldSize(3.f);
+		Title->SetTextRenderColor(FColor(60,34,24));
+		Title->SetText(FText::FromString(TEXT("RUTH'S MAP")));
+		Title->RegisterComponent();
 	}
 	Add(TinTargets[1],TEXT("Press the wave tin"),FVector(2652,-511,434),FVector(8,7,9),Cylinder,Tin,FVector(.14,.14,.10));
 	Add(TinTargets[2],TEXT("Press the star tin"),FVector(2672,-504,434),FVector(8,7,9),Cylinder,Tin,FVector(.14,.14,.10));

@@ -26,6 +26,7 @@
 #include "UnrealClient.h"
 #include "Misc/Paths.h"
 #include "Misc/CommandLine.h"
+#include "HAL/IConsoleManager.h"
 #include "Engine/StaticMeshActor.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Engine/Light.h"
@@ -356,15 +357,7 @@ bool AWCDirector::HouseEvent(FName Id)
 		PlayAt(TEXT("switch_click"), Pos(TEXT("FusePoint")), 1.f, 0.8f);
 		PlayAt(TEXT("bulb_buzz"), Pos(TEXT("FusePoint")), 0.8f);
 		After(0.7f, [this]() { SwitchRoom(TEXT("pantry"), true, false); Feedback(TEXT("That's got it.")); });
-		if (Objective.Contains(TEXT("fuse")))
-		{
-			if (!Has(TEXT("book_done")))
-				SetObjective(TEXT("Find the settlers' book on the living-room shelf beside the stairs"));
-			else if (HasItem(TEXT("key_desk")) && !Has(TEXT("desk_open")))
-				SetObjective(TEXT("Use the book's small key on Walter's desk in the downstairs den"));
-			else
-				SetObjective(TEXT("Search the house for Edith Harrow"));
-		}
+		if (Objective.Contains(TEXT("fuse"))) SetPostFuseObjective();
 		Checkpoint(TEXT("fuse_done"));
 		return true;
 	}
@@ -519,8 +512,33 @@ void AWCDirector::AirIntoCar()
 	SetLoop(TEXT("amb"), TEXT(""), 0.f, 0.8f);
 }
 
+void AWCDirector::SetDriveShadowDetail(bool bReduced)
+{
+	IConsoleManager& Console = IConsoleManager::Get();
+	IConsoleVariable* MovingBias = Console.FindConsoleVariable(TEXT("r.Shadow.Virtual.ResolutionLodBiasLocalMoving"));
+	if (!MovingBias) return;
+
+	const FName Scope(TEXT("WCDriveShadowDetail"), static_cast<int32>(GetUniqueID()));
+	const float Before = MovingBias->GetFloat();
+	// The moving headlights cover much more foliage than the deputy's flashlight.
+	// Use coarser shadow pages for the drive and restore the current graphics setting before he gets out.
+	if (bReduced)
+	{
+		if (Before < 3.f) MovingBias->Set(3.f, ECVF_SetByTemp, Scope);
+	}
+	else
+	{
+		Console.UnsetAllConsoleVariablesWithTag(Scope, ECVF_SetByTemp);
+	}
+	if (MovingBias->GetFloat() != Before)
+	{
+		UE_LOG(LogWCHouse, Display, TEXT("WCDRIVE moving shadow bias %.1f -> %.1f"), Before, MovingBias->GetFloat());
+	}
+}
+
 void AWCDirector::ParkCruiser()
 {
+	SetDriveShadowDetail(false);
 	if (!Car.IsValid()) return;
 
 	// The drive rig is aligned to the authored transform. Turn the parked exterior
@@ -570,6 +588,7 @@ void AWCDirector::BeginDrive()
 		UE_LOG(LogWCHouse, Display, TEXT("WCDRIVE the thing on the road stands %.0f m in"), ShadowDist / 100.f);
 	}
 	bDriving = true;
+	SetDriveShadowDetail(true);
 	Car->SetActorEnableCollision(false);
 	P->SetInputLocked(true);
 	P->SetFlashlight(false, false);
@@ -831,8 +850,6 @@ void AWCDirector::EndDrive()
 	if (!bDriving) return;
 	bDriving = false;
 	Set(TEXT("arrived"));
-	ShowTagged(TEXT("CabinOnly"), false);
-	if (Car.IsValid()) Car->SetActorHiddenInGame(false);
 	if (FParse::Param(FCommandLine::Get(), TEXT("WCDriveOnly")))
 	{
 		const FString Dir0 = AutoShotDir;
@@ -840,18 +857,16 @@ void AWCDirector::EndDrive()
 		// when filming, stay until he has walked up to the house
 		After(FParse::Param(FCommandLine::Get(), TEXT("WCFilm")) ? 34.f : 7.f, [this]() { UKismetSystemLibrary::QuitGame(this, UGameplayStatics::GetPlayerController(this, 0), EQuitPreference::Quit, false); });
 	}
-	if (Car.IsValid())
-	{
-		Car->SetActorLocationAndRotation(CarHome, CarHomeRot);
-		Car->SetActorEnableCollision(bParkedCarCollision);
-	}
 	Play2D(TEXT("car_stop"), 0.6f);
 	SetLoop(TEXT("car"), TEXT(""), 0.f, 1.8f);
 	UE_LOG(LogWCHouse, Display, TEXT("WCDRIVE arrived t=%.1f"), PlaySeconds);
 	// engine off, a breath, then out of the car
-	After(2.6f, [this]() { ShowTagged(TEXT("CarRunning"), false); FadeTo(1.f, 0.7f); });
+	After(2.6f, [this]() { FadeTo(1.f, 0.7f); });
 	After(3.6f, [this]()
 	{
+		// Keep the cabin assembled until the fade covers the swap to the parked car.
+		ShowTagged(TEXT("CarRunning"), false);
+		ShowTagged(TEXT("CabinOnly"), false);
 		ParkCruiser();
 		Play2D(TEXT("car_door"), 0.9f);
 		APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0);

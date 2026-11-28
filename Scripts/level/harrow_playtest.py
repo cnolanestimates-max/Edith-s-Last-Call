@@ -8,6 +8,36 @@ ROOT = Path(u.Paths.convert_relative_path_to_full(u.Paths.project_dir()))
 PROPS = "/Game/WC/Props/HouseDetails"
 
 
+def dress_bath():
+    actors = u.get_editor_subsystem(u.EditorActorSubsystem).get_all_level_actors()
+    # The narrow chest sits between the cast-iron bath and the sink. Its drawers
+    # face the clear floor, and the use box surrounds the top drawer's handle.
+    positions = {"Hide_drawer": -554.4, "Show_drawer": -539.4}
+    for tag, y in positions.items():
+        dresser, = [a for a in actors if a.actor_has_tag(tag) and str(a.get_folder_path()).endswith("/Bath")]
+        dresser.set_actor_location(u.Vector(1140, y, 350), False, True)
+        dresser.set_actor_rotation(u.Rotator(0, 0, 0), False)
+        dresser.set_actor_scale3d(u.Vector(.68, 1, 1))
+    by_label = {a.get_actor_label(): a for a in actors}
+    drawer = by_label["Harrow_bath_dresser"]
+    drawer.set_actor_location(u.Vector(1140, -516, 422), False, True)
+    drawer.set_editor_property("grab_extent", u.Vector(30, 12, 14))
+    by_label["DrawerPoint"].set_actor_location(u.Vector(1140, -524, 422), False, True)
+
+    # Raise the rear bath's existing surface into the bowl and give it the
+    # same opaque, reflective water material as the draining bath.
+    surface = by_label.get("TubWater")
+    if surface:
+        p = surface.get_actor_location()
+        surface.set_actor_location(u.Vector(p.x, p.y, 425), False, True)
+        scale = surface.get_actor_scale3d()
+        surface.set_actor_scale3d(u.Vector(scale.x * 1.08 if scale.x < .7 else scale.x,
+                                          scale.y * 1.04 if scale.y < 1.46 else scale.y, scale.z))
+        water = u.load_asset("/Game/WC/Materials/M_KitchenTar")
+        assert water, "Missing bath water material"
+        surface.static_mesh_component.set_material(0, water)
+
+
 def dress():
     actors = u.get_editor_subsystem(u.EditorActorSubsystem)
     by_label = {a.get_actor_label(): a for a in actors.get_all_level_actors()}
@@ -36,18 +66,6 @@ def dress():
         plaque.set_actor_relative_location(u.Vector(0, 5.6, 156), False, False)
         plaque.set_actor_relative_rotation(u.Rotator(0, 0, 0), False, False)
         print(f"WCHARRPLAQ {name} {plaque.get_actor_location()} {mesh.get_bounding_box()}")
-
-    # The bathroom dresser stands right beside the bath, against the far wall under the mirror, so "the dresser beside
-    # the bath" (whose drawer has caught the plug chain) is where a player looks (Cheyenne, 2026-11-28: she could not
-    # find it by the door wall, 2.5 m away).  polish_pass.py seats both against the wall facing the room.
-    for prop, x, y in (("Hide_drawer", 1160, -556), ("Show_drawer", 1160, -541)):
-        for actor in by_label.values():
-            if actor.actor_has_tag(prop) and actor.get_actor_location().z == 350:
-                actor.set_actor_location(u.Vector(x, y, 350), False, True)
-                actor.set_actor_rotation(u.Rotator(0, 0, 0), False)
-    for label, y in (("Harrow_bath_dresser", -505), ("DrawerPoint", -520)):
-        actor = by_label[label]
-        actor.set_actor_location(u.Vector(1160, y, actor.get_actor_location().z), False, True)
 
     notes = json.loads((ROOT / "Scripts/level/notes.json").read_text(encoding="utf-8"))
     for note_id in ("note_letter1", "note_rem2"):

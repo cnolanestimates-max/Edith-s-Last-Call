@@ -198,8 +198,11 @@ void AWCHUD::DrawHUD()
 	if (bMap && D->Mode == EWCMode::Playing && Screen == EWCScreen::None && !D->ActiveNote.IsValid() &&
 		D->Fade < .5f && !D->HasActiveEncounter() && !D->IsDriving() && !D->IsShedPickupActive())
 	{
-		if (AWCCharacter* P = D->Player(); P && !P->IsDown() && !P->IsInputLocked() && WCRuthMap::Count(*D))
-			OpenRuthMap(D);
+		if (AWCCharacter* P = D->Player(); P && !P->IsDown() && !P->IsInputLocked())
+		{
+			if (WCRuthMap::Count(*D)) OpenRuthMap(D);
+			else if (D->Has(TEXT("inside"))) D->ShowHint(TEXT("Ruth's first map scrap is pinned above the hall table"), 5.f);
+		}
 	}
 	if (D->bAuto && Screen == EWCScreen::Pause && RealNow - ScreenOpenedAt > 10.0)
 	{
@@ -901,7 +904,12 @@ void AWCHUD::InvUse(AWCDirector* D, FName Id)
 	}
 	if (S.StartsWith(TEXT("tape"))) { if (F && F->WCId == TEXT("tv")) OnWhatHeFaces(); else InvSay(TEXT("It goes in the television.")); return; }
 	if (Id == TEXT("doll")) { InvSay(TEXT("There is something hard inside her. Inspect her.")); return; }
-	if (Id == TEXT("screwdriver")) { if (F && F->WCId == TEXT("vent")) OnWhatHeFaces(); else InvSay(TEXT("Nothing here to unscrew.")); return; }
+	if (Id == TEXT("screwdriver"))
+	{
+		if (F && (F->WCId == TEXT("vent") || F->WCId == TEXT("bath_dresser"))) OnWhatHeFaces();
+		else InvSay(TEXT("Nothing here to unscrew or pry open."));
+		return;
+	}
 	if (Id == TEXT("fuse")) { if (F && F->WCId == TEXT("fusebox")) OnWhatHeFaces(); else InvSay(TEXT("It goes in the fuse box.")); return; }
 	if (Id == TEXT("shears")) { if (F && F->WCId.ToString().StartsWith(TEXT("knot"))) OnWhatHeFaces(); else InvSay(TEXT("Nothing here to cut.")); return; }
 	if (S.StartsWith(TEXT("keep_")) && F && F->WCId == TEXT("place")) { OnWhatHeFaces(); return; }

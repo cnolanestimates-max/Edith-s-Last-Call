@@ -35,6 +35,8 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "Components/CapsuleComponent.h"
 #include "Misc/CommandLine.h"
+#include "ProfilingDebugging/CsvProfiler.h"
+#include "Algo/Count.h"
 #include "Misc/Paths.h"
 #include "NavigationPath.h"
 #include "NavigationSystem.h"
@@ -170,6 +172,28 @@ void AWCDirector::AutoBegin()
 	auto WaitHer = [this](float Timeout) { AutoSteps.Add({ A_WaitHer, NAME_None, Timeout }); };
 	auto Fire = [this](int32 N) { AutoSteps.Add({ A_Fire, NAME_None, (float)N }); };
 
+	if (FParse::Param(FCommandLine::Get(), TEXT("WCPerfRoute")))
+	{
+		auto Do = [this](const TCHAR* Cmd) { AutoSteps.Add({A_Do,Cmd,0.f}); };
+		Do(TEXT("perf_start:forest"));
+		Flag(TEXT("briefed"),150.f);
+		Do(TEXT("perf_end:forest"));
+		Go(TEXT("A_Porch"));
+		Use(TEXT("front")); Flag(TEXT("door_opened"),30.f); Wait(4.f);
+		Do(TEXT("perf_start:entry"));
+		Use(TEXT("front")); Wait(2.f); Go(TEXT("A_Foyer")); Flag(TEXT("inside"),10.f); Wait(6.f);
+		Do(TEXT("perf_end:entry"));
+		Do(TEXT("flag:peek_done")); Do(TEXT("item:key_ell"));
+		Do(TEXT("at:1518,0,442,0,0")); Wait(2.f);
+		Do(TEXT("perf_start:rear_wing"));
+		AutoSteps.Add({ A_Use,TEXT("up_ell"),0.f }); Wait(1.4f);
+		Go(TEXT("A_UpEll")); Go(TEXT("A_Aide")); Go(TEXT("A_Bath2")); Wait(4.f);
+		Do(TEXT("perf_end:rear_wing")); Do(TEXT("perf_csv_stop")); Wait(3.f);
+		AutoIndex = 0;
+		AutoStepStart = Clock;
+		return;
+	}
+
 	if (FParse::Param(FCommandLine::Get(), TEXT("WCHarrowCheck")))
 	{
 		Steps.Reset();
@@ -179,7 +203,8 @@ void AWCDirector::AutoBegin()
 		if (FParse::Param(FCommandLine::Get(),TEXT("WCRuthMapCheck")))
 		{
 			Do(TEXT("flag:inside")); Do(TEXT("flag:briefed")); Do(TEXT("flag:attic_done"));
-			Do(TEXT("at:327,49,92,88,-33")); Do(TEXT("ruth_map_checkpoint")); Touch(TEXT("ruth_foyer_envelope"));
+			Do(TEXT("at:280,90,92,63,-7")); Do(TEXT("ruth_map_checkpoint")); Wait(.7f); Shot(TEXT("00_map_above_hall_table"));
+			Touch(TEXT("ruth_foyer_envelope"));
 			Do(TEXT("ruth_map_first")); Do(TEXT("ruth_map_show")); Wait(.5f); Shot(TEXT("01_foyer_scrap")); Do(TEXT("ruth_map_close"));
 			Do(TEXT("at:209,-257,92,-90,-48")); Touch(TEXT("ruth_stash_0"));
 			Do(TEXT("at:1014,-840,92,-75,-28")); Touch(TEXT("ruth_metronome")); Touch(TEXT("ruth_metronome"));
@@ -271,6 +296,22 @@ void AWCDirector::AutoBegin()
 			Do(TEXT("at:1180,40,442,180,0")); Wait(1.5f);       // just short of the landing trigger, so the scare starts on cue
 			Do(TEXT("rec:ceiling")); Wait(.5f); Do(TEXT("ceiling"));
 			Flag(TEXT("ceiling_done"),40.f); Wait(3.f); Do(TEXT("rec_off")); Wait(.5f);
+		}
+		else if (FParse::Param(FCommandLine::Get(), TEXT("WCCellarWithoutBox")))
+		{
+			const bool bBeforeRuth = FParse::Param(FCommandLine::Get(), TEXT("WCBeforeRuth"));
+			Do(TEXT("check_before_music_box"));
+			Do(TEXT("at:855,-58,92,-139,-5")); Touch(TEXT("cellar"));
+			Do(TEXT("check_cellar_refused"));
+			if (!bBeforeRuth)
+			{
+				Do(TEXT("room_walk:638,-307"));
+				AutoSteps.Add({A_Crouch, NAME_None, 1.f}); Wait(.4f);
+				Touch(TEXT("pick_keep_ruth")); Do(TEXT("check_music_box_checkpoint"));
+				AutoSteps.Add({A_Crouch, NAME_None, 0.f});
+				Do(TEXT("at:855,-58,92,-139,-5")); Touch(TEXT("cellar"));
+				Flag(TEXT("sprint_started"),5.f); Flag(TEXT("sprint_done"),40.f);
+			}
 		}
 		else if (FParse::Param(FCommandLine::Get(),TEXT("WCCellarScene")))
 		{
@@ -459,18 +500,52 @@ void AWCDirector::AutoBegin()
 		}
 		else if (FParse::Param(FCommandLine::Get(), TEXT("WCFuseRoute")))
 		{
-			Do(TEXT("flag:inside")); Do(TEXT("flag:peek_done")); Do(TEXT("flag:power_out")); Do(TEXT("flag:lockin_done"));
-			Do(TEXT("at:1200,-395,442,90,-24")); Touch(TEXT("bath_dresser")); Flag(TEXT("bath_chain_released"), 2.f);
+			const bool bBookFirst = FParse::Param(FCommandLine::Get(), TEXT("WCBookBeforeFuse"));
+			const bool bLegacyBathSave = FParse::Param(FCommandLine::Get(), TEXT("WCLegacyBathSave"));
+			if (bBookFirst)
+			{
+				Do(TEXT("check_before_book_first"));
+				Do(TEXT("at:552,-319,92,90,-5")); Do(TEXT("look_at_settlers")); Do(TEXT("pull_settlers"));
+				Flag(TEXT("book_done"),16.f); Do(TEXT("check_automatic_desk_key"));
+				Do(TEXT("at:2190,-330,92,0,-19")); Touch(TEXT("walter_drawer")); Wait(1.f);
+				Touch(TEXT("pick_key_ell")); Do(TEXT("check_desk_unlocked"));
+			}
+			else if (!bLegacyBathSave)
+			{
+				Do(TEXT("flag:inside")); Do(TEXT("flag:peek_done")); Do(TEXT("flag:power_out")); Do(TEXT("flag:lockin_done"));
+			}
+			Do(TEXT("at:1010,-406,442,-90,-42")); Touch(TEXT("look_upbath_tub")); Do(TEXT("check_tub_before_chain"));
+			Do(TEXT("at:1120,-407,442,-82,-34")); Wait(.8f); Shot(TEXT("01_front_bath_chain"));
+			if (!bLegacyBathSave && !bBookFirst)
+			{
+				Touch(TEXT("bath_dresser")); Do(TEXT("check_drawer_needs_tool"));
+				Do(TEXT("at:625,330,442,-20,-28")); Touch(TEXT("pick_screwdriver"));
+				Do(TEXT("at:1400,335,92,-90,-4")); Touch(TEXT("vent")); Flag(TEXT("vent_open"), 3.f);
+				Do(TEXT("at:1120,-407,442,-82,-34"));
+			}
+			Touch(TEXT("bath_dresser")); Flag(TEXT("bath_chain_released"), 2.f); Do(TEXT("check_bath_chain_checkpoint"));
+			Do(TEXT("at:1120,-407,442,-82,-34")); Wait(.7f); Shot(TEXT("02_dresser_open"));
 			Do(TEXT("at:1010,-406,442,-90,-42")); Touch(TEXT("look_upbath_tub")); Flag(TEXT("bath_drained"), 2.f);
-			Wait(3.f); Touch(TEXT("pick_key_sitting"));
-			Do(TEXT("at:265,105,92,0,-1")); Do(TEXT("walk_past_stair_wall"));
-			Do(TEXT("at:831.4163,127.0449,92,-32.58102,-1.75130"));
-			Do(TEXT("pendant_warm")); Do(TEXT("pendant_cool")); Do(TEXT("pendant_warm"));
-			Wait(5.f); Do(TEXT("walk_to_pendant")); Wait(1.8f);
+			Wait(3.f); Shot(TEXT("03_bath_drained")); Touch(TEXT("pick_key_sitting"));
+			if (!bLegacyBathSave)
+			{
+				Do(TEXT("at:265,105,92,0,-1")); Do(TEXT("walk_past_stair_wall"));
+				Do(TEXT("at:831.4163,127.0449,92,-32.58102,-1.75130"));
+				Do(TEXT("pendant_warm")); Do(TEXT("pendant_cool")); Do(TEXT("pendant_warm"));
+				Wait(5.f); Do(TEXT("walk_to_pendant")); Wait(1.8f);
+			}
 			Do(TEXT("at:1390,-111,92,-90,0")); Touch(TEXT("sitting")); Flag(TEXT("sitting_open"), 7.f);
 			Do(TEXT("at:1066,-362,92,90,-22")); Touch(TEXT("pick_fuse"));
 			Do(TEXT("at:1860,422,92,0,0")); Touch(TEXT("fusebox")); Flag(TEXT("fuse_done"), 3.f);
-			Do(TEXT("check_direct_fuse_route")); Wait(7.f);
+			Do(TEXT("check_direct_fuse_route"));
+			Do(TEXT("at:3201,349,442,-20,-35")); Wait(1.f); Shot(TEXT("04_rear_bath_water"));
+			Touch(TEXT("look_bath2_tub"));
+			if (bBookFirst)
+			{
+				Do(TEXT("at:1518,0,442,0,0")); Touch(TEXT("up_ell")); Wait(1.4f);
+				Do(TEXT("corner24_open"));
+			}
+			Wait(7.f);
 			Do(TEXT("at:1800,-75,442,-90,8")); Wait(1.f); Shot(TEXT("Danny"));
 			Do(TEXT("at:200,-75,442,-90,8")); Wait(1.f); Shot(TEXT("Ruth"));
 		}
@@ -572,7 +647,9 @@ void AWCDirector::AutoBegin()
 			Do(TEXT("at:1425,523,93,0,-14")); Touch(TEXT("fridge_door")); Wait(.94f); Shot(TEXT("01_fridge")); Touch(TEXT("fridge_door")); Wait(.9f);
 			Do(TEXT("lit_review")); Do(TEXT("at:1825,-342,92,180,-9")); Wait(.7f); Shot(TEXT("02_books"));
 			Do(TEXT("at:256,499,442,180,-12")); Wait(1.f); Shot(TEXT("03_dresses"));
-			Do(TEXT("flag:phone_done")); Do(TEXT("at:1010,-406,442,-90,-42")); Touch(TEXT("look_upbath_tub")); Wait(3.f);
+			Do(TEXT("flag:phone_done")); Do(TEXT("item:screwdriver"));
+			Do(TEXT("at:1120,-407,442,-82,-34")); Touch(TEXT("bath_dresser"));
+			Do(TEXT("at:1010,-406,442,-90,-42")); Touch(TEXT("look_upbath_tub")); Wait(3.f);
 			Touch(TEXT("pick_key_sitting")); Shot(TEXT("04_drained_bath"));
 			Do(TEXT("at:1380,-420,92,0,-25")); Touch(TEXT("sitting_drawer")); Wait(.8f); Touch(TEXT("pick_ivory"));
 			Do(TEXT("at:231,-420,92,180,-28")); Touch(TEXT("look_piano")); Wait(1.f); Shot(TEXT("05_piano")); Touch(TEXT("pick_key_prayer"));
@@ -1205,7 +1282,8 @@ void AWCDirector::AutoBegin()
 	Use(TEXT("back")); Flag(TEXT("phone_ringing"), 30.f * Slow); Wait(3.f);
 	Use(TEXT("phone")); Flag(TEXT("phone_seat"), 40.f); LookHer(1.2f); Shot(TEXT("14_S2_table")); LookHer(6.f);
 	Wait(10.f); Shot(TEXT("15_after_S2"));
-	Go(TEXT("A_StairsTop")); Go(TEXT("A_UpBath")); Wait(1.f); Shot(TEXT("15b_drawer_open_upstairs")); Use(TEXT("bath_dresser")); Use(TEXT("look_upbath_tub")); Wait(3.f); Use(TEXT("pick_key_sitting"));
+	Go(TEXT("A_StairsTop")); Go(TEXT("A_UpBath")); Use(TEXT("bath_dresser")); Shot(TEXT("15b_drawer_open_upstairs"));
+	Use(TEXT("look_upbath_tub")); Wait(3.f); Use(TEXT("pick_key_sitting"));
 	Go(TEXT("A_StairsTop")); Go(TEXT("A_HallSit")); Use(TEXT("sitting")); Wait(3.f);
 	Go(TEXT("A_Sitting")); Wait(3.f); Shot(TEXT("16_sitting")); Use(TEXT("note_diary2")); Wait(1.f); Close();
 	Use(TEXT("sitting_drawer")); Wait(.8f); Use(TEXT("pick_ivory")); Go(TEXT("A_Book")); Use(TEXT("look_piano")); Wait(1.f); Use(TEXT("pick_key_prayer")); Go(TEXT("A_Sitting")); Use(TEXT("note_deskkey")); Wait(1.f); Close(); Use(TEXT("pick_fuse"));
@@ -1365,14 +1443,27 @@ void AWCDirector::PerfReport(const TCHAR* Label, bool bReset)
 	const float Avg = (float)(Sum / S.Num());
 	const float P99 = S[FMath::Clamp(FMath::FloorToInt(S.Num() * 0.99f), 0, S.Num() - 1)];
 	UE_LOG(LogWCAuto, Display, TEXT("WCPERF %s frames=%d avg=%.1f ms (%.0f fps) p99=%.1f ms (%.0f fps) worst=%.1f ms"), Label, S.Num(), Avg * 1000.f, 1.f / Avg, P99 * 1000.f, 1.f / P99, S.Last() * 1000.f);
+	if (FParse::Param(FCommandLine::Get(), TEXT("WCPerfRoute")))
+	{
+		const int32 LongFrames = static_cast<int32>(Algo::CountIf(S, [](float Seconds) { return Seconds > .05f; }));
+		UE_LOG(LogWCAuto, Display, TEXT("WCPERF %s p50=%.1f ms p95=%.1f ms frames_over_50ms=%d"),
+			Label, S[S.Num()/2]*1000.f, S[FMath::FloorToInt(S.Num()*.95f)]*1000.f, LongFrames);
+	}
 	if (bReset) PerfFrames.Reset();
 }
 
 void AWCDirector::AutoTick(float Dt)
 {
 	{
+		static const bool bProfileRoute = FParse::Param(FCommandLine::Get(), TEXT("WCPerfRoute"));
 		const double Now = FPlatformTime::Seconds();
-		if (PerfLast > 0.0 && PlaySeconds > 20.f) PerfFrames.Add((float)(Now - PerfLast));
+		if (PerfLast > 0.0 && (PlaySeconds > 20.f || bProfileRoute))
+		{
+			const float Seconds = (float)(Now - PerfLast);
+			PerfFrames.Add(Seconds);
+			if (bProfileRoute && Seconds > .10f)
+				UE_LOG(LogWCAuto, Display, TEXT("WCPERF hitch t=%.2f %.1f ms"), PlaySeconds, Seconds*1000.f);
+		}
 		PerfLast = Now;
 		if (PerfFrames.Num() >= 3600) PerfReport(TEXT("window"), true);
 	}
@@ -1468,6 +1559,118 @@ void AWCDirector::AutoTick(float Dt)
 	case A_Aim: P->SetAiming(S.F > 0.5f); Next(); return;
 	case A_Crouch: if (S.F > 0.5f) P->Crouch(); else P->UnCrouch(); Next(); return;
 	case A_Do:
+		if (S.Arg == TEXT("check_before_book_first"))
+		{
+			if (LastCheckpoint != TEXT("lockin_done") || !bPowerOut || Has(TEXT("book_done")) || Has(TEXT("phone_done")))
+			{
+				UE_LOG(LogWCAuto, Error, TEXT("WCAUTO FAIL expected the untreated stair encounter checkpoint"));
+			}
+			Next(); return;
+		}
+		if (S.Arg == TEXT("check_tub_before_chain"))
+		{
+			const AWCInteractable* Key = Thing(TEXT("pick_key_sitting"));
+			if (Has(TEXT("bath_drained")) || Has(TEXT("bath_chain_released")) || !Key || Key->CanInteract() || !Objective.Contains(TEXT("plug chain")))
+			{
+				UE_LOG(LogWCAuto, Error, TEXT("WCAUTO FAIL trying the plug before freeing its chain"));
+			}
+			else
+			{
+				UE_LOG(LogWCAuto, Display, TEXT("WCORDER blocked plug pointed to the dresser"));
+			}
+			Next(); return;
+		}
+		if (S.Arg == TEXT("check_bath_chain_checkpoint"))
+		{
+			if (!DoLoad() || LastCheckpoint != TEXT("bath_chain") || !Has(TEXT("bath_chain_released")) ||
+				!HasItem(TEXT("screwdriver")) || Has(TEXT("bath_drained")) || !Objective.Contains(TEXT("Pull the plug")))
+			{
+				UE_LOG(LogWCAuto, Error, TEXT("WCAUTO FAIL bath chain Continue"));
+			}
+			else
+			{
+				UE_LOG(LogWCAuto, Display, TEXT("WCORDER freed chain and tub objective persisted"));
+			}
+			ApplyWorldState();
+			Next(); return;
+		}
+		if (S.Arg == TEXT("check_drawer_needs_tool"))
+		{
+			if (Has(TEXT("bath_chain_released")) || HasItem(TEXT("screwdriver")) || !Objective.Contains(TEXT("screwdriver")))
+			{
+				UE_LOG(LogWCAuto, Error, TEXT("WCAUTO FAIL jammed bath drawer did not ask for the screwdriver"));
+			}
+			else
+			{
+				UE_LOG(LogWCAuto, Display, TEXT("WCBATH jammed drawer refused to open without the tool"));
+			}
+			Next(); return;
+		}
+		if (S.Arg == TEXT("check_direct_fuse_route"))
+		{
+			const bool bBookFirst = FParse::Param(FCommandLine::Get(), TEXT("WCBookBeforeFuse"));
+			const TCHAR* Clue = TEXT("settlers' book");
+			if (Has(TEXT("book_done")))
+			{
+				const AWCDoor* RearHall = Door(TEXT("up_ell"));
+				if (!Has(TEXT("desk_open"))) Clue = TEXT("Walter's desk");
+				else if (!HasItem(TEXT("key_ell")) && !Has(TEXT("walter_keys_taken"))) Clue = TEXT("Walter's keys");
+				else Clue = RearHall && RearHall->bLocked ? TEXT("rear upstairs hall") : TEXT("Search the house for Edith Harrow");
+			}
+			const bool bCompleted = !Has(TEXT("phone_done")) && Has(TEXT("bath_chain_released")) &&
+				Has(TEXT("sitting_open")) && Has(TEXT("fuse_done")) && !HasItem(TEXT("fuse")) && !bPowerOut &&
+				(!bBookFirst || (Has(TEXT("desk_open")) && HasItem(TEXT("key_ell"))));
+			const bool bClueBeforeLoad = Objective.Contains(Clue);
+			if (!bCompleted || !DoLoad() || !Has(TEXT("fuse_done")) || !bClueBeforeLoad || !Objective.Contains(Clue))
+			{
+				UE_LOG(LogWCAuto, Error, TEXT("WCAUTO FAIL fuse route or checkpoint; expected '%s', saw '%s'"), Clue, *Objective);
+			}
+			else
+			{
+				UE_LOG(LogWCAuto, Display, TEXT("WCORDER restored power with phone unanswered; '%s' objective persisted"), Clue);
+			}
+			Next(); return;
+		}
+		if (S.Arg == TEXT("check_before_music_box"))
+		{
+			const bool bBeforeRuth = FParse::Param(FCommandLine::Get(), TEXT("WCBeforeRuth"));
+			const FName Expected = bBeforeRuth ? FName(TEXT("attic_done")) : FName(TEXT("hand"));
+			if (LastCheckpoint != Expected || Has(TEXT("underbed_done")) == bBeforeRuth || !HasItem(TEXT("key_cellar")) ||
+				HasItem(TEXT("keep_ruth")) || (bBeforeRuth && !Objective.Contains(TEXT("front upstairs landing"))))
+			{
+				UE_LOG(LogWCAuto, Error, TEXT("WCAUTO FAIL expected checkpoint %s and a route to Ruth; saw %s"), *Expected.ToString(), *Objective);
+			}
+			Next(); return;
+		}
+		if (S.Arg == TEXT("check_cellar_refused"))
+		{
+			const AWCDoor* Cellar = Door(TEXT("cellar"));
+			if (!Cellar || !Cellar->bLocked || Cellar->IsOpen() || Has(TEXT("sprint_started")))
+			{
+				UE_LOG(LogWCAuto, Error, TEXT("WCAUTO FAIL cellar opened without Ruth's music box"));
+			}
+			else
+			{
+				UE_LOG(LogWCAuto, Display, TEXT("WCORDER cellar stayed locked without Ruth's music box; objective '%s'"), *Objective);
+			}
+			if (!DoLoad()) UE_LOG(LogWCAuto, Error, TEXT("WCAUTO FAIL loading the hand checkpoint"));
+			ApplyWorldState();
+			Next(); return;
+		}
+		if (S.Arg == TEXT("check_music_box_checkpoint"))
+		{
+			if (!HasItem(TEXT("keep_ruth")) || !DoLoad() || LastCheckpoint != TEXT("underbed") ||
+				!HasItem(TEXT("keep_ruth")) || Thing(TEXT("pick_keep_ruth"))->CanInteract() || Objective != TEXT("Unlock the cellar"))
+			{
+				UE_LOG(LogWCAuto, Error, TEXT("WCAUTO FAIL Ruth's music box or checkpoint"));
+			}
+			else
+			{
+				UE_LOG(LogWCAuto, Display, TEXT("WCORDER music box and cellar objective persisted"));
+			}
+			ApplyWorldState();
+			Next(); return;
+		}
 		if (S.Arg.ToString().StartsWith(TEXT("stand_opt:")))
 		{
 			static bool bDark = false;
@@ -1488,6 +1691,31 @@ void AWCDirector::AutoTick(float Dt)
 		}
 		if (S.Arg == TEXT("sprint_on") || S.Arg == TEXT("sprint_off")) { P->SetSprinting(S.Arg == TEXT("sprint_on")); if (S.Arg == TEXT("sprint_on")) P->SetAiming(false); Next(); return; }
 		if (S.Arg == TEXT("record_mix_long")) { UAudioMixerBlueprintLibrary::StartRecordingOutput(this, 300.f); UE_LOG(LogWCAuto, Display, TEXT("WCMIX start t=%.3f"), PlaySeconds); Next(); return; }
+		if (S.Arg.ToString().StartsWith(TEXT("perf_start:")))
+		{
+			const FString Segment = S.Arg.ToString().Mid(11);
+			if (Segment == TEXT("forest"))
+			{
+				Rng.Initialize(94713);
+				UKismetSystemLibrary::ExecuteConsoleCommand(this, TEXT("CSVProfile START"), nullptr);
+			}
+			CSV_EVENT_GLOBAL(TEXT("Start %s"), *Segment);
+			UE_LOG(LogWCAuto, Display, TEXT("WCPERF begin %s t=%.2f"), *Segment, PlaySeconds);
+			PerfFrames.Reset();
+			Next(); return;
+		}
+		if (S.Arg.ToString().StartsWith(TEXT("perf_end:")))
+		{
+			const FString Segment = S.Arg.ToString().Mid(9);
+			CSV_EVENT_GLOBAL(TEXT("End %s"), *Segment);
+			PerfReport(*Segment,true);
+			Next(); return;
+		}
+		if (S.Arg == TEXT("perf_csv_stop"))
+		{
+			UKismetSystemLibrary::ExecuteConsoleCommand(this, TEXT("CSVProfile STOP"), nullptr);
+			Next(); return;
+		}
 		if (S.Arg == TEXT("finish_stairs_mix")) { UAudioMixerBlueprintLibrary::StopRecordingOutputToAnyPath(this,EAudioRecordingExportType::WavFile,TEXT("stairs_mix"),AutoShotDir); Next(); return; }
 		if (S.Arg.ToString().StartsWith(TEXT("rec:")))
 		{
@@ -2305,20 +2533,6 @@ void AWCDirector::AutoTick(float Dt)
 			Set(TEXT("phone_ringing"));
 			if (Target && Target->WCId == TEXT("phone")) P->DoInteract();
 			UE_LOG(LogWCAuto, Display, TEXT("WCROOM phone focus=%s answered=%d"),Target ? *Target->WCId.ToString() : TEXT("none"),Has(TEXT("phone_done")));
-		}
-		else if (S.Arg == TEXT("check_direct_fuse_route"))
-		{
-			const bool bCompleted = !Has(TEXT("phone_done")) && Has(TEXT("bath_chain_released")) &&
-				Has(TEXT("sitting_open")) && Has(TEXT("fuse_done")) && !HasItem(TEXT("fuse")) && !bPowerOut &&
-				Objective.Contains(TEXT("settlers' book"));
-			if (!bCompleted || !DoLoad() || !Has(TEXT("fuse_done")) || !Objective.Contains(TEXT("settlers' book")))
-			{
-				UE_LOG(LogWCAuto, Error, TEXT("WCAUTO FAIL direct fuse route or checkpoint"));
-			}
-			else
-			{
-				UE_LOG(LogWCAuto, Display, TEXT("WCFUSE restored pantry power without answering the phone; book objective and checkpoint verified"));
-			}
 		}
 		else if (S.Arg == TEXT("check_book_focus"))
 		{

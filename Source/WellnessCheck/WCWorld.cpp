@@ -157,6 +157,7 @@ void AWCDoor::Interact(AWCCharacter* By)
 					if (D->HasItem(FName(N[0]))) continue;
 					D->PlayAt(TEXT("door_locked"), GetActorLocation() + FVector(0, 0, 100), 0.9f);
 					D->Feedback(FString::Printf(TEXT("Not yet. Not without %s."), N[1]));
+					D->SetCellarRouteObjective();
 					return;
 				}
 			}

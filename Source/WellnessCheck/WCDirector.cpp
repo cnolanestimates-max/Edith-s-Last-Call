@@ -262,6 +262,7 @@ void AWCDirector::EndPlay(const EEndPlayReason::Type Reason)
 {
 	if (DeputyBreath.IsValid()) DeputyBreath->Stop();
 	SetDoorSilence(false);
+	SetDriveShadowDetail(false);
 	Steps.Reset();
 	Deferred.Reset();
 	Super::EndPlay(Reason);
@@ -585,6 +586,8 @@ bool AWCDirector::DoLoad()
 	YardCawsLeft = FMath::Clamp(S->YardCawsLeft,-1,8);
 	NextYardCaw = -1.;
 	Items = TSet<FName>(S->Items);
+	// Old checkpoints consumed the screwdriver when the kitchen vent opened.
+	if (Has(TEXT("vent_open"))) Items.Add(TEXT("screwdriver"));
 	if (Has(TEXT("scullery_key_found"))) Items.Add(TEXT("key_scullery"));
 	RuthMetronomeStep = RuthTinStep = 0;
 	RefreshRuthMap();

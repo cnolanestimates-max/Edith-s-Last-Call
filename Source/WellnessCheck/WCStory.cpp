@@ -3,6 +3,7 @@
 #include "WCDirector.h"
 #include "WCCharacter.h"
 #include "WCEntity.h"
+#include "WCRuthMap.h"
 #include "WCWorld.h"
 
 #include "Components/AudioComponent.h"
@@ -228,7 +229,7 @@ void AWCDirector::ApplyWorldState()
 		Box->bEnabled = Has(TEXT("underbed_done")) && !bTaken;
 		if (!bTaken) Box->SetActorLocation(Pos(TEXT("Her_Under")) + FVector(0, Has(TEXT("underbed_done")) ? BedBoxRestOffset : 150.f, 1.f));
 	}
-	const bool DresserOpen = Has(TEXT("bath_chain_released")) || Has(TEXT("phone_done"));
+	const bool DresserOpen = Has(TEXT("bath_chain_released")) || Has(TEXT("bath_drained"));
 	ShowTagged(TEXT("Show_drawer"), DresserOpen);
 	UpdateFurniture(0.f, Furniture.IsEmpty());
 	RefreshFurnitureLoot();
@@ -406,6 +407,29 @@ void AWCDirector::OutsideProgress()
 	UE_LOG(LogWCStory, Display, TEXT("WCOUTSIDE t=%.1f shed %d back door %d"), PlaySeconds, bShed ? 1 : 0, bBack ? 1 : 0);
 }
 
+void AWCDirector::SetCellarRouteObjective()
+{
+	if (!HasItem(TEXT("key_cellar")))
+		SetObjective(TEXT("Find the cellar key in the attic footlocker"));
+	else if (!HasItem(TEXT("keep_ruth")))
+	{
+		if (Has(TEXT("underbed_done")))
+			SetObjective(TEXT("Crouch beside Ruth's bed and retrieve her music box"));
+		else if (Has(TEXT("kids_open")))
+			SetObjective(TEXT("Follow the music box into Ruth's room"));
+		else if (Has(TEXT("ruth_door_ajar")))
+			SetObjective(TEXT("Look through the cracked door on the front upstairs landing"));
+		else
+			SetObjective(TEXT("Check the doors along the front upstairs landing"));
+	}
+	else if (!HasItem(TEXT("shears")))
+		SetObjective(TEXT("Find something to cut with in the upstairs sewing room"));
+	else if (!HasItem(TEXT("keep_walter")) || !HasItem(TEXT("keep_daniel")) || !HasItem(TEXT("keep_eye")))
+		SetObjective(TEXT("Find the remaining keepsakes"));
+	else
+		SetObjective(TEXT("Unlock the cellar"));
+}
+
 void AWCDirector::StoryEvent(FName Id)
 {
 		AWCCharacter* P = Player();
@@ -506,6 +530,8 @@ void AWCDirector::StoryEvent(FName Id)
 			InsideAt = PlaySeconds;
 			ApplyWorldState();
 			Set(TEXT("smell_pending"));
+			if (!WCRuthMap::OwnsPiece(*this, 0))
+				ShowHint(TEXT("Ruth's map is pinned above the hall table"), 6.f);
 			After(5.f, [this]() { SetObjective(TEXT("Search the house for Edith Harrow")); });
 			Checkpoint(TEXT("inside"));
 		}
@@ -580,7 +606,6 @@ void AWCDirector::StoryEvent(FName Id)
 			VentToolAt = Clock;
 			TickVentTool();
 		}
-		Items.Remove(TEXT("screwdriver"));
 		Set(TEXT("vent_seen"));
 		Set(TEXT("vent_open"));
 		UE_LOG(LogWCStory, Display, TEXT("WCVENT t=%.1f opened (%.0f s after coming in)"), PlaySeconds, PlaySeconds - InsideAt);
@@ -609,7 +634,11 @@ void AWCDirector::StoryEvent(FName Id)
 	}
 	if (Is(Id, TEXT("take:screwdriver")))
 	{
-		if (Has(TEXT("vent_seen")) && !Has(TEXT("vent_open")) && !Has(TEXT("heard_upstairs"))) SetObjective(TEXT("Search the house. The kitchen vent."));
+		RefreshFurnitureLoot();
+		if (Objective == TEXT("Find the screwdriver on the desk in Edith's room"))
+			SetObjective(TEXT("Pry open the jammed drawer in the front upstairs bathroom"));
+		else if (Has(TEXT("vent_seen")) && !Has(TEXT("vent_open")) && !Has(TEXT("heard_upstairs")))
+			SetObjective(TEXT("Search the house. The kitchen vent."));
 		return;
 	}
 	if (Is(Id, TEXT("use:jewelbox")))
@@ -733,14 +762,8 @@ void AWCDirector::StoryEvent(FName Id)
 		Say(TEXT("d_musicbox"), 1.0f);
 		if (!Has(TEXT("book_done")) && !HasItem(TEXT("key_desk")) && !Has(TEXT("walter_keys_taken")))
 			SetObjective(TEXT("Check Customs of the First Settlers on the living-room shelf beside the stairs"));
-		else if (!HasItem(TEXT("key_cellar")))
-			SetObjective(TEXT("Find the cellar key in the attic footlocker"));
-		else if (!HasItem(TEXT("shears")))
-			SetObjective(TEXT("Find something to cut with in the upstairs sewing room"));
-		else if (HasItem(TEXT("keep_walter")) && HasItem(TEXT("keep_daniel")) && HasItem(TEXT("keep_eye")))
-			SetObjective(TEXT("Unlock the cellar"));
 		else
-			SetObjective(TEXT("Find the remaining keepsakes"));
+			SetCellarRouteObjective();
 		Checkpoint(TEXT("underbed")); return;
 	}
 	
@@ -1215,15 +1238,13 @@ void AWCDirector::ScarePhone()
 								ApplyWorldState();
 								bBusy = false;
 								Rest(170.f);
-								float T2 = Say(TEXT("d_after_kitchen"), 0.3f);
-								if (!Has(TEXT("bath_chain_released")) && !Has(TEXT("bath_drained")))
-									T2 = Say(TEXT("d_drawer"), T2 + 2.2f);
+								const float T2 = Say(TEXT("d_after_kitchen"), 0.3f) + 1.2f;
 								After(T2, [this]()
 								{
 									if (!Has(TEXT("bath_chain_released")) && !Has(TEXT("bath_drained")))
 									{
 										PlayAt(TEXT("drag_floor"), Pos(TEXT("DrawerPoint")), 1.f, 1.5f, 4500.f);
-										SetObjective(TEXT("Search the open dresser drawer in the front upstairs bathroom"));
+									SetObjective(TEXT("Free the plug chain at the front upstairs bathroom dresser"));
 									}
 									Checkpoint(TEXT("phone_done"));
 								});
@@ -1436,7 +1457,7 @@ void AWCDirector::AtticTagsTaken()
 		NextScareAt = FMath::Min(NextScareAt, Clock);
 		WhenQuiet([this, HeldRest]() { NextScareAt = FMath::Max(NextScareAt, HeldRest); AtticCrawl(); },
 			[this, AtticZ]() { AWCCharacter* Pl = Player(); return Pl && Pl->GetActorLocation().Z > AtticZ - 40.f; },
-			[this, HeldRest]() { NextScareAt = FMath::Max(NextScareAt, HeldRest); Set(TEXT("attic_done")); Rest(60.f); SetObjective(TEXT("Unlock the cellar")); Checkpoint(TEXT("attic_done")); }, 50.f);
+			[this, HeldRest]() { NextScareAt = FMath::Max(NextScareAt, HeldRest); Set(TEXT("attic_done")); Rest(60.f); SetCellarRouteObjective(); Checkpoint(TEXT("attic_done")); }, 50.f);
 	});
 }
 
@@ -1483,7 +1504,7 @@ void AWCDirector::AtticCrawl()
 						if (AWCCharacter* Q3 = Player()) { Q3->SetLightScale(1.f); Q3->FlickerLight(0.6f, 0.8f); }
 						Set(TEXT("attic_done"));
 						float T2 = Say(TEXT("d_after_attic"), 1.6f);
-						After(T2, [this]() { SetObjective(TEXT("Unlock the cellar")); Checkpoint(TEXT("attic_done")); });
+						After(T2, [this]() { SetCellarRouteObjective(); Checkpoint(TEXT("attic_done")); });
 						Tension = 0.6f;
 					});
 				});

@@ -109,6 +109,7 @@ public:
 	bool HasItem(FName Item) const { return Items.Contains(Item); }
 	void GiveItem(FName Item, const FString& DisplayName);
 	void SetObjective(const FString& Text);
+	void SetCellarRouteObjective();
 	void Checkpoint(FName Id);
 	FString Objective;
 	double ObjectiveShownAt = -100.0;
@@ -230,6 +231,7 @@ private:
 	void UpdateFurniture(float Dt, bool bSnap = false);
 	void RefreshFurnitureLoot();
 	void RestoreHarrowHints();
+	void SetPostFuseObjective();
 	struct FMovingProp { FTransform Closed; float Alpha = 0; TWeakObjectPtr<AWCInteractable> Actor; };
 	TMap<FName,FMovingProp> Furniture;
 	TWeakObjectPtr<class UPointLightComponent> FridgeBulb;
@@ -496,6 +498,7 @@ private:
 
 
 	void AirIntoCar();
+	void SetDriveShadowDetail(bool bReduced);
 
 	FVector CarHome = FVector::ZeroVector;
 	FRotator CarHomeRot = FRotator::ZeroRotator;
