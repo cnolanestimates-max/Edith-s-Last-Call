@@ -30,6 +30,22 @@ Engine: UE 5.9.0. Project: `C:\GameDev\Unreal\WellnessCheck`. Git: local repo on
   commandlet's world has no physics: it could not even see the house walls). Frame time in the off-screen photo run was
   10.4 ms average with the grass in.
 - The new tree line (forest pines for the kit trees) was approved with the rest.
+- **Scan pass ("AAA quality"), 2026-11-28 evening, on the map, NOT yet signed off by Cheyenne:** photo scans she owns on
+  Fab (free, Fab Standard License) replace the hand-built pieces. Raw downloads are in `SourceArt/Fab/` (1 GB, not in git:
+  re-download from her Fab library); `Scripts/art/outdoor_scans.py build` (Blender) trims, decimates and settles them into
+  `SourceArt/Outdoors/scans/`; the `scans` part of `import_outdoors.py` brings them to `/Game/WC/Outdoors/Scans`.
+  - Wheelbarrow: Megascans "Wheelbarrow Metal Rusty" (30k triangles, scale 1.12) with `SM_Item_MuckLoad` (muck, straw and
+    fork built to its tray, `outdoor_models.py muck_load`, offset in `SourceArt/Outdoors/muck_offset.json`).
+    Its material has specular 0.04, tint (0.60, 0.72, 0.50) and the occlusion multiplied into the colour: with default
+    specular the torch (a light at the eye) washed the dark rust to salmon pink.
+  - Stones: "Mossy Rock" at every size and "Forest Pine Boulder" (Nanite, 110k) for some of the big clusters. Tints 0.60 / 0.52.
+  - Grass: two scanned cards from "Grass Vegetation Mix" mixed into the planted clumps (331 turf patches, yard only, and
+    1,327 seeding plants), browned in the material to stand with the November grass.
+  - Stumps: untouched (the kit stumps, her choice). Woodpile: still the Blender one.
+  - Set aside: three 12 m mossy rock ledges from "Mossy Rocks from Forest (lidar scan)", prepared once, not placed.
+  - Off-screen photo run with the scans in: 12.0 ms average (84 fps). Before/after sheets: `Saved/Outdoors/compare_scans`.
+  - To iterate on the map from scratch: copy `Saved/Outdoors/House_before_outdoors.umap` (saved 10:09 local, already has
+    the bath dresser step) over the map, then `polish.ps1 -Steps polish_outdoors`. A material-only change needs just the import.
 
 ## AUDIO PASS 2, in the game since 2026-11-26 05:25 UTC (Claude; Cheyenne signed off on five before/after videos: "i like it all put it all in game")
 

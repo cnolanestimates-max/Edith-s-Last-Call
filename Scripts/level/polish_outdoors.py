@@ -15,6 +15,7 @@ import unreal as u
 
 ROOT = "C:/GameDev/Unreal/WellnessCheck"
 P = "/Game/WC/Props/SM_Item_"
+S = "/Game/WC/Outdoors/Scans/SM_Scan_"          # photo-scanned Fab assets (Scripts/art/outdoor_scans.py); her "AAA quality" ask
 F = "/Game/WC/Forest/"
 GROUND = -40.0
 WALK = (-2460.0, 4260.0, -1100.0, 1100.0)                 # the invisible limits of the yard (exterior.py)
@@ -97,7 +98,7 @@ def dress():
         return a
 
     # what this step made on an earlier run goes, and is made again
-    made = [a for a in actors if a.get_actor_label().startswith(("TreeBlock_", "StumpExtra_", "RockExtra_")) or a.get_actor_label() == "GrassField"]
+    made = [a for a in actors if a.get_actor_label().startswith(("TreeBlock_", "StumpExtra_", "RockExtra_", "MuckLoad_")) or a.get_actor_label() == "GrassField"]
     for a in made:
         sub.destroy_actor(a)
     actors = [a for a in actors if a not in made]
@@ -106,8 +107,17 @@ def dress():
     n = {"barrow": 0, "stump": 0, "pile": 0, "rock": 0}
     for a in actors:
         nm = name_of(a)
-        if nm == "SM_Wheelbarrow_Old":
-            swap(a, asset(P + "Wheelbarrow"), yaw=a.get_actor_rotation().yaw + 90.0)      # the kit one ran along Y; ours runs along X
+        if nm in ("SM_Wheelbarrow_Old", "SM_Item_Wheelbarrow"):
+            # the Megascans scan of a rusted iron barrow, with a load of muck made to fit its tray (the hand-built
+            # SM_Item_Wheelbarrow stays in the project, unused)
+            yaw = a.get_actor_rotation().yaw + (90.0 if nm == "SM_Wheelbarrow_Old" else 0.0)     # the kit one ran along Y; the scan runs along X
+            BS = 1.12                                         # the scanned barrow is a small one (1.13 m); a little larger reads better at night
+            swap(a, asset(S + "Wheelbarrow"), yaw=yaw, scale=BS)
+            l = a.get_actor_location()
+            off = json.load(open(ROOT + "/SourceArt/Outdoors/muck_offset.json"))
+            cy_, sy_ = math.cos(math.radians(yaw)), math.sin(math.radians(yaw))
+            mk = spawn(f"MuckLoad_{n['barrow']}", asset(P + "MuckLoad"), l.x + (off["x"] * cy_ - off["y"] * sy_) * BS, l.y + (off["x"] * sy_ + off["y"] * cy_) * BS,
+                       GROUND + off["z"] * BS, yaw, str(a.get_folder_path()), BS, "NoCollision")
             n["barrow"] += 1
         elif nm == "SM_Stump_Axe" and STUMPS:
             front = a.get_actor_location().x < 0
@@ -123,7 +133,9 @@ def dress():
             n["stump"] += 1
 
     # ------------------------------------------------------------------ rocks
-    rocks = {k: asset(P + k) for k in ("RockA", "RockB", "RockC")}
+    # scanned stones: a lichened boulder ("MossyRock") at every size, and a root-bound rock mound ("PineBoulder") for a few of
+    # the big clusters.  (The hand-built SM_Item_RockA/B/C stay in the project, unused.)
+    rocks = {"RockA": asset(S + "MossyRock"), "RockB": asset(S + "MossyRock"), "RockC": asset(S + "MossyRock"), "Mound": asset(S + "PineBoulder")}
     half = {}
     for k, m in rocks.items():
         bb = m.get_bounding_box()
@@ -141,19 +153,19 @@ def dress():
         px, py = off_tracks(l.x, l.y)                       # the kit slabs lay flat on the drive and the paths; stones do not
         moved += (px, py) != (l.x, l.y)
         if "Cluster" in nm:                                   # a flat cluster of slabs: one large stone and two beside it
-            k = "RockC"
-            s = min(1.1, max(0.7, size * 0.40 / half[k][0]))
+            k = "Mound" if h % 5 < 2 else "RockC"
+            s = min(0.95, max(0.6, size * 0.42 / half[k][0]))
             swap(a, rocks[k], z=GROUND - 1.0, scale=s, collide="BlockAll" if half[k][1] * s > 30 else "NoCollision", xy=(px, py))
             for j, (kk, ang) in enumerate((("RockA", 0.7), ("RockB", 3.6))):
                 ang += (h % 100) / 50.0
                 d = half[k][0] * s * 1.05
-                ss = 0.7 + ((h >> (4 * j)) % 10) / 20.0
+                ss = 0.28 + ((h >> (4 * j)) % 10) / 40.0
                 ex, ey = off_tracks(px + d * math.cos(ang), py + d * math.sin(ang))
                 spawn(f"RockExtra_{extra}", rocks[kk], ex, ey, GROUND - 1.0, (h >> j) % 360, folder, ss, "BlockAll" if half[kk][1] * ss > 30 else "NoCollision")
                 extra += 1
         else:
-            k = "RockB" if size < 60 else ("RockA" if h % 2 else "RockC")
-            s = min(1.6, max(0.35, size * 0.85 / half[k][0]))
+            k = "RockB"
+            s = min(0.8, max(0.22, size * 0.85 / half[k][0]))
             swap(a, rocks[k], z=GROUND - 1.0, scale=s, collide="BlockAll" if half[k][1] * s > 30 else "NoCollision", yaw=h % 360, xy=(px, py))
         n["rock"] += 1
     u.log_warning(f"WC_POLISH outdoors: {n['barrow']} wheelbarrows, {n['stump']} stumps, {n['pile']} woodpiles, {n['rock']} rocks (+{extra} beside the clusters, {moved} moved off the gravel)")
@@ -239,7 +251,7 @@ def dress():
         c = lib.get_object(lib.get_data(h))
         if not c:
             raise RuntimeError(f"no grass component for {var}: {fail}")
-        c.set_static_mesh(asset(f"/Game/WC/Outdoors/SM_Grass_{var}"))
+        c.set_static_mesh(asset(S + var[2:] if var.startswith("X_") else f"/Game/WC/Outdoors/SM_Grass_{var}"))
         c.set_collision_profile_name("NoCollision")
         c.set_cast_shadow(False)
         c.set_editor_property("visible_in_ray_tracing", False)

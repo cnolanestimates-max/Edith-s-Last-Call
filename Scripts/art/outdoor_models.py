@@ -405,6 +405,46 @@ def wheelbarrow():
     return P
 
 
+def muck_load():
+    """The load for the scanned Megascans wheelbarrow (Scripts/art/outdoor_scans.py): the same muck, straw and fork, sized
+    to that barrow's tray.  Built in the barrow's own space (it runs along X, wheel at +X, tray floor 0.34 m up); where the
+    load sits is written to SourceArt/Outdoors/muck_offset.json for the level step."""
+    import json
+    cx, cz = -0.155, 0.47
+    P = [blob(0.20, "Manure", (cx, 0.0, cz), (1.45, 1.0, 0.75), 0.11, 2.6, 3.0, sub=5)]
+    rr = random.Random(11)
+
+    def top(x, y):
+        k = 1.0 - ((x - cx) / 0.29) ** 2 - (y / 0.20) ** 2
+        return cz + 0.15 * math.sqrt(k) if k > 0 else None
+    for i in range(24):
+        x, y = cx + rr.uniform(-0.26, 0.26), rr.uniform(-0.17, 0.17)
+        z = top(x, y)
+        if z is None:
+            continue
+        s = rr.uniform(0.015, 0.038)
+        P.append(blob(s, "Manure", (x, y, z - s * 0.15), (1.15, rr.uniform(0.75, 1.15), rr.uniform(0.45, 0.7)), 0.22, 2.4, i * 1.37, sub=2, rot=(0, 0, rr.uniform(0, PI))))
+    for i in range(70):
+        x, y = cx + rr.uniform(-0.27, 0.27), rr.uniform(-0.18, 0.18)
+        z = top(x, y)
+        if z is None:
+            continue
+        L = rr.uniform(0.04, 0.13)
+        a, tilt = rr.uniform(0, PI), rr.uniform(-0.16, 0.16)
+        d = Vector((math.cos(a) * math.cos(tilt), math.sin(a) * math.cos(tilt), math.sin(tilt))) * L / 2
+        c = Vector((x, y, z + 0.004 + abs(d.z)))
+        P.append(rod(c - d, c + d, rr.uniform(0.0010, 0.0017), "Straw", 3))
+    P += moved(muck_fork(), (cx + 0.02, 0.02, cz + 0.07), (math.radians(-12), math.radians(34), math.radians(-8)))
+    lo = Vector((1e9, 1e9, 1e9)); hi = Vector((-1e9, -1e9, -1e9))
+    for ob in P:
+        for v in ob.data.vertices:
+            w = ob.matrix_world @ v.co
+            lo = Vector((min(lo.x, w.x), min(lo.y, w.y), min(lo.z, w.z))); hi = Vector((max(hi.x, w.x), max(hi.y, w.y), max(hi.z, w.z)))
+    json.dump({"x": (lo.x + hi.x) / 2 * 100.0, "y": (lo.y + hi.y) / 2 * 100.0, "z": lo.z * 100.0},
+              open(os.path.join(os.path.dirname(os.path.abspath(OUT)), "..", "Outdoors", "muck_offset.json"), "w"))
+    return P
+
+
 # ============================================================================================ stumps
 def stump_parts(R=0.27, H=0.42, seed=1.0, roots=6, hinge=True, tilt=0.05, broken=None, seg=112, rings=34):
     """A felled trunk: root flare at the ground, furrowed bark, a cut face with the felling hinge standing proud."""
@@ -649,8 +689,8 @@ def woodpile():
     return P
 
 
-UV_ANGLE.update({"Wheelbarrow": 89, "RockA": 89, "RockB": 89, "RockC": 89, "Stump": 80, "StumpRot": 80, "StumpAxe": 80, "Woodpile": 80})
+UV_ANGLE.update({"MuckLoad": 89, "Wheelbarrow": 89, "RockA": 89, "RockB": 89, "RockC": 89, "Stump": 80, "StumpRot": 80, "StumpAxe": 80, "Woodpile": 80})
 for _n, _f, _s in (("Wheelbarrow", wheelbarrow, 2048), ("Stump", stump, 2048), ("StumpRot", stump_rot, 2048), ("StumpAxe", stump_axe, 2048),
                    ("RockA", lambda: rock(0.34, (1.25, 0.95, 0.62), 1.0), 1024), ("RockB", lambda: rock(0.22, (1.0, 1.15, 0.7), 2.0), 1024),
-                   ("RockC", lambda: rock(0.55, (1.1, 0.8, 0.5), 3.0, 0.35), 1024), ("Woodpile", woodpile, 2048)):
+                   ("RockC", lambda: rock(0.55, (1.1, 0.8, 0.5), 3.0, 0.35), 1024), ("Woodpile", woodpile, 2048), ("MuckLoad", muck_load, 1024)):
     build(_n, _f, _s)

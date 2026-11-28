@@ -62,6 +62,8 @@ def on_road(x, y, m=0.0):
 
 
 out = {v: [] for vs in KINDS.values() for v in vs}
+out["X_GrassClump"] = []          # photo-scanned cards from the Fab pack (Scripts/art/outdoor_scans.py): a low patch of turf, 4,130
+out["X_GrassSeed"] = []           # triangles, so used sparingly and only in the yard; and a seeding grass plant, light, used freely
 
 
 def plant(x, y, d):
@@ -80,7 +82,14 @@ def plant(x, y, d):
         k = "L"
     else:
         k = "F"
-    out[rr.choice(KINDS[k])].append([round(x, 1), round(y, 1), round(rr.uniform(0, 360), 1), round(rr.uniform(0.82, 1.22), 3)])
+    v = rr.choice(KINDS[k])
+    yard = -2700 < x < 4560
+    if k == "L" and yard and rr.random() < 0.16:
+        v = "X_GrassClump"
+    elif k in ("S", "T") and rr.random() < (0.55 if k == "S" else 0.2):
+        v = "X_GrassSeed"
+    s = rr.uniform(0.82, 1.22) * (1.5 if v == "X_GrassSeed" else 1.0)
+    out[v].append([round(x, 1), round(y, 1), round(rr.uniform(0, 360), 1), round(s, 3)])
 
 
 # ---- the yard

@@ -36,3 +36,7 @@ SourceArt/Her/refs/
 
 # Audio pass 2 build output: identical to the applied files in SourceArt/Audio (rebuild with Scripts/audio/pass2_build.py)
 SourceArt/AudioPass2/new/
+
+# Raw Fab downloads of the photo scans used in the yard (about 1 GB); the prepared meshes and textures are in
+# SourceArt/Outdoors/scans (Scripts/art/outdoor_scans.py).  Re-download from the Fab library when the raw files are needed.
+SourceArt/Fab/
