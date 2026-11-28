@@ -30,7 +30,7 @@ Engine: UE 5.9.0. Project: `C:\GameDev\Unreal\WellnessCheck`. Git: local repo on
   commandlet's world has no physics: it could not even see the house walls). Frame time in the off-screen photo run was
   10.4 ms average with the grass in.
 - The new tree line (forest pines for the kit trees) was approved with the rest.
-- **Scan pass ("AAA quality"), 2026-11-28 evening, on the map, NOT yet signed off by Cheyenne:** photo scans she owns on
+- **Scan pass ("AAA quality"), 2026-11-28 evening, on the map, signed off by Cheyenne 2026-11-28 20:50 UTC ("Yes to everything here"):** photo scans she owns on
   Fab (free, Fab Standard License) replace the hand-built pieces. Raw downloads are in `SourceArt/Fab/` (1 GB, not in git:
   re-download from her Fab library); `Scripts/art/outdoor_scans.py build` (Blender) trims, decimates and settles them into
   `SourceArt/Outdoors/scans/`; the `scans` part of `import_outdoors.py` brings them to `/Game/WC/Outdoors/Scans`.
