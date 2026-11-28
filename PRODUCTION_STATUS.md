@@ -4,6 +4,30 @@
 Engine: UE 5.9.0. Project: `C:\GameDev\Unreal\WellnessCheck`. Git: local repo on `main`, remote
 `github.com/cnolanestimates-max/Edith-s-Last-Call` (private). Pushed; checkpoints are pushed as work lands.
 
+## OUTDOOR POLISH 2026-11-28 (Claude; Cheyenne asked for it, before/after sheets sent, her sign-off pending)
+
+- **What:** the kit wheelbarrows, stumps, woodpiles and slab rocks in the yard are replaced by Blender models
+  (`Scripts/art/outdoor_models.py`, built through `build_items_fine.py --only Wheelbarrow,Stump,StumpRot,StumpAxe,Woodpile,RockA,RockB,RockC`);
+  eight stumps instead of two; grass is 19,400 instanced clumps of fifteen kinds (`Scripts/art/outdoor_grass.py`, vertex
+  colour, wind in `M_GrassBlades`) in the yard and along the forest road, in one actor `GrassField`; the old flat grass
+  blades are out of the `SM_MockYard_nn` chunks (`mock_yard.py`, `WC_MOCK_GRASS=1` brings them back); the 179 kit trees
+  (seven in the yard, the tree line outside the fence) are the forest's own pines, dead pines and saplings; every trunk
+  within reach has an invisible post (`TreeBlock_n`).
+- **Chain to redo it:** `python Scripts/level/outdoor_mask.py` (needs `Saved/Outdoors/survey.json` from
+  `uepy.ps1 Scripts/level/outdoor_survey.py`), `python Scripts/level/outdoor_plant.py`, Blender for the models and the
+  grass, `uepy.ps1 Scripts/level/import_outdoors.py`, `polish.ps1 -Steps polish_outdoors`. The step only swaps kit pieces
+  that are still there and rebuilds what it made, so it is safe to run again.
+- **Not in `build_house.py` yet** (that file had someone else's uncommitted edit on 2026-11-28): after a full level rebuild
+  run `polish.ps1 -Steps polish_outdoors`, or add it to the end of the chain there.
+- **Pictures:** `python Scripts/level/outdoor_shots.py <file>` writes the camera list; run the game with
+  `-WCShotFile=<file> -WCShots=<dir> -WCFilter=0 -RenderOffscreen`; `python Scripts/tools/ba_sheet.py <before> <after> <out>`
+  lays two runs side by side. The pre-polish map is `Saved/Outdoors/House_before_outdoors.umap` (not in git).
+- **Not verified:** nobody has walked into the trees and props in play. A headless capsule sweep cannot test it (the
+  commandlet's world has no physics: it could not even see the house walls). Frame time in the off-screen photo run was
+  10.4 ms average with the grass in.
+- **Open, her call:** the new tree line is straighter and less gnarled than the kit trees; she was asked whether to keep it
+  or have twisted dead trees modelled.
+
 ## AUDIO PASS 2, in the game since 2026-11-26 05:25 UTC (Claude; Cheyenne signed off on five before/after videos: "i like it all put it all in game")
 
 - 101 sounds rebuilt: six stings, the bath wheelchair set, pistol, doors, footsteps, thumps and her steps, creaks, lights,

@@ -1,7 +1,7 @@
 """Blender: the yard-ground mock-up (Cheyenne, 2026-11-22: before and after pictures, keep or trash).  The yard round the
 house is one flat dark dirt texture; this scatters what a neglected farmhouse yard has on it, in world space so it can keep
-off the footpath, the house and the oil spill: clumps of dead grass and weeds (thicker in patches), fallen leaves, pine
-needles and twigs, stones and the odd fallen branch.  Six-metre chunks, pivot at the middle on the ground.
+off the footpath, the house and the oil spill: fallen leaves, pine needles and twigs, stones and the odd fallen branch.
+(Its clumps of flat grass blades were replaced on 2026-11-28 by the planted grass of Scripts/art/outdoor_grass.py.)  Six-metre chunks, pivot at the middle on the ground.
 Materials by slot: RoadGrass (vertex colour, two-sided), RoadStone (vertex colour grey), Bark.
   SourceArt/Mock/SM_MockYard_<nn>.fbx, SourceArt/Mock/mock_yard.json
 blender -b --factory-startup -P mock_yard.py"""
@@ -11,6 +11,7 @@ from mathutils import Vector, noise
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "SourceArt", "Mock")
 os.makedirs(OUT, exist_ok=True)
 random.seed(2026)
+GRASS = os.environ.get("WC_MOCK_GRASS", "0") == "1"       # 2026-11-28: off; set WC_MOCK_GRASS=1 for the old flat blades
 GROUND = -40.0
 CH = 600.0
 X0, X1, Y0, Y1 = -1150.0, 3900.0, -1650.0, 1650.0
@@ -78,9 +79,11 @@ while cx < X1:
                 sx, sy = -math.sin(a) * w / 2, math.cos(a) * w / 2
                 tx, ty = bx + math.cos(la) * h * lean, by + math.sin(la) * h * lean
                 mx_, my_ = bx + math.cos(la) * h * lean * 0.4, by + math.sin(la) * h * lean * 0.4
+                g = random.uniform(0.0, 1.0)
+                if not GRASS:                    # the clumps are planted as real grass now (Scripts/art/outdoor_grass.py); the dice are
+                    continue                     # still thrown so the leaves, needles and stones land where they did before
                 v = [bm.verts.new(L(bx - sx, by - sy, -0.5)), bm.verts.new(L(bx + sx, by + sy, -0.5)), bm.verts.new(L(mx_ + sx * 0.6, my_ + sy * 0.6, h * 0.55)),
                      bm.verts.new(L(mx_ - sx * 0.6, my_ - sy * 0.6, h * 0.55)), bm.verts.new(L(tx, ty, h * (1 - lean * 0.4)))]
-                g = random.uniform(0.0, 1.0)
                 straw = (0.30 + 0.08 * g, 0.23 + 0.06 * g, 0.11 + 0.03 * g)
                 olive = (0.07 + 0.03 * g, 0.08 + 0.04 * g, 0.03 + 0.01 * g)
                 cc = tuple(straw[i] * dry + olive[i] * (1 - dry) for i in range(3))

@@ -28,6 +28,7 @@ PI = math.pi
 
 # ============================================================================================ materials
 SOCK = {}          # material name -> the sockets that are baked
+UV_ANGLE = {}      # item name -> smart-project angle limit in degrees (default 66); lumpy things want 89, or every lump is its own island
 
 
 class Graph:
@@ -1290,7 +1291,7 @@ def bake_item(name, ob, size):
     bpy.context.view_layer.objects.active = ob
     bpy.ops.object.mode_set(mode="EDIT")
     bpy.ops.mesh.select_all(action="SELECT")
-    bpy.ops.uv.smart_project(angle_limit=math.radians(66), island_margin=0.006)
+    bpy.ops.uv.smart_project(angle_limit=math.radians(UV_ANGLE.get(name, 66)), island_margin=0.006)
     bpy.ops.object.mode_set(mode="OBJECT")
     mats = [m for m in ob.data.materials if m]
     em, tn = {}, {}
@@ -1464,3 +1465,5 @@ print("FINE all done")
 exec(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "trash_models.py"), encoding="utf-8").read())
 # the tipped oil drum and its spill in the back yard (Scripts/art/yard_models.py)
 exec(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "yard_models.py"), encoding="utf-8").read())
+# the wheelbarrow, stumps, grass clumps and field stones outside (Scripts/art/outdoor_models.py)
+exec(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "outdoor_models.py"), encoding="utf-8").read())
