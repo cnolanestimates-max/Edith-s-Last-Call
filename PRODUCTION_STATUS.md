@@ -4,7 +4,11 @@
 Engine: UE 5.9.0. Project: `C:\GameDev\Unreal\WellnessCheck`. Git: local repo on `main`, remote
 `github.com/cnolanestimates-max/Edith-s-Last-Call` (private). Pushed; checkpoints are pushed as work lands.
 
-## OUTDOOR POLISH 2026-11-28 (Claude; Cheyenne asked for it, before/after sheets sent, her sign-off pending)
+## OUTDOOR POLISH 2026-11-28 (Claude; Cheyenne signed off 17:51 UTC: "yes to almost everything but stumps look better before")
+
+- **Her verdict:** everything stays except the stumps: the two kit stumps are back as they were and the six extra stumps are
+  gone (`STUMPS = False` in `polish_outdoors.py`; the stump models stay in the project, unused). She also asked for "AAA
+  quality": photo-scanned Fab assets are to replace the hand-built wheelbarrow, rocks and grass (not the stumps).
 
 - **What:** the kit wheelbarrows, stumps, woodpiles and slab rocks in the yard are replaced by Blender models
   (`Scripts/art/outdoor_models.py`, built through `build_items_fine.py --only Wheelbarrow,Stump,StumpRot,StumpAxe,Woodpile,RockA,RockB,RockC`);
@@ -25,8 +29,7 @@ Engine: UE 5.9.0. Project: `C:\GameDev\Unreal\WellnessCheck`. Git: local repo on
 - **Not verified:** nobody has walked into the trees and props in play. A headless capsule sweep cannot test it (the
   commandlet's world has no physics: it could not even see the house walls). Frame time in the off-screen photo run was
   10.4 ms average with the grass in.
-- **Open, her call:** the new tree line is straighter and less gnarled than the kit trees; she was asked whether to keep it
-  or have twisted dead trees modelled.
+- The new tree line (forest pines for the kit trees) was approved with the rest.
 
 ## AUDIO PASS 2, in the game since 2026-11-26 05:25 UTC (Claude; Cheyenne signed off on five before/after videos: "i like it all put it all in game")
 

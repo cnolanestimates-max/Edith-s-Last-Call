@@ -3,8 +3,8 @@ have any collisions ... stumps ... need to look like stumps ... the grass needs 
 literally looks janky, like it's out of Roblox").  A polish step for the saved map (Scripts/tools/polish.ps1 -Steps
 polish_outdoors) and safe to run again: it only touches kit pieces that are still there, and rebuilds what it made itself.
 
-  - the kit wheelbarrows, stumps, woodpiles and rocks become the modelled ones (SM_Item_Wheelbarrow, _Stump, _StumpAxe,
-    _StumpRot, _Woodpile, _RockA/B/C), solid; a few more stumps go in where trees were felled
+  - the kit wheelbarrows, woodpiles and rocks become the modelled ones (SM_Item_Wheelbarrow, _Woodpile, _RockA/B/C), solid.
+    The stumps are NOT changed: she preferred the kit stumps (STUMPS below)
   - the kit trees (the seven in the yard and the tree line outside the fence: blocky trunks, stretched bark) become the
     forest's own pines, dead pines and saplings
   - every trunk a player can reach gets an invisible post, so no tree can be walked through
@@ -20,6 +20,8 @@ GROUND = -40.0
 WALK = (-2460.0, 4260.0, -1100.0, 1100.0)                 # the invisible limits of the yard (exterior.py)
 PATHS = [[(-710, 0), (-649, -340), (-536, -654), (-216, -1000), (53, -1184), (463, -1184), (760, -1000), (1410, -845), (2695, -836), (3230, -755), (3556, -745)],
          [(-710, 0), (-595, 400), (-507, 685), (-431, 911), (-325, 993), (825, 993), (1100, 875), (2610, 802), (3130, 760), (3335, 480), (3345, -482), (3230, -755)]]
+STUMPS = False        # Cheyenne, 2026-11-28, on the before/after sheets: "stumps look better before, keep their look".  The kit
+                      # stumps stay as they were and no extra stumps are added.  (True swaps in SM_Item_Stump / _StumpAxe / _StumpRot.)
 EXTRA_STUMPS = [(-1820, 620, "StumpRot", 40), (-2150, -430, "Stump", 200), (2000, -1010, "StumpRot", 120), (4050, -250, "Stump", 300),
                 (3900, 780, "StumpRot", 15), (1400, 1010, "Stump", 250)]
 TRUNK = {"SM_Tree_Dead_Pine_A": 21.0, "SM_Tree_Dead_Pine_B": 19.0, "SM_Tree_Dead_Pine_C": 16.0, "SM_Tree_Dead_Pine_D": 11.0,
@@ -107,14 +109,14 @@ def dress():
         if nm == "SM_Wheelbarrow_Old":
             swap(a, asset(P + "Wheelbarrow"), yaw=a.get_actor_rotation().yaw + 90.0)      # the kit one ran along Y; ours runs along X
             n["barrow"] += 1
-        elif nm == "SM_Stump_Axe":
+        elif nm == "SM_Stump_Axe" and STUMPS:
             front = a.get_actor_location().x < 0
             swap(a, asset(P + ("StumpAxe" if front else "Stump")), scale=1.15 if front else 1.3)
             n["stump"] += 1
         elif nm == "SM_Woodpile_Rotten":
             swap(a, asset(P + "Woodpile"), scale=0.85)
             n["pile"] += 1
-    for i, (x, y, kind, yaw) in enumerate(EXTRA_STUMPS):
+    for i, (x, y, kind, yaw) in enumerate(EXTRA_STUMPS if STUMPS else []):
         if path_dist(x, y) > 150.0:
             spawn(f"StumpExtra_{i}", asset(P + kind), x, y, GROUND, yaw, "House/Shell/Exterior/Yard" if x < 2800 else "House/Shell/Exterior/BackYard",
                   1.05 + 0.3 * ((i * 37) % 10) / 10.0)
