@@ -37,14 +37,17 @@ def dress():
         plaque.set_actor_relative_rotation(u.Rotator(0, 0, 0), False, False)
         print(f"WCHARRPLAQ {name} {plaque.get_actor_location()} {mesh.get_bounding_box()}")
 
-    # The former drawer position was directly behind an impassable floor hole.
-    for prop, x, y in (("Hide_drawer", 1200, -256), ("Show_drawer", 1200, -268)):
+    # The bathroom dresser stands right beside the bath, against the far wall under the mirror, so "the dresser beside
+    # the bath" (whose drawer has caught the plug chain) is where a player looks (Cheyenne, 2026-11-28: she could not
+    # find it by the door wall, 2.5 m away).  polish_pass.py seats both against the wall facing the room.
+    for prop, x, y in (("Hide_drawer", 1160, -556), ("Show_drawer", 1160, -541)):
         for actor in by_label.values():
             if actor.actor_has_tag(prop) and actor.get_actor_location().z == 350:
                 actor.set_actor_location(u.Vector(x, y, 350), False, True)
-    for label, y in (("Harrow_bath_dresser", -301), ("DrawerPoint", -268)):
+                actor.set_actor_rotation(u.Rotator(0, 0, 0), False)
+    for label, y in (("Harrow_bath_dresser", -505), ("DrawerPoint", -520)):
         actor = by_label[label]
-        actor.set_actor_location(u.Vector(1200, y, actor.get_actor_location().z), False, True)
+        actor.set_actor_location(u.Vector(1160, y, actor.get_actor_location().z), False, True)
 
     notes = json.loads((ROOT / "Scripts/level/notes.json").read_text(encoding="utf-8"))
     for note_id in ("note_letter1", "note_rem2"):

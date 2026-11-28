@@ -18,8 +18,8 @@ ROOMS = {
 # (label, the end of its folder path, the yaw it should have, seat its back against the wall)
 TURN = [
     ("Dresser_Drawers", "/Kitchen", 90.0, True),                 # drawers were to the east wall
-    ("Dresser_Drawers", "/Bath", 180.0, True),                   # upstairs bath: both dressers showed their backs
-    ("Dresser_Drawers_Open", "/Bath", 180.0, True),
+    ("Dresser_Drawers", "/Bath", 0.0, True),                     # upstairs bath: beside the tub, back to the far wall (2026-11-28)
+    ("Dresser_Drawers_Open", "/Bath", 0.0, True),
     ("Mirror_Standing_Cheval", "/Prayer", 220.0, False),         # the glass to the room
     ("Mirror_Standing_Cheval", "/Aide", -50.0, False),
     ("GunCabinet", "/Den", 90.0, True),
